@@ -5,6 +5,8 @@ import re as _re
 import types as _types
 import typing as _typing
 
+from tools.generate.environment.gen.result import Result
+
 from .. import globals as _globals
 from . import environment as _environment
 from . import venv as _venv
@@ -43,17 +45,11 @@ class PythonWriter:
 
     @_contextlib.contextmanager
     def write(self: _typing.Self) -> _typing.Iterator[None]:
-        def results_gen() -> _typing.Iterator[_environment.gen.Result]:
-            result: _typing.Any = self.__env.exec(self.__code)
-            if not isinstance(result, _typing.Iterable):
-                raise TypeError(result)
-            ret: _typing.Any
-            for ret in result:
-                if not isinstance(ret, _environment.gen.Result):
-                    raise TypeError(ret)
-                yield ret
-        results: _typing.Collection[_environment.gen.Result] = tuple(
-            results_gen())
+        results0: _typing.Any = self.__env.exec(self.__code)
+        if not isinstance(results0, _environment.gen.Results):
+            raise TypeError(results0)
+        results: _environment.gen.Results = results0
+        del results0
         try:
             yield
         finally:
