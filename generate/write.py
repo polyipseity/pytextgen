@@ -5,11 +5,8 @@ import re as _re
 import types as _types
 import typing as _typing
 
-from tools.generate.environment.gen.result import Result
-
 from .. import globals as _globals
-from . import environment as _environment
-from . import venv as _venv
+from . import virenv as _virenv
 
 
 class Writer(metaclass=_abc.ABCMeta):
@@ -34,10 +31,10 @@ class PythonWriter:
 
     def __init__(self: _typing.Self,
                  code: _typing.Any, /, *,
-                 env: _venv.Environment,
+                 env: _virenv.Environment,
                  timestamp: bool = True) -> None:
         self.__code: _typing.Any = code
-        self.__env: _venv.Environment = env
+        self.__env: _virenv.Environment = env
         self.__timestamp: bool = timestamp
 
     def __repr__(self: _typing.Self) -> str:
@@ -46,14 +43,14 @@ class PythonWriter:
     @_contextlib.contextmanager
     def write(self: _typing.Self) -> _typing.Iterator[None]:
         results0: _typing.Any = self.__env.exec(self.__code)
-        if not isinstance(results0, _environment.gen.Results):
+        if not isinstance(results0, _virenv.gen.Results):
             raise TypeError(results0)
-        results: _environment.gen.Results = results0
+        results: _virenv.gen.Results = results0
         del results0
         try:
             yield
         finally:
-            result: _environment.gen.Result
+            result: _virenv.gen.Result
             for result in results:
                 io: _typing.TextIO
                 with result.location.open() as io:

@@ -1,5 +1,4 @@
 from . import main as main
-from . import environment as environment
+from . import virenv as virenv
 from .read import *
-from .venv import *
 from .write import *

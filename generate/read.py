@@ -6,8 +6,7 @@ import types as _types
 import typing as _typing
 
 from .. import globals as _globals
-from . import environment as _environment
-from . import venv as _venv
+from . import virenv as _virenv
 from . import write as _write
 
 
@@ -45,9 +44,9 @@ class Reader(metaclass=_abc.ABCMeta):
 
 
 def _Python_env(reader: Reader) -> _typing.Mapping[str, _typing.Any]:
-    def cwf_section(section: str) -> _environment.util.Location:
-        return _typing.cast(_environment.util.Location,
-                            _environment.util.FileSection(
+    def cwf_section(section: str) -> _virenv.util.Location:
+        return _typing.cast(_virenv.util.Location,
+                            _virenv.util.FileSection(
                                 path=reader.path, section=section)
                             )
     return _types.MappingProxyType({
@@ -98,10 +97,10 @@ class MarkdownReader:
 
     def pipe(self: _typing.Self) -> _typing.Collection[_write.Writer]:
         vars: _typing.MutableMapping[str,
-                                     _typing.Any] = _environment.__dict__.copy()
+                                     _typing.Any] = _virenv.__dict__.copy()
         vars['__builtins__'] = {
             k: v for k, v in _builtins.__dict__.items() if k not in self.builtins_exclude}
-        env: _venv.Environment = _venv.Environment(
+        env: _virenv.Environment = _virenv.Environment(
             env=_Python_env(_typing.cast(Reader, self)), globals=vars, locals=vars)
 
         def ret_gen() -> _typing.Iterator[_write.Writer]:
