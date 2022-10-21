@@ -10,5 +10,5 @@ class Result(_typing.NamedTuple):
 
 
 @_typing.final
-class Results(_util.TypedTuple[Result], t_type=Result):
+class Results(_util.TypedTuple[Result], element_type=Result):
     pass

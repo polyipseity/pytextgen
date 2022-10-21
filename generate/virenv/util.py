@@ -246,7 +246,7 @@ class FlashcardState(_typing.NamedTuple('FlashcardState', date=_datetime.date, i
 
 
 @_typing.final
-class FlashcardStateGroup(_util.TypedTuple[FlashcardState], t_type=FlashcardState):
+class FlashcardStateGroup(_util.TypedTuple[FlashcardState], element_type=FlashcardState):
     __slots__ = ()
     format: str = '<!--SR:{states}-->'
     regex: _re.Pattern[str] = _re.compile(r'<!--SR:(.*?)-->', flags=0)

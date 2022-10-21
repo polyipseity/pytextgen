@@ -7,11 +7,16 @@ _T = _typing.TypeVar('_T')
 
 
 class TypedTuple(_typing.Generic[_T], tuple[_T, ...]):
-    __t_type: type[_T]
+    __element_type: type[_T]
 
-    def __init_subclass__(cls, t_type: type[_T], **kwargs: _typing.Any) -> None:
-        cls.__t_type = t_type
+    def __init_subclass__(cls: type[_typing.Self], element_type: type[_T], **kwargs: _typing.Any) -> None:
+        cls.__element_type = element_type
         return super().__init_subclass__(**kwargs)
+
+    @property
+    @classmethod
+    def element_type(cls: type[_typing.Self]) -> type[_T]:
+        return cls.__element_type
 
     @_typing.overload
     def __new__(cls: type[_typing.Self], iterable: _typing.Iterable[_T], /) -> _typing.Self:
@@ -22,7 +27,7 @@ class TypedTuple(_typing.Generic[_T], tuple[_T, ...]):
         ...
 
     def __new__(cls: type[_typing.Self], *items: _typing.Iterable[_T] | _T) -> _typing.Self:
-        if len(items) == 1 and not isinstance(items[0], cls.__t_type):
+        if len(items) == 1 and not isinstance(items[0], cls.__element_type):
             return super().__new__(cls, _typing.cast(_typing.Iterable[_T], items[0]))
         return super().__new__(cls, _typing.cast(_typing.Iterable[_T], items))
 
