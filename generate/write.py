@@ -11,7 +11,7 @@ from . import virenv as _virenv
 
 
 class Writer(metaclass=_abc.ABCMeta):
-    __slots__ = ()
+    __slots__: _typing.ClassVar = ()
 
     @_contextlib.contextmanager
     @_abc.abstractmethod
@@ -28,7 +28,7 @@ class Writer(metaclass=_abc.ABCMeta):
 
 
 class PythonWriter:
-    __slots__ = ('__code', '__env', '__options')
+    __slots__: _typing.ClassVar = ('__code', '__env', '__options')
 
     def __init__(self: _typing.Self,
                  code: _typing.Any, /, *,

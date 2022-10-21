@@ -7,7 +7,7 @@ import typing as _typing
 
 @_typing.final
 class TextCode:
-    __slots__ = ('__blocks', '__by_tag')
+    __slots__: _typing.ClassVar = ('__blocks', '__by_tag')
 
     @_typing.final
     @_dataclasses.dataclass(init=True,
@@ -70,10 +70,12 @@ class TextCode:
     def compiler(code: str) -> _typing.Iterator[Block]:
         @_enum.unique
         class State(_enum.Enum):
-            NORMAL = _enum.auto()
-            ESCAPE = _enum.auto()
-            TAG = _enum.auto()
-            BLOCK = _enum.auto()
+            __slots__: _typing.ClassVar = ()
+
+            NORMAL: _typing.ClassVar = _enum.auto()
+            ESCAPE: _typing.ClassVar = _enum.auto()
+            TAG: _typing.ClassVar = _enum.auto()
+            BLOCK: _typing.ClassVar = _enum.auto()
         state: State = State.NORMAL
         stack: _typing.MutableSequence[_io.StringIO | State] = []
         stack.append(_io.StringIO())

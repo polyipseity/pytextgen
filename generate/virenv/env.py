@@ -4,7 +4,7 @@ import typing as _typing
 
 @_typing.final
 class Environment:
-    __slots__ = ('__env', '__globals', '__locals')
+    __slots__: _typing.ClassVar = ('__env', '__globals', '__locals')
 
     def __init__(self: _typing.Self, *,
                  env: _typing.Mapping[str, _typing.Any] = {},

@@ -17,8 +17,8 @@ from . import write as _write
 
 
 class Reader(metaclass=_abc.ABCMeta):
-    registry: _typing.MutableMapping[str, type] = {}
-    __slots__ = ()
+    __slots__: _typing.ClassVar = ()
+    registry: _typing.ClassVar[_typing.MutableMapping[str, type]] = {}
 
     @_abc.abstractmethod
     def __init__(self: _typing.Self, *,
@@ -63,13 +63,13 @@ def _Python_env(reader: Reader) -> _typing.Mapping[str, _typing.Any]:
 
 
 class MarkdownReader:
-    __slots__ = ('__path', '__codes', '__options')
-    builtins_exclude: _typing.AbstractSet[str] = frozenset(
+    __slots__: _typing.ClassVar = ('__path', '__codes', '__options')
+    builtins_exclude: _typing.ClassVar[_typing.AbstractSet[str]] = frozenset(
         # constants: https://docs.python.org/library/constants.html
         # functions: https://docs.python.org/library/functions.html
     )
-    start: str = f'```Python\n# {_globals.uuid} generate data'
-    stop: str = '```'
+    start: _typing.ClassVar[str] = f'```Python\n# {_globals.uuid} generate data'
+    stop: _typing.ClassVar[str] = '```'
 
     @property
     def path(self: _typing.Self) -> _pathlib.Path: return self.__path

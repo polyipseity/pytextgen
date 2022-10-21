@@ -21,4 +21,4 @@ class Result:
 
 @_typing.final
 class Results(_util.TypedTuple[Result], element_type=Result):
-    pass
+    __slots__: _typing.ClassVar = ()

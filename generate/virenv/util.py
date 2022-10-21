@@ -5,7 +5,6 @@ import io as _io
 import os as _os
 import pathlib as _pathlib
 import re as _re
-from tkinter.ttk import Separator
 import types as _types
 import typing as _typing
 
@@ -19,7 +18,7 @@ _ExtendsUnit = _typing.TypeVar('_ExtendsUnit', bound='Unit[_typing.Any]')
 
 @_typing.final
 class Unit(_typing.Generic[_CoT]):
-    __slots__ = ('__value',)
+    __slots__: _typing.ClassVar = ('__value',)
 
     def __init__(self: _typing.Self, value: _CoT) -> None:
         self.__value: _CoT = value
@@ -44,7 +43,7 @@ class Unit(_typing.Generic[_CoT]):
 
 
 class Location(metaclass=_abc.ABCMeta):
-    __slots__ = ()
+    __slots__: _typing.ClassVar = ()
 
     @_abc.abstractmethod
     def open(self: _typing.Self) -> _typing.TextIO: ...
@@ -125,7 +124,7 @@ class FileSection:
         if self.section:
             @_typing.final
             class IO(_io.StringIO):
-                __slots__ = ('__file', '__slice')
+                __slots__: _typing.ClassVar = ('__file', '__slice')
 
                 def __init__(self: _typing.Self, closure: FileSection, /) -> None:
                     ext: str
@@ -180,7 +179,7 @@ assert issubclass(FileSection, Location)
 
 
 class FlashcardGroup(_typing.Sequence[str], metaclass=_abc.ABCMeta):
-    __slots__ = ()
+    __slots__: _typing.ClassVar = ()
 
     @_abc.abstractmethod
     def __str__(self: _typing.Self) -> str: ...
@@ -306,9 +305,10 @@ class FlashcardState:
 
 @_typing.final
 class FlashcardStateGroup(_util.TypedTuple[FlashcardState], element_type=FlashcardState):
-    __slots__ = ()
-    format: str = '<!--SR:{states}-->'
-    regex: _re.Pattern[str] = _re.compile(r'<!--SR:(.*?)-->', flags=0)
+    __slots__: _typing.ClassVar = ()
+    format: _typing.ClassVar[str] = '<!--SR:{states}-->'
+    regex: _typing.ClassVar[_re.Pattern[str]] = _re.compile(
+        r'<!--SR:(.*?)-->', flags=0)
 
     def __str__(self: _typing.Self) -> str:
         if self:

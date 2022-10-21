@@ -17,11 +17,13 @@ _punctuation_regex: _re.Pattern[str] = _re.compile(
 
 @_enum.unique
 class Tag(_enum.Enum):
-    COMMON = ''
-    COMMENT = 'cmt'
-    TEXT = 'text'
-    MEMORIZE = 'mem'
-    SEMANTICS = 'sem'
+    __slots__: _typing.ClassVar = ()
+
+    COMMON: _typing.ClassVar = ''
+    COMMENT: _typing.ClassVar = 'cmt'
+    TEXT: _typing.ClassVar = 'text'
+    MEMORIZE: _typing.ClassVar = 'mem'
+    SEMANTICS: _typing.ClassVar = 'sem'
 
 
 TagStr: _typing.TypeAlias = Tag | str
