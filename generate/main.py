@@ -37,7 +37,7 @@ def main(argv: _typing.Sequence[str]) -> None:
                 )
                 reader.read(file.read())
                 writers.extend(reader.pipe())
-            except BaseException:
+            except Exception:
                 _logging.exception(f'Exception reading file: {input}')
                 continue
 
@@ -47,14 +47,15 @@ def main(argv: _typing.Sequence[str]) -> None:
         for writer in writers:
             try:
                 writer_stack.enter_context(writer.write())
-            except:
+            except Exception:
                 _logging.exception(f'Error while validation: {writer}')
                 continue
     finally:
         try:
             writer_stack.close()
-        except:
+        except Exception as ex:
             _logging.exception(f'Error while writing')
+            raise ex
 
 
 @_typing.final

@@ -119,7 +119,7 @@ class FileSection(_typing.NamedTuple('FileSection', path=_pathlib.PurePath, sect
                                 f'Unenclosure from char {start}: {closure}')
                         self.__slice: slice = slice(start, stop)
                         super().__init__(text[self.__slice])
-                    except BaseException as ex:
+                    except Exception as ex:
                         self.__file.close()
                         raise ex
 
