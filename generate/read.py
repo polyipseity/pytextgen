@@ -22,12 +22,12 @@ class Reader(metaclass=_abc.ABCMeta):
 
     @_abc.abstractmethod
     def __init__(self: _typing.Self, *,
-                 path: _pathlib.PurePath,
+                 path: _pathlib.Path,
                  comment: _options.Options) -> None: ...
 
     @property
     @_abc.abstractmethod
-    def path(self: _typing.Self) -> _pathlib.PurePath: ...
+    def path(self: _typing.Self) -> _pathlib.Path: ...
 
     @property
     @_abc.abstractmethod
@@ -72,15 +72,15 @@ class MarkdownReader:
     stop: str = '```'
 
     @property
-    def path(self: _typing.Self) -> _pathlib.PurePath: return self.__path
+    def path(self: _typing.Self) -> _pathlib.Path: return self.__path
 
     @property
     def options(self: _typing.Self) -> _options.Options: return self.__options
 
     def __init__(self: _typing.Self, *,
-                 path: _pathlib.PurePath,
+                 path: _pathlib.Path,
                  options: _options.Options) -> None:
-        self.__path: _pathlib.PurePath = path
+        self.__path: _pathlib.Path = path.resolve(strict=True)
         self.__codes: _typing.MutableSequence[_typing.Any] = []
         self.__options: _options.Options = options
 

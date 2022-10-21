@@ -60,7 +60,7 @@ class Location(metaclass=_abc.ABCMeta):
 
 @_typing.final
 class PathLocation(_typing.NamedTuple):
-    path: _pathlib.PurePath
+    path: _pathlib.Path
 
     def open(self: _typing.Self) -> _typing.TextIO:
         return open(self.path, mode='r+t', **_globals.open_options)
@@ -71,7 +71,7 @@ assert issubclass(PathLocation, Location)
 
 
 @_typing.final
-class FileSection(_typing.NamedTuple('FileSection', path=_pathlib.PurePath, section=str)):
+class FileSection(_typing.NamedTuple('FileSection', path=_pathlib.Path, section=str)):
     __slots__ = ()
 
     @_typing.final
@@ -89,7 +89,7 @@ class FileSection(_typing.NamedTuple('FileSection', path=_pathlib.PurePath, sect
         ),
     })
 
-    path: _pathlib.PurePath
+    path: _pathlib.Path
     section: str
 
     def open(self: _typing.Self) -> _typing.TextIO:

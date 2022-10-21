@@ -16,7 +16,7 @@ from . import write as _write
 def main(argv: _typing.Sequence[str]) -> None:
     args: Arguments = parse_argv(argv)
     writers: _typing.MutableSequence[_write.Writer] = []
-    input: _pathlib.PurePath
+    input: _pathlib.Path
     for input in args.inputs:
         try:
             file: _typing.TextIO = open(
@@ -60,7 +60,7 @@ def main(argv: _typing.Sequence[str]) -> None:
 
 @_typing.final
 class Arguments(_typing.NamedTuple):
-    inputs: _typing.Sequence[_pathlib.PurePath]
+    inputs: _typing.Sequence[_pathlib.Path]
     options: _options.Options
 
 
@@ -103,7 +103,8 @@ def parse_argv(argv: _typing.Sequence[str]) -> Arguments | _typing.NoReturn:
     parser.add_argument('inputs',
                         action='store',
                         nargs=_argparse.ONE_OR_MORE,
-                        type=_pathlib.PurePath,
+                        type=lambda path:
+                        _pathlib.Path(path).resolve(strict=True),
                         help='sequence of input(s) to read',)
     input: _argparse.Namespace = parser.parse_args(argv[1:])
     return Arguments(
