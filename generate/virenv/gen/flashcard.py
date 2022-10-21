@@ -33,19 +33,23 @@ def memorize_linked_seq(strs: _typing.Iterable[str], /, *,
         str_: str
         left: str
         right: str
-    prev: HintedStr | None = None
+    iter: enumerate[str] = enumerate(strs)
     index: int
     str_: str
-    for index, str_ in enumerate(strs):
+    try:
+        index, str_ = next(iter)
+    except StopIteration:
+        return
+    prev: HintedStr = HintedStr(str_, *hinter(index, str_))
+    for index, str_ in iter:
         cur: HintedStr = HintedStr(str_, *hinter(index, str_))
-        if prev is not None:
-            yield _typing.cast(
-                _util.FlashcardGroup,
-                _util.TwoSidedFlashcard(
-                    prev.str_ + cur.left, prev.right + cur.str_,
-                    reversible=reversible,
-                )
+        yield _typing.cast(
+            _util.FlashcardGroup,
+            _util.TwoSidedFlashcard(
+                prev.str_ + cur.left, prev.right + cur.str_,
+                reversible=reversible,
             )
+        )
         prev = cur
 
 
