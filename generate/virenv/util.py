@@ -146,7 +146,7 @@ Location.register(FileSection)
 assert issubclass(FileSection, Location)
 
 
-class FlashcardGroup(metaclass=_abc.ABCMeta):
+class FlashcardGroup(_typing.Sequence[str], metaclass=_abc.ABCMeta):
     __slots__ = ()
 
     @_abc.abstractmethod
@@ -155,9 +155,10 @@ class FlashcardGroup(metaclass=_abc.ABCMeta):
     @classmethod
     def __subclasshook__(cls: type[_typing.Self], subclass: type) -> bool | _types.NotImplementedType:
         if cls is FlashcardGroup:
-            if any(all(p not in c.__dict__ or c.__dict__[p] is None
+            if _typing.Sequence.__subclasscheck__(subclass) is not True\
+                or any(all(p not in c.__dict__ or c.__dict__[p] is None
                        for c in subclass.__mro__)
-                   for p in (cls.__str__.__name__,)):
+                       for p in (cls.__str__.__name__,)):
                 return False
         return NotImplemented
 
@@ -180,6 +181,17 @@ class TwoSidedFlashcard(_typing.NamedTuple('Flashcard', left=str, right=str, rev
     left: str
     right: str
     reversible: bool
+
+    def __len__(self: _typing.Self) -> int:
+        return 2 if self.reversible else 1
+
+    def __getitem__(self: _typing.Self, index: int) -> str:
+        if self.reversible:
+            if -2 > index or index >= 2:
+                raise IndexError(index)
+        elif -1 > index or index >= 1:
+            raise IndexError(index)
+        return str(self)
 
     def __str__(self: _typing.Self) -> str:
         return self.separators[self.SeparatorKey(
