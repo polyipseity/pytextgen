@@ -1,10 +1,11 @@
 import abc as _abc
-import collections.abc as _collections_abc
+import dataclasses as _dataclasses
 import datetime as _datetime
 import io as _io
 import os as _os
 import pathlib as _pathlib
 import re as _re
+from tkinter.ttk import Separator
 import types as _types
 import typing as _typing
 
@@ -59,7 +60,16 @@ class Location(metaclass=_abc.ABCMeta):
 
 
 @_typing.final
-class PathLocation(_typing.NamedTuple):
+@_dataclasses.dataclass(init=True,
+                        repr=True,
+                        eq=True,
+                        order=False,
+                        unsafe_hash=False,
+                        frozen=True,
+                        match_args=True,
+                        kw_only=True,
+                        slots=True,)
+class PathLocation:
     path: _pathlib.Path
 
     def open(self: _typing.Self) -> _typing.TextIO:
@@ -71,21 +81,37 @@ assert issubclass(PathLocation, Location)
 
 
 @_typing.final
-class FileSection(_typing.NamedTuple('FileSection', path=_pathlib.Path, section=str)):
-    __slots__ = ()
-
+@_dataclasses.dataclass(init=True,
+                        repr=True,
+                        eq=True,
+                        order=False,
+                        unsafe_hash=False,
+                        frozen=True,
+                        match_args=True,
+                        kw_only=True,
+                        slots=True,)
+class FileSection:
     @_typing.final
-    class SectionFormat(_typing.NamedTuple):
+    @_dataclasses.dataclass(init=True,
+                            repr=True,
+                            eq=True,
+                            order=False,
+                            unsafe_hash=False,
+                            frozen=True,
+                            match_args=True,
+                            kw_only=True,
+                            slots=True,)
+    class SectionFormat:
         start: str
         stop: str
-    section_formats: _typing.Mapping[str, SectionFormat] = _types.MappingProxyType({
+    section_formats: _typing.ClassVar[_typing.Mapping[str, SectionFormat]] = _types.MappingProxyType({
         '': SectionFormat(
-            f'[{_globals.uuid},generate,{{section}}]',
-            f'[{_globals.uuid},end]'
+            start=f'[{_globals.uuid},generate,{{section}}]',
+            stop=f'[{_globals.uuid},end]'
         ),
         '.md': SectionFormat(
-            f'<!--{_globals.uuid} generate section="{{section}}"-->',
-            f'<!--/{_globals.uuid}-->'
+            start=f'<!--{_globals.uuid} generate section="{{section}}"-->',
+            stop=f'<!--/{_globals.uuid}-->'
         ),
     })
 
@@ -147,7 +173,7 @@ Location.register(FileSection)
 assert issubclass(FileSection, Location)
 
 
-class FlashcardGroup(_typing.Sequence[str]):
+class FlashcardGroup(_typing.Sequence[str], metaclass=_abc.ABCMeta):
     __slots__ = ()
 
     @_abc.abstractmethod
@@ -166,14 +192,30 @@ class FlashcardGroup(_typing.Sequence[str]):
 
 
 @_typing.final
-class TwoSidedFlashcard(_typing.NamedTuple('Flashcard', left=str, right=str, reversible=bool)):
-    __slots__ = ()
-
+@_dataclasses.dataclass(init=True,
+                        repr=True,
+                        eq=True,
+                        order=False,
+                        unsafe_hash=False,
+                        frozen=True,
+                        match_args=True,
+                        kw_only=False,
+                        slots=True,)
+class TwoSidedFlashcard:
     @_typing.final
-    class SeparatorKey(_typing.NamedTuple):
+    @_dataclasses.dataclass(init=True,
+                            repr=True,
+                            eq=True,
+                            order=False,
+                            unsafe_hash=False,
+                            frozen=True,
+                            match_args=True,
+                            kw_only=True,
+                            slots=True,)
+    class SeparatorKey:
         reversible: bool
         multiline: bool
-    separators: _typing.Mapping[SeparatorKey, str] = _types.MappingProxyType({
+    separators: _typing.ClassVar[_typing.Mapping[SeparatorKey, str]] = _types.MappingProxyType({
         SeparatorKey(reversible=False, multiline=False): '::',
         SeparatorKey(reversible=True, multiline=False): ':::',
         SeparatorKey(reversible=False, multiline=True): '\n??\n',
@@ -182,7 +224,14 @@ class TwoSidedFlashcard(_typing.NamedTuple('Flashcard', left=str, right=str, rev
 
     left: str
     right: str
+    _: _dataclasses.KW_ONLY
     reversible: bool
+
+    def __str__(self: _typing.Self) -> str:
+        return self.separators[self.SeparatorKey(
+            reversible=self.reversible,
+            multiline='\n' in self.left or '\n' in self.right
+        )].join((self.left, self.right))
 
     def __len__(self: _typing.Self) -> int:
         return 2 if self.reversible else 1
@@ -195,22 +244,24 @@ class TwoSidedFlashcard(_typing.NamedTuple('Flashcard', left=str, right=str, rev
             raise IndexError(index)
         return str(self)
 
-    def __str__(self: _typing.Self) -> str:
-        return self.separators[self.SeparatorKey(
-            reversible=self.reversible,
-            multiline='\n' in self.left or '\n' in self.right
-        )].join((self.left, self.right))
-
 
 FlashcardGroup.register(TwoSidedFlashcard)
 assert issubclass(TwoSidedFlashcard, FlashcardGroup)
 
 
 @_typing.final
-class FlashcardState(_typing.NamedTuple('FlashcardState', date=_datetime.date, interval=int, ease=int)):
-    __slots__ = ()
-    format: str = '!{date},{interval},{ease}'
-    regex: _re.Pattern[str] = _re.compile(
+@_dataclasses.dataclass(init=True,
+                        repr=True,
+                        eq=True,
+                        order=False,
+                        unsafe_hash=False,
+                        frozen=True,
+                        match_args=True,
+                        kw_only=True,
+                        slots=True,)
+class FlashcardState:
+    format: _typing.ClassVar[str] = '!{date},{interval},{ease}'
+    regex: _typing.ClassVar[_re.Pattern[str]] = _re.compile(
         r'!(\d{4}-\d{2}-\d{2}),(\d+),(\d+)',
         flags=0
     )
@@ -280,7 +331,16 @@ class FlashcardStateGroup(_util.TypedTuple[FlashcardState], element_type=Flashca
 
 
 @_typing.final
-class StatefulFlashcardGroup(_typing.NamedTuple):
+@_dataclasses.dataclass(init=True,
+                        repr=True,
+                        eq=True,
+                        order=False,
+                        unsafe_hash=False,
+                        frozen=True,
+                        match_args=True,
+                        kw_only=True,
+                        slots=True,)
+class StatefulFlashcardGroup:
     flashcard: FlashcardGroup
     state: FlashcardStateGroup
 

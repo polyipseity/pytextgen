@@ -1,3 +1,4 @@
+import dataclasses as _dataclasses
 import enum as _enum
 import io as _io
 import types as _types
@@ -9,8 +10,18 @@ class TextCode:
     __slots__ = ('__blocks', '__by_tag')
 
     @_typing.final
-    class Block(_typing.NamedTuple):
+    @_dataclasses.dataclass(init=True,
+                            repr=True,
+                            eq=True,
+                            order=False,
+                            unsafe_hash=False,
+                            frozen=True,
+                            match_args=True,
+                            kw_only=False,
+                            slots=True,)
+    class Block:
         text: str
+        _: _dataclasses.KW_ONLY
         tag: str = ''
 
         @property
@@ -20,7 +31,16 @@ class TextCode:
         def common(self: _typing.Self) -> bool: return not self.special
 
     @_typing.final
-    class ByTagValue(_typing.NamedTuple):
+    @_dataclasses.dataclass(init=True,
+                            repr=True,
+                            eq=True,
+                            order=False,
+                            unsafe_hash=False,
+                            frozen=True,
+                            match_args=True,
+                            kw_only=True,
+                            slots=True,)
+    class ByTagValue:
         idx: int
         block: 'TextCode.Block'
 

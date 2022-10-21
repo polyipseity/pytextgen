@@ -1,3 +1,4 @@
+import dataclasses as _dataclasses
 import re as _re
 import typing as _typing
 
@@ -7,7 +8,17 @@ from . import misc as _misc
 from . import text_code as _text_code
 
 
-class _MarkdownRegex(_typing.NamedTuple):
+@_typing.final
+@_dataclasses.dataclass(init=True,
+                        repr=True,
+                        eq=True,
+                        order=False,
+                        unsafe_hash=False,
+                        frozen=True,
+                        match_args=True,
+                        kw_only=True,
+                        slots=True,)
+class _MarkdownRegex:
     regex: _re.Pattern[str]
     desugared: str
 

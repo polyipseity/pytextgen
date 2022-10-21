@@ -1,5 +1,6 @@
 import argparse as _argparse
 import contextlib as _contextlib
+import dataclasses as _dataclasses
 import logging as _logging
 import os as _os
 import pathlib as _pathlib
@@ -59,7 +60,16 @@ def main(argv: _typing.Sequence[str]) -> None:
 
 
 @_typing.final
-class Arguments(_typing.NamedTuple):
+@_dataclasses.dataclass(init=True,
+                        repr=True,
+                        eq=True,
+                        order=False,
+                        unsafe_hash=False,
+                        frozen=True,
+                        match_args=True,
+                        kw_only=True,
+                        slots=True,)
+class Arguments:
     inputs: _typing.Sequence[_pathlib.Path]
     options: _options.Options
 
