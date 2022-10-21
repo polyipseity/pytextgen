@@ -55,20 +55,11 @@ class Location(metaclass=_abc.ABCMeta):
 
 
 @_typing.final
-class PathLocation:
-    __slots__ = ('__path',)
-
-    def __init__(self: _typing.Self, path: _pathlib.PurePath, /):
-        self.__path: _pathlib.PurePath = path
-
-    def __repr__(self: _typing.Self) -> str:
-        return f'{PathLocation.__qualname__}({self.__path!r})'
-
-    @property
-    def path(self: _typing.Self) -> _pathlib.PurePath: return self.__path
+class PathLocation(_typing.NamedTuple):
+    path: _pathlib.PurePath
 
     def open(self: _typing.Self) -> _typing.TextIO:
-        return open(self.__path, mode='r+t', **_globals.open_options)
+        return open(self.path, mode='r+t', **_globals.open_options)
 
 
 Location.register(PathLocation)
@@ -76,8 +67,8 @@ assert issubclass(PathLocation, Location)
 
 
 @_typing.final
-class FileSection:
-    __slots__ = ('__path', '__section')
+class FileSection(_typing.NamedTuple('FileSection', path=_pathlib.PurePath, section=str)):
+    __slots__ = ()
 
     @_typing.final
     class SectionFormat(_typing.NamedTuple):
@@ -94,23 +85,11 @@ class FileSection:
         ),
     })
 
-    def __init__(self: _typing.Self, *,
-                 path: _pathlib.PurePath,
-                 section: str) -> None:
-        self.__path: _pathlib.PurePath = path
-        self.__section: str = section
-
-    def __repr__(self: _typing.Self) -> str:
-        return f'{FileSection.__qualname__}(path={self.__path!r}, section={self.__section!r})'
-
-    @property
-    def path(self: _typing.Self) -> _pathlib.PurePath: return self.__path
-
-    @property
-    def section(self: _typing.Self) -> str: return self.__section
+    path: _pathlib.PurePath
+    section: str
 
     def open(self: _typing.Self) -> _typing.TextIO:
-        if self.__section:
+        if self.section:
             @_typing.final
             class IO(_io.StringIO):
                 __slots__ = ('__file', '__slice')
@@ -157,7 +136,7 @@ class FileSection:
                     finally:
                         super().close()
             return IO(self)
-        return open(self.__path, mode='r+t', **_globals.open_options)
+        return open(self.path, mode='r+t', **_globals.open_options)
 
 
 Location.register(FileSection)

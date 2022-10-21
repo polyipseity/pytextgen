@@ -5,8 +5,8 @@ from . import misc as _misc
 
 
 @_typing.final
-class Flashcard:
-    __slots__ = ('__left', '__right', '__reversible')
+class Flashcard(_typing.NamedTuple('Flashcard', left=str, right=str, reversible=bool)):
+    __slots__ = ()
 
     @_typing.final
     class SeparatorKey(_typing.NamedTuple):
@@ -19,28 +19,15 @@ class Flashcard:
         SeparatorKey(reversible=True, multiline=True): '\n???\n',
     })
 
-    def __init__(self: _typing.Self, left: str, right: str, *, reversible: bool = False) -> None:
-        self.__left: str = left
-        self.__right: str = right
-        self.__reversible: bool = reversible
-
-    def __repr__(self: _typing.Self) -> str:
-        return f'{Flashcard.__qualname__}(left={self.__left!r}, right={self.__right!r}, reversible={self.__reversible!r})'
+    left: str
+    right: str
+    reversible: bool
 
     def __str__(self: _typing.Self) -> str:
         return self.separators[self.SeparatorKey(
-            reversible=self.__reversible,
-            multiline='\n' in self.__left or '\n' in self.__right
-        )].join((self.__left, self.__right))
-
-    @property
-    def left(self: _typing.Self) -> str: return self.__left
-
-    @property
-    def right(self: _typing.Self) -> str: return self.__right
-
-    @property
-    def reversible(self: _typing.Self) -> bool: return self.__reversible
+            reversible=self.reversible,
+            multiline='\n' in self.left or '\n' in self.right
+        )].join((self.left, self.right))
 
 
 def listify_flashcards(flashcards: _typing.Iterable[Flashcard])\
@@ -83,7 +70,9 @@ def memorize_linked_seq(strs: _typing.Iterable[str], /, *,
     for index, str_ in enumerate(strs):
         cur: HintedStr = HintedStr(str_, *hinter(index, str_))
         if prev is not None:
-            yield Flashcard(prev.str_ + cur.left, prev.right + cur.str_, reversible=reversible)
+            ret: Flashcard = Flashcard(
+                prev.str_ + cur.left, prev.right + cur.str_, reversible=reversible)
+            yield ret
         prev = cur
 
 
@@ -91,7 +80,8 @@ def semantics_seq_map(map: _typing.Iterable[tuple[str, str]], /, *,
                       reversible: bool = False)\
         -> _typing.Iterator[Flashcard]:
     for text, sem in map:
-        yield Flashcard(text, sem, reversible=reversible)
+        ret: Flashcard = Flashcard(text, sem, reversible=reversible)
+        yield ret
 
 
 def punctuation_hinter(hinted: _typing.Callable[[int], bool] = lambda _: True, *,

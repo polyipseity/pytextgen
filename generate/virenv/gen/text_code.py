@@ -9,24 +9,12 @@ class TextCode:
     __slots__ = ('__blocks', '__by_tag')
 
     @_typing.final
-    class Block:
-        __slots__ = ('__tag', '__text')
-
-        def __init__(self: _typing.Self, text: str, *, tag: str = '') -> None:
-            self.__tag: str = tag
-            self.__text: str = text
-
-        def __repr__(self: _typing.Self) -> str:
-            return f'{TextCode.Block.__qualname__}(text={self.__text!r}, tag={self.__tag!r})'
+    class Block(_typing.NamedTuple):
+        text: str
+        tag: str = ''
 
         @property
-        def tag(self: _typing.Self) -> str: return self.__tag
-
-        @property
-        def text(self: _typing.Self) -> str: return self.__text
-
-        @property
-        def special(self: _typing.Self) -> bool: return bool(self.__tag)
+        def special(self: _typing.Self) -> bool: return bool(self.tag)
 
         @property
         def common(self: _typing.Self) -> bool: return not self.special
