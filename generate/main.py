@@ -73,6 +73,10 @@ class Arguments:
     inputs: _typing.Sequence[_pathlib.Path]
     options: _options.Options
 
+    def __post_init__(self: _typing.Self) -> None:
+        object.__setattr__(self, 'inputs', tuple(
+            input.resolve(strict=True) for input in self.inputs))
+
 
 def parse_argv(argv: _typing.Sequence[str]) -> Arguments | _typing.NoReturn:
     prog0: str | None = _sys.modules[__name__].__package__
@@ -118,7 +122,7 @@ def parse_argv(argv: _typing.Sequence[str]) -> Arguments | _typing.NoReturn:
                         help='sequence of input(s) to read',)
     input: _argparse.Namespace = parser.parse_args(argv[1:])
     return Arguments(
-        inputs=tuple(input.inputs),
+        inputs=input.inputs,
         options=_options.Options(
             timestamp=input.timestamp,
             init_flashcards=input.init_flashcards,

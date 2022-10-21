@@ -75,6 +75,9 @@ class PathLocation:
     def open(self: _typing.Self) -> _typing.TextIO:
         return open(self.path, mode='r+t', **_globals.open_options)
 
+    def __post_init__(self: _typing.Self) -> None:
+        object.__setattr__(self, 'path', self.path.resolve(strict=True))
+
 
 Location.register(PathLocation)
 assert issubclass(PathLocation, Location)
@@ -167,6 +170,9 @@ class FileSection:
                         super().close()
             return IO(self)
         return open(self.path, mode='r+t', **_globals.open_options)
+
+    def __post_init__(self: _typing.Self) -> None:
+        object.__setattr__(self, 'path', self.path.resolve(strict=True))
 
 
 Location.register(FileSection)
