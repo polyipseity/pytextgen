@@ -8,6 +8,7 @@ import typing as _typing
 
 from .. import globals as _globals
 from .. import version as _version
+from . import options as _options
 from . import read as _read
 from . import write as _write
 
@@ -32,7 +33,7 @@ def main(argv: _typing.Sequence[str]) -> None:
                 _, ext = _os.path.splitext(input)
                 reader: _read.Reader = _read.Reader.registry[ext](
                     path=input,
-                    timestamp=args.timestamp,
+                    options=args.options,
                 )
                 reader.read(file.read())
                 writers.extend(reader.pipe())
@@ -59,7 +60,7 @@ def main(argv: _typing.Sequence[str]) -> None:
 @_typing.final
 class Arguments(_typing.NamedTuple):
     inputs: _typing.Sequence[_pathlib.PurePath]
-    timestamp: bool
+    options: _options.Options
 
 
 def parse_argv(argv: _typing.Sequence[str]) -> Arguments | _typing.NoReturn:
@@ -77,28 +78,37 @@ def parse_argv(argv: _typing.Sequence[str]) -> Arguments | _typing.NoReturn:
     parser.add_argument('-v', '--version',
                         action='version',
                         version=f'{prog} v{_version.version}',
-                        help='print version and exit',
-                        )
+                        help='print version and exit',)
     parser.add_argument('-t', '--timestamp',
                         action='store_true',
                         default=True,
                         help='update or write timestamp (default)',
-                        dest='timestamp',
-                        )
+                        dest='timestamp',)
     parser.add_argument('-T', '--no-timestamp',
                         action='store_false',
                         default=False,
                         help='do not update or write timestamp',
-                        dest='timestamp',
-                        )
+                        dest='timestamp',)
+    parser.add_argument('--init-flashcards',
+                        action='store_true',
+                        default=False,
+                        help='initialize flashcards',
+                        dest='init_flashcards',)
+    parser.add_argument('--no-init-flashcards',
+                        action='store_false',
+                        default=True,
+                        help='do not initialize flashcards (default)',
+                        dest='init_flashcards',)
     parser.add_argument('inputs',
                         action='store',
                         nargs=_argparse.ONE_OR_MORE,
                         type=_pathlib.PurePath,
-                        help='sequence of input(s) to read',
-                        )
+                        help='sequence of input(s) to read',)
     input: _argparse.Namespace = parser.parse_args(argv[1:])
     return Arguments(
         inputs=tuple(input.inputs),
-        timestamp=input.timestamp,
+        options=_options.Options(
+            timestamp=input.timestamp,
+            init_flashcards=input.init_flashcards,
+        ),
     )

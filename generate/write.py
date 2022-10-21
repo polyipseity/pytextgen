@@ -6,6 +6,7 @@ import types as _types
 import typing as _typing
 
 from .. import globals as _globals
+from . import options as _options
 from . import virenv as _virenv
 
 
@@ -27,18 +28,18 @@ class Writer(metaclass=_abc.ABCMeta):
 
 
 class PythonWriter:
-    __slots__ = ('__code', '__env', '__timestamp')
+    __slots__ = ('__code', '__env', '__options')
 
     def __init__(self: _typing.Self,
                  code: _typing.Any, /, *,
                  env: _virenv.Environment,
-                 timestamp: bool = True) -> None:
+                 options: _options.Options) -> None:
         self.__code: _typing.Any = code
         self.__env: _virenv.Environment = env
-        self.__timestamp: bool = timestamp
+        self.__options: _options.Options = options
 
     def __repr__(self: _typing.Self) -> str:
-        return f'{PythonWriter.__qualname__}({self.__code!r}, env={self.__env!r}, timestamp={self.__timestamp!r})'
+        return f'{PythonWriter.__qualname__}({self.__code!r}, env={self.__env!r}, options={self.__options!r})'
 
     @_contextlib.contextmanager
     def write(self: _typing.Self) -> _typing.Iterator[None]:
@@ -59,7 +60,7 @@ class PythonWriter:
                         text)
                     if result.text != (text[:timestamp.start()] + text[timestamp.end():] if timestamp else text):
                         io.seek(0)
-                        if self.__timestamp:
+                        if self.__options.timestamp:
                             io.write(_globals.generate_comment.format(
                                 now=_datetime.datetime.now().astimezone().isoformat()))
                         elif timestamp:

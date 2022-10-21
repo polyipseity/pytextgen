@@ -1,11 +1,17 @@
 import abc as _abc
 import ast as _ast
 import builtins as _builtins
+import datetime as _datetime
+import functools as _functools
+import importlib.machinery as _importlib_machinery
+import importlib.util as _importlib_util
+import itertools as _itertools
 import pathlib as _pathlib
 import types as _types
 import typing as _typing
 
 from .. import globals as _globals
+from . import options as _options
 from . import virenv as _virenv
 from . import write as _write
 
@@ -17,7 +23,7 @@ class Reader(metaclass=_abc.ABCMeta):
     @_abc.abstractmethod
     def __init__(self: _typing.Self, *,
                  path: _pathlib.PurePath,
-                 comment: bool = True) -> None: ...
+                 comment: _options.Options) -> None: ...
 
     @property
     @_abc.abstractmethod
@@ -25,7 +31,7 @@ class Reader(metaclass=_abc.ABCMeta):
 
     @property
     @_abc.abstractmethod
-    def timestamp(self: _typing.Self) -> bool: ...
+    def options(self: _typing.Self) -> _options.Options: ...
 
     @_abc.abstractmethod
     def read(self: _typing.Self, text: str, /) -> None: ...
@@ -38,7 +44,7 @@ class Reader(metaclass=_abc.ABCMeta):
         if cls is Reader:
             if any(all(p not in c.__dict__ or c.__dict__[p] is None
                        for c in subclass.__mro__)
-                   for p in ('path', 'timestamp', cls.read.__name__, cls.pipe.__name__)):
+                   for p in ('path', 'options', cls.read.__name__, cls.pipe.__name__)):
                 return False
         return NotImplemented
 
@@ -57,7 +63,7 @@ def _Python_env(reader: Reader) -> _typing.Mapping[str, _typing.Any]:
 
 
 class MarkdownReader:
-    __slots__ = ('__path', '__codes', '__timestamp')
+    __slots__ = ('__path', '__codes', '__options')
     builtins_exclude: _typing.AbstractSet[str] = frozenset(
         # constants: https://docs.python.org/library/constants.html
         # functions: https://docs.python.org/library/functions.html
@@ -69,14 +75,14 @@ class MarkdownReader:
     def path(self: _typing.Self) -> _pathlib.PurePath: return self.__path
 
     @property
-    def timestamp(self: _typing.Self) -> bool: return self.__timestamp
+    def options(self: _typing.Self) -> _options.Options: return self.__options
 
     def __init__(self: _typing.Self, *,
                  path: _pathlib.PurePath,
-                 timestamp: bool = True) -> None:
+                 options: _options.Options) -> None:
         self.__path: _pathlib.PurePath = path
         self.__codes: _typing.MutableSequence[_typing.Any] = []
-        self.__timestamp: bool = timestamp
+        self.__options: _options.Options = options
 
     def read(self: _typing.Self, text: str, /) -> None:
         start: int = text.find(self.start)
@@ -96,18 +102,49 @@ class MarkdownReader:
             start = text.find(self.start, stop + len(self.stop))
 
     def pipe(self: _typing.Self) -> _typing.Collection[_write.Writer]:
-        vars: _typing.MutableMapping[str,
-                                     _typing.Any] = _virenv.__dict__.copy()
-        vars['__builtins__'] = {
-            k: v for k, v in _builtins.__dict__.items() if k not in self.builtins_exclude}
-        env: _virenv.Environment = _virenv.Environment(
-            env=_Python_env(_typing.cast(Reader, self)), globals=vars, locals=vars)
+        def gen_env() -> _virenv.Environment:
+            spec: _importlib_machinery.ModuleSpec = _virenv.__spec__
+            mod = _importlib_util.module_from_spec(spec)
+            if spec.loader is None:
+                raise ValueError(spec)
+            spec.loader.exec_module(mod)
+            if self.__options.init_flashcards:
+                cls: type[_virenv.util.StatefulFlashcardGroup] = mod.util.StatefulFlashcardGroup
+                old: _typing.Callable[[
+                    _virenv.util.StatefulFlashcardGroup], str] = cls.__str__
+
+                @_functools.wraps(old)
+                def new(self: _virenv.util.StatefulFlashcardGroup) -> str:
+                    self0: _virenv.util.StatefulFlashcardGroup = self
+                    diff: int = len(self.flashcard) - len(self.state)
+                    if diff > 0:
+                        self0 = type(self)(
+                            flashcard=self.flashcard,
+                            state=type(self.state)(_itertools.chain(
+                                self.state,
+                                _itertools.repeat(type(self.state).element_type(
+                                    date=_datetime.date.today(),
+                                    interval=1,
+                                    ease=_globals.flashcard_ease_default,
+                                ), diff),
+                            )),
+                        )
+                    return old(self0)
+                cls.__str__ = new
+            vars: _typing.MutableMapping[str, _typing.Any] = mod.__dict__
+            vars['__builtins__'] = {k: v for k, v in _builtins.__dict__.items()
+                                    if k not in self.builtins_exclude}
+            return _virenv.Environment(
+                env=_Python_env(_typing.cast(Reader, self)),
+                globals=vars,
+                locals=vars
+            )
 
         def ret_gen() -> _typing.Iterator[_write.Writer]:
             code: _typing.Any
             for code in self.__codes:
                 ret: _write.PythonWriter = _write.PythonWriter(
-                    code, env=env, timestamp=self.__timestamp)
+                    code, env=gen_env(), options=self.__options)
                 assert isinstance(ret, _write.Writer)
                 yield ret
         return tuple(ret_gen())
