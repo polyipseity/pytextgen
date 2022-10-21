@@ -1,4 +1,5 @@
 import abc as _abc
+import collections.abc as _collections_abc
 import datetime as _datetime
 import io as _io
 import os as _os
@@ -146,7 +147,7 @@ Location.register(FileSection)
 assert issubclass(FileSection, Location)
 
 
-class FlashcardGroup(_typing.Sequence[str], metaclass=_abc.ABCMeta):
+class FlashcardGroup(_typing.Sequence[str]):
     __slots__ = ()
 
     @_abc.abstractmethod
@@ -155,7 +156,8 @@ class FlashcardGroup(_typing.Sequence[str], metaclass=_abc.ABCMeta):
     @classmethod
     def __subclasshook__(cls: type[_typing.Self], subclass: type) -> bool | _types.NotImplementedType:
         if cls is FlashcardGroup:
-            if _typing.Sequence.__subclasscheck__(subclass) is not True\
+            if any(getattr(c, '__subclasshook__')(subclass) is False
+                   for c in cls.__mro__ if c is not cls and hasattr(c, '__subclasshook__'))\
                 or any(all(p not in c.__dict__ or c.__dict__[p] is None
                        for c in subclass.__mro__)
                        for p in (cls.__str__.__name__,)):
