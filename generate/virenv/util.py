@@ -1,11 +1,14 @@
 import abc as _abc
+import datetime as _datetime
 import io as _io
 import os as _os
 import pathlib as _pathlib
+import re as _re
 import types as _types
 import typing as _typing
 
 from ... import globals as _globals
+from ... import util as _util
 
 _CoT = _typing.TypeVar('_CoT', covariant=True)
 _CoU = _typing.TypeVar('_CoU', covariant=True)
@@ -141,3 +144,131 @@ class FileSection(_typing.NamedTuple('FileSection', path=_pathlib.PurePath, sect
 
 Location.register(FileSection)
 assert issubclass(FileSection, Location)
+
+
+class FlashcardGroup(metaclass=_abc.ABCMeta):
+    __slots__ = ()
+
+    @_abc.abstractmethod
+    def __str__(self: _typing.Self) -> str: ...
+
+    @classmethod
+    def __subclasshook__(cls: type[_typing.Self], subclass: type) -> bool | _types.NotImplementedType:
+        if cls is FlashcardGroup:
+            if any(all(p not in c.__dict__ or c.__dict__[p] is None
+                       for c in subclass.__mro__)
+                   for p in (cls.__str__.__name__,)):
+                return False
+        return NotImplemented
+
+
+@_typing.final
+class TwoSidedFlashcard(_typing.NamedTuple('Flashcard', left=str, right=str, reversible=bool)):
+    __slots__ = ()
+
+    @_typing.final
+    class SeparatorKey(_typing.NamedTuple):
+        reversible: bool
+        multiline: bool
+    separators: _typing.Mapping[SeparatorKey, str] = _types.MappingProxyType({
+        SeparatorKey(reversible=False, multiline=False): '::',
+        SeparatorKey(reversible=True, multiline=False): ':::',
+        SeparatorKey(reversible=False, multiline=True): '\n??\n',
+        SeparatorKey(reversible=True, multiline=True): '\n???\n',
+    })
+
+    left: str
+    right: str
+    reversible: bool
+
+    def __str__(self: _typing.Self) -> str:
+        return self.separators[self.SeparatorKey(
+            reversible=self.reversible,
+            multiline='\n' in self.left or '\n' in self.right
+        )].join((self.left, self.right))
+
+
+FlashcardGroup.register(TwoSidedFlashcard)
+assert issubclass(TwoSidedFlashcard, FlashcardGroup)
+
+
+@_typing.final
+class FlashcardState(_typing.NamedTuple('FlashcardState', date=_datetime.date, interval=int, ease=int)):
+    __slots__ = ()
+    format: str = '!{date},{interval},{ease}'
+    regex: _re.Pattern[str] = _re.compile(
+        r'!(\d{4}-\d{2}-\d{2}),(\d+),(\d+)',
+        flags=0
+    )
+
+    date: _datetime.date
+    interval: int
+    ease: int
+
+    def __str__(self: _typing.Self) -> str:
+        return self.format.format(date=self.date, interval=self.interval, ease=self.ease)
+
+    @classmethod
+    def compile_many(cls: type[_typing.Self], text: str) -> _typing.Iterator[_typing.Self]:
+        match: _re.Match[str]
+        for match in cls.regex.finditer(text):
+            yield cls(
+                date=_datetime.date.fromisoformat(match.group(1)),
+                interval=int(match.group(2)),
+                ease=int(match.group(3)),
+            )
+
+    @classmethod
+    def compile(cls: type[_typing.Self], text: str) -> _typing.Self:
+        rets: _typing.Iterator[_typing.Self] = cls.compile_many(text)
+        try:
+            ret: _typing.Self = next(rets)
+        except StopIteration as ex:
+            raise ValueError(f'No matches: {text}') from ex
+        try:
+            next(rets)
+            raise ValueError(f'Too many matches: {text}')
+        except StopIteration:
+            pass
+        return ret
+
+
+@_typing.final
+class FlashcardStateGroup(_util.TypedTuple[FlashcardState], t_type=FlashcardState):
+    __slots__ = ()
+    format: str = '<!--SR:{states}-->'
+    regex: _re.Pattern[str] = _re.compile(r'<!--SR:(.*?)-->', flags=0)
+
+    def __str__(self: _typing.Self) -> str:
+        if self:
+            return self.format.format(states=''.join(map(str, self)))
+        return ''
+
+    @classmethod
+    def compile_many(cls: type[_typing.Self], text: str) -> _typing.Iterator[_typing.Self]:
+        match: _re.Match[str]
+        for match in cls.regex.finditer(text):
+            yield cls(FlashcardState.compile_many(text[match.start():match.end()]))
+
+    @classmethod
+    def compile(cls: type[_typing.Self], text: str) -> _typing.Self:
+        rets: _typing.Iterator[_typing.Self] = cls.compile_many(text)
+        try:
+            ret: _typing.Self = next(rets)
+        except StopIteration as ex:
+            raise ValueError(f'No matches: {text}') from ex
+        try:
+            next(rets)
+            raise ValueError(f'Too many matches: {text}')
+        except StopIteration:
+            pass
+        return ret
+
+
+@_typing.final
+class StatefulFlashcardGroup(_typing.NamedTuple):
+    flashcard: FlashcardGroup
+    state: FlashcardStateGroup
+
+    def __str__(self: _typing.Self) -> str:
+        return ' '.join((str(self.flashcard), str(self.state)))

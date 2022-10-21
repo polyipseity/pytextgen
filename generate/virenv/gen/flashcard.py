@@ -1,36 +1,18 @@
 import itertools as _itertools
-import types as _types
 import typing as _typing
+
+from .. import util as _util
 from . import misc as _misc
 
 
-@_typing.final
-class Flashcard(_typing.NamedTuple('Flashcard', left=str, right=str, reversible=bool)):
-    __slots__ = ()
-
-    @_typing.final
-    class SeparatorKey(_typing.NamedTuple):
-        reversible: bool
-        multiline: bool
-    separators: _typing.Mapping[SeparatorKey, str] = _types.MappingProxyType({
-        SeparatorKey(reversible=False, multiline=False): '::',
-        SeparatorKey(reversible=True, multiline=False): ':::',
-        SeparatorKey(reversible=False, multiline=True): '\n??\n',
-        SeparatorKey(reversible=True, multiline=True): '\n???\n',
-    })
-
-    left: str
-    right: str
-    reversible: bool
-
-    def __str__(self: _typing.Self) -> str:
-        return self.separators[self.SeparatorKey(
-            reversible=self.reversible,
-            multiline='\n' in self.left or '\n' in self.right
-        )].join((self.left, self.right))
+def attach_flashcard_states(flashcards: _typing.Iterable[_util.FlashcardGroup], /, *,
+                            states: _typing.Iterable[_util.FlashcardStateGroup])\
+        -> _typing.Iterator[_util.StatefulFlashcardGroup]:
+    for fc, st in zip(flashcards, _itertools.chain(states, _itertools.repeat(_util.FlashcardStateGroup()))):
+        yield _util.StatefulFlashcardGroup(flashcard=fc, state=st)
 
 
-def listify_flashcards(flashcards: _typing.Iterable[Flashcard])\
+def listify_flashcards(flashcards: _typing.Iterable[_util.StatefulFlashcardGroup])\
         -> str:
     def ret_gen() -> _typing.Iterator[str]:
         newline: str = ''
@@ -43,23 +25,10 @@ def listify_flashcards(flashcards: _typing.Iterable[Flashcard])\
     return ''.join(ret_gen())
 
 
-def attach_flashcard_states(text: str, /, *, states: _typing.Iterable[str]) -> str:
-    def ret_gen() -> _typing.Iterator[str]:
-        newline: str = ''
-        for line, state in zip(text.splitlines(), _itertools.chain(states, _itertools.repeat(''))):
-            yield newline
-            yield line
-            if state:
-                yield ' '
-                yield state
-            newline = '\n'
-    return ''.join(ret_gen())
-
-
 def memorize_linked_seq(strs: _typing.Iterable[str], /, *,
                         reversible: bool = True,
                         hinter: _typing.Callable[[int, str], tuple[str, str]] = lambda idx, str_: ('→', '←'))\
-        -> _typing.Iterator[Flashcard]:
+        -> _typing.Iterator[_util.FlashcardGroup]:
     class HintedStr(_typing.NamedTuple):
         str_: str
         left: str
@@ -70,18 +39,27 @@ def memorize_linked_seq(strs: _typing.Iterable[str], /, *,
     for index, str_ in enumerate(strs):
         cur: HintedStr = HintedStr(str_, *hinter(index, str_))
         if prev is not None:
-            ret: Flashcard = Flashcard(
-                prev.str_ + cur.left, prev.right + cur.str_, reversible=reversible)
-            yield ret
+            yield _typing.cast(
+                _util.FlashcardGroup,
+                _util.TwoSidedFlashcard(
+                    prev.str_ + cur.left, prev.right + cur.str_,
+                    reversible=reversible,
+                )
+            )
         prev = cur
 
 
 def semantics_seq_map(map: _typing.Iterable[tuple[str, str]], /, *,
                       reversible: bool = False)\
-        -> _typing.Iterator[Flashcard]:
+        -> _typing.Iterator[_util.FlashcardGroup]:
     for text, sem in map:
-        ret: Flashcard = Flashcard(text, sem, reversible=reversible)
-        yield ret
+        yield _typing.cast(
+            _util.FlashcardGroup,
+            _util.TwoSidedFlashcard(
+                text, sem,
+                reversible=reversible,
+            )
+        )
 
 
 def punctuation_hinter(hinted: _typing.Callable[[int], bool] = lambda _: True, *,

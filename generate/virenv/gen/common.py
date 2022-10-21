@@ -45,7 +45,7 @@ def quote_text(code: _text_code.TextCode, /, *,
 
 def memorize_linked_seq(code: _text_code.TextCode, /, *,
                         hinted: _typing.Sequence[bool],
-                        states: _typing.Iterable[str],
+                        states: _typing.Iterable[_util.FlashcardStateGroup],
                         sanitizer: _typing.Callable[[
                             str], str] = lambda str_: str_,
                         reversible: bool = True,) -> str:
@@ -56,15 +56,15 @@ def memorize_linked_seq(code: _text_code.TextCode, /, *,
                                                          hinter=_flashcard.punctuation_hinter(
                                                              hinted.__getitem__, sanitizer=sanitizer)
                                                          ))\
+        .map(lambda fcs: _flashcard.attach_flashcard_states(fcs, states=states))\
         .map(_flashcard.listify_flashcards)\
-        .map(lambda text: _flashcard.attach_flashcard_states(text, states=states))\
         .map(_misc.strip_lines)\
         .map(lambda text: f'\n{text}\n')\
         .counit()
 
 
 def semantics_seq_map(text: _text_code.TextCode, sem: _text_code.TextCode, *,
-                      states: _typing.Iterable[str],
+                      states: _typing.Iterable[_util.FlashcardStateGroup],
                       reversible: bool = False,) -> str:
     return _util.Unit((text, sem))\
         .map(lambda codes: (
@@ -73,8 +73,8 @@ def semantics_seq_map(text: _text_code.TextCode, sem: _text_code.TextCode, *,
         ))\
         .map(lambda strss: zip(*strss, strict=True))\
         .map(lambda map: _flashcard.semantics_seq_map(map, reversible=reversible))\
+        .map(lambda fcs: _flashcard.attach_flashcard_states(fcs, states=states))\
         .map(_flashcard.listify_flashcards)\
-        .map(lambda text: _flashcard.attach_flashcard_states(text, states=states))\
         .map(_misc.strip_lines)\
         .map(lambda text: f'\n{text}\n')\
         .counit()
