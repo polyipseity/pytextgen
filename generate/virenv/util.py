@@ -1,7 +1,9 @@
 import abc as _abc
 import dataclasses as _dataclasses
 import datetime as _datetime
+import threading as _threading
 import io as _io
+import itertools as _itertools
 import os as _os
 import pathlib as _pathlib
 import re as _re
@@ -104,18 +106,123 @@ class FileSection:
                             kw_only=True,
                             slots=True,)
     class SectionFormat:
+        start_regex: _re.Pattern[str]
+        end_regex: _re.Pattern[str]
         start: str
         stop: str
     section_formats: _typing.ClassVar[_typing.Mapping[str, SectionFormat]] = _types.MappingProxyType({
         '': SectionFormat(
+            start_regex=_re.compile(
+                fr'\[{_globals.uuid},generate,([^,\]]*)\]',
+                flags=0,
+            ),
+            end_regex=_re.compile(
+                fr'\[{_globals.uuid},end\]',
+                flags=0
+            ),
             start=f'[{_globals.uuid},generate,{{section}}]',
             stop=f'[{_globals.uuid},end]'
         ),
         '.md': SectionFormat(
+            start_regex=_re.compile(
+                fr'<!--{_globals.uuid} generate section="([^"]*)"-->',
+                flags=0,
+            ),
+            end_regex=_re.compile(
+                fr'<!--/{_globals.uuid}-->',
+                flags=0
+            ),
             start=f'<!--{_globals.uuid} generate section="{{section}}"-->',
             stop=f'<!--/{_globals.uuid}-->'
         ),
     })
+
+    @_typing.final
+    @_dataclasses.dataclass(init=True,
+                            repr=True,
+                            eq=True,
+                            order=False,
+                            unsafe_hash=False,
+                            frozen=True,
+                            match_args=True,
+                            kw_only=True,
+                            slots=True,)
+    class __CacheData:
+        empty: _typing.ClassVar[_typing.Self]
+        mod_time: int
+        sections: _typing.AbstractSet[str]
+
+        def __post_init__(self: _typing.Self) -> None:
+            object.__setattr__(self, 'sections', frozenset(self.sections))
+    __CacheData.empty = __CacheData(mod_time=-1, sections=frozenset())
+
+    class __ValidateCache(dict[_pathlib.Path, __CacheData]):
+        __slots__: _typing.ClassVar = ('__lock',)
+        __ValueType: _typing.ClassVar[type['FileSection.__CacheData']]
+
+        def __init_subclass__(cls: type[_typing.Self],
+                              value_type: type['FileSection.__CacheData'],
+                              **kwargs: _typing.Any) -> None:
+            cls.__ValueType = value_type
+            return super().__init_subclass__(**kwargs)
+
+        def __init__(self: _typing.Self) -> None:
+            self.__lock: _threading.Lock = _threading.Lock()
+            super().__init__()
+
+        def __getitem__(self: _typing.Self, key: _pathlib.Path) -> 'FileSection.__CacheData':
+            ext: str
+            _, ext = _os.path.splitext(key)
+            try:
+                format: FileSection.SectionFormat = FileSection.section_formats[ext]
+            except KeyError as ex:
+                raise ValueError(f'Unknown extension: {key}') from ex
+            mod_time: int = _os.stat(key).st_mtime_ns
+            with self.__lock:
+                try:
+                    cache: FileSection.__CacheData = super().__getitem__(key)
+                except KeyError:
+                    cache = self.__ValueType.empty
+                if mod_time != cache.mod_time:
+                    text: str
+                    file: _typing.TextIO
+                    with open(key, mode='rt', **_globals.open_options) as file:
+                        text = file.read()
+                    sections: _typing.MutableSet[str] = set()
+                    read_to: int = 0
+                    start: _re.Match[str]
+                    for start in format.start_regex.finditer(text):
+                        if start.start() < read_to:
+                            raise ValueError(
+                                f'Overlapping section at char {start.start()}: {key}')
+                        section: str = text[start.start(1):start.end(1)]
+                        if section in sections:
+                            raise ValueError(
+                                f'Duplicated section {section}: {key}')
+                        sections.add(section)
+                        end_str: str = format.stop.format(section=section)
+                        try:
+                            end_idx: int = text.index(end_str, start.end())
+                        except ValueError as ex:
+                            raise ValueError(
+                                f'Unenclosure from char {start.start()}: {key}') from ex
+                        read_to = end_idx + len(end_str)
+                    end: _re.Match[str]
+                    for end in _itertools.islice(format.end_regex.finditer(text), len(sections), None):
+                        raise ValueError(
+                            f'Too many closings at char {end.start()}: {key}')
+                    cache = self.__ValueType(
+                        mod_time=mod_time,
+                        sections=sections,
+                    )
+                    super().__setitem__(key, cache)
+            return cache
+
+        def __setitem__(self: _typing.Self, key: _pathlib.Path, value: 'FileSection.__CacheData') -> None:
+            raise TypeError(f'Unsupported')
+    __ValidateCache = type(
+        '__ValidateCache', (__ValidateCache,), {}, value_type=__CacheData)
+    __validate_cache: _typing.ClassVar[__ValidateCache] = __ValidateCache()
 
     path: _pathlib.Path
     section: str
@@ -172,6 +279,8 @@ class FileSection:
 
     def __post_init__(self: _typing.Self) -> None:
         object.__setattr__(self, 'path', self.path.resolve(strict=True))
+        if not self.section or self.section not in self.__validate_cache[self.path].sections:
+            raise ValueError(f'Section not found: {self}')
 
 
 Location.register(FileSection)
