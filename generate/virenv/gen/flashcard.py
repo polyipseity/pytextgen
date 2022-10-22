@@ -71,7 +71,8 @@ def punctuation_hinter(hinted: _typing.Callable[[int], bool] = lambda _: True, *
         -> _typing.Callable[[int, str], tuple[str, str]]:
     def ret(index: int, str_: str) -> tuple[str, str]:
         if hinted(index):
-            count: int = len(_misc.split_by_punctuations(sanitizer(str_)))
+            count: int = sum(
+                1 for _ in _misc.split_by_punctuations(sanitizer(str_)))
             return (f'→{count}', f'{count}←')
         return ('→', '←')
     return ret

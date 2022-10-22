@@ -1,5 +1,6 @@
 import enum as _enum
 import re as _re
+import regex as _regex
 import sys as _sys
 import typing as _typing
 import unicodedata as _unicodedata
@@ -8,10 +9,10 @@ from . import text_code as _text_code
 
 _punctuations: _typing.Collection[str] = tuple(chr(char) for char in range(_sys.maxunicode)
                                                if _unicodedata.category(chr(char)).startswith('P'))
-_punctuation_regex: _re.Pattern[str] = _re.compile(
-    r'(?<={delims})(?!{delims})'.format(
+_punctuation_regex: _regex.Pattern[str] = _regex.compile(
+    r'(?<={delims})(?<!^(?:{delims})+)(?!$|{delims})'.format(
         delims=r'|'.join(map(_re.escape, _punctuations))),
-    flags=0
+    flags=_regex.VERSION0
 )
 
 
@@ -45,8 +46,8 @@ def strip_lines(text: str, /, *, chars: str | None = None) -> str:
     return '\n'.join(line.strip(chars) for line in text.splitlines())
 
 
-def split_by_punctuations(text: str) -> _typing.Sequence[str]:
-    return tuple(chunk for chunk in _punctuation_regex.split(text) if chunk)
+def split_by_punctuations(text: str) -> _typing.Iterator[str]:
+    return _punctuation_regex.splititer(text)
 
 
 def code_to_strs(code: _text_code.TextCode, /, *,
