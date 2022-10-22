@@ -13,6 +13,7 @@ import typing as _typing
 from .. import globals as _globals
 from . import options as _options
 from . import virenv as _virenv
+from .virenv import util as _virenv_util
 from . import write as _write
 
 
@@ -50,9 +51,9 @@ class Reader(metaclass=_abc.ABCMeta):
 
 
 def _Python_env(reader: Reader) -> _typing.Mapping[str, _typing.Any]:
-    def cwf_section(section: str) -> _virenv.util.Location:
-        return _typing.cast(_virenv.util.Location,
-                            _virenv.util.FileSection(
+    def cwf_section(section: str) -> _virenv_util.Location:
+        return _typing.cast(_virenv_util.Location,
+                            _virenv_util.FileSection(
                                 path=reader.path, section=section)
                             )
     return _types.MappingProxyType({
@@ -109,13 +110,13 @@ class MarkdownReader:
                 raise ValueError(spec)
             spec.loader.exec_module(mod)
             if self.__options.init_flashcards:
-                cls: type[_virenv.util.StatefulFlashcardGroup] = mod.util.StatefulFlashcardGroup
+                cls: type[_virenv_util.StatefulFlashcardGroup] = mod.util.StatefulFlashcardGroup
                 old: _typing.Callable[[
-                    _virenv.util.StatefulFlashcardGroup], str] = cls.__str__
+                    _virenv_util.StatefulFlashcardGroup], str] = cls.__str__
 
                 @_functools.wraps(old)
-                def new(self: _virenv.util.StatefulFlashcardGroup) -> str:
-                    self0: _virenv.util.StatefulFlashcardGroup = self
+                def new(self: _virenv_util.StatefulFlashcardGroup) -> str:
+                    self0: _virenv_util.StatefulFlashcardGroup = self
                     diff: int = len(self.flashcard) - len(self.state)
                     if diff > 0:
                         self0 = type(self)(

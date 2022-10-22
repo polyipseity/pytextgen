@@ -8,6 +8,7 @@ import typing as _typing
 from .. import globals as _globals
 from . import options as _options
 from . import virenv as _virenv
+from .virenv import gen as _virenv_gen
 
 
 class Writer(metaclass=_abc.ABCMeta):
@@ -44,14 +45,14 @@ class PythonWriter:
     @_contextlib.contextmanager
     def write(self: _typing.Self) -> _typing.Iterator[None]:
         results0: _typing.Any = self.__env.exec(self.__code)
-        if not isinstance(results0, _virenv.gen.Results):
+        if not isinstance(results0, _virenv_gen.Results):
             raise TypeError(results0)
-        results: _virenv.gen.Results = results0
+        results: _virenv_gen.Results = results0
         del results0
         try:
             yield
         finally:
-            result: _virenv.gen.Result
+            result: _virenv_gen.Result
             for result in results:
                 io: _typing.TextIO
                 with result.location.open() as io:
