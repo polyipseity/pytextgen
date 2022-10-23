@@ -167,8 +167,8 @@ class FileSection:
             return super().__init_subclass__(**kwargs)
 
         def __init__(self: _typing.Self) -> None:
-            self.__lock: _threading.Lock = _threading.Lock()
             super().__init__()
+            self.__lock: _threading.Lock = _threading.Lock()
 
         def __getitem__(self: _typing.Self, key: _pathlib.Path) -> 'FileSection.__CacheData':
             ext: str
