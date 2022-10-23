@@ -87,7 +87,7 @@ def parse_argv(argv: _typing.Sequence[str]) -> Arguments | _typing.NoReturn:
         prog=f'python -m {prog}',
         description='generate text from input',
         add_help=True,
-        allow_abbrev=True,
+        allow_abbrev=False,
         exit_on_error=False,
     )
     parser.add_argument('-v', '--version',
