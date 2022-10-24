@@ -17,18 +17,16 @@ def abc_subclasshook_check(impl_cls: _abc.ABCMeta,
                            ) -> bool | _types.NotImplementedType:
     if cls is impl_cls:
         if typing == 'nominal':
-            if any(getattr(c, '__subclasshook__')(subclass) is False
-                   for c in cls.__mro__ if c is not cls and hasattr(c, '__subclasshook__'))\
+            if (any(getattr(c, '__subclasshook__')(subclass) is False
+                    for c in cls.__mro__ if c is not cls and hasattr(c, '__subclasshook__'))
                 or any(all(c.__dict__[p] is None
-                           for c in subclass.__mro__ if p in c.__dict__)
-                       for p in names):
+                           for c in subclass.__mro__ if p in c.__dict__) for p in names)):
                 return False
         elif typing == 'structural':
-            if all(getattr(c, '__subclasshook__')(subclass) is not False
-                   for c in cls.__mro__ if c is not cls and hasattr(c, '__subclasshook__'))\
+            if (all(getattr(c, '__subclasshook__')(subclass) is not False
+                    for c in cls.__mro__ if c is not cls and hasattr(c, '__subclasshook__'))
                 and all(any(c.__dict__[p] is not None
-                            for c in subclass.__mro__ if p in c.__dict__)
-                        for p in names):
+                            for c in subclass.__mro__ if p in c.__dict__) for p in names)):
                 return True
         else:
             raise ValueError(typing)
