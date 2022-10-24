@@ -32,10 +32,10 @@ class PythonWriter:
     __slots__: _typing.ClassVar = ('__code', '__env', '__options')
 
     def __init__(self: _typing.Self,
-                 code: _typing.Any, /, *,
+                 code: _types.CodeType, /, *,
                  env: _virenv.Environment,
                  options: _options.Options) -> None:
-        self.__code: _typing.Any = code
+        self.__code: _types.CodeType = code
         self.__env: _virenv.Environment = env
         self.__options: _options.Options = options
 

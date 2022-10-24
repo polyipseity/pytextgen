@@ -82,7 +82,7 @@ class MarkdownReader:
                  path: _pathlib.Path,
                  options: _options.Options) -> None:
         self.__path: _pathlib.Path = path.resolve(strict=True)
-        self.__codes: _typing.MutableSequence[_typing.Any] = []
+        self.__codes: _typing.MutableSequence[_types.CodeType] = []
         self.__options: _options.Options = options
 
     def read(self: _typing.Self, text: str, /) -> None:
@@ -142,7 +142,7 @@ class MarkdownReader:
             )
 
         def ret_gen() -> _typing.Iterator[_write.Writer]:
-            code: _typing.Any
+            code: _types.CodeType
             for code in self.__codes:
                 ret: _write.PythonWriter = _write.PythonWriter(
                     code, env=gen_env(), options=self.__options)

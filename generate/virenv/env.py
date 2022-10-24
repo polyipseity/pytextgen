@@ -33,7 +33,7 @@ class Environment:
     def locals(self: _typing.Self) -> _typing.Mapping[str, _typing.Any]:
         return self.__locals
 
-    def exec(self: _typing.Self, code: _typing.Any) -> _typing.Any:
+    def exec(self: _typing.Self, code: _types.CodeType) -> _typing.Any:
         env: _types.SimpleNamespace = _types.SimpleNamespace(
             result=None, **self.__env)
         locals: _types.SimpleNamespace = _types.SimpleNamespace(
