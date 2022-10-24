@@ -1,9 +1,38 @@
+import abc as _abc
 import os as _os
+import types as _types
 import typing as _typing
 
 StrPath: _typing.TypeAlias = str | _os.PathLike[str]
 
 _T = _typing.TypeVar('_T')
+
+
+def abc_subclasshook_check(impl_cls: _abc.ABCMeta,
+                           cls: _abc.ABCMeta,
+                           subclass: type, /, *,
+                           names: _typing.Collection[str],
+                           typing: _typing.Literal['nominal',
+                                                   'structural'] = 'nominal',
+                           ) -> bool | _types.NotImplementedType:
+    if cls is impl_cls:
+        if typing == 'nominal':
+            if any(getattr(c, '__subclasshook__')(subclass) is False
+                   for c in cls.__mro__ if c is not cls and hasattr(c, '__subclasshook__'))\
+                or any(all(c.__dict__[p] is None
+                           for c in subclass.__mro__ if p in c.__dict__)
+                       for p in names):
+                return False
+        elif typing == 'structural':
+            if all(getattr(c, '__subclasshook__')(subclass) is not False
+                   for c in cls.__mro__ if c is not cls and hasattr(c, '__subclasshook__'))\
+                and all(any(c.__dict__[p] is not None
+                            for c in subclass.__mro__ if p in c.__dict__)
+                        for p in names):
+                return True
+        else:
+            raise ValueError(typing)
+    return NotImplemented
 
 
 class TypedTuple(_typing.Generic[_T], tuple[_T, ...]):

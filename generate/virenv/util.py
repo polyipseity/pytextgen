@@ -52,12 +52,8 @@ class Location(metaclass=_abc.ABCMeta):
 
     @classmethod
     def __subclasshook__(cls: type[_typing.Self], subclass: type) -> bool | _types.NotImplementedType:
-        if cls is Location:
-            if any(all(p not in c.__dict__ or c.__dict__[p] is None
-                       for c in subclass.__mro__)
-                   for p in (cls.open.__name__,)):
-                return False
-        return NotImplemented
+        return _util.abc_subclasshook_check(Location, cls, subclass,
+                                            names=(cls.open.__name__,))
 
 
 @_typing.final
@@ -295,14 +291,8 @@ class FlashcardGroup(_typing.Sequence[str], metaclass=_abc.ABCMeta):
 
     @classmethod
     def __subclasshook__(cls: type[_typing.Self], subclass: type) -> bool | _types.NotImplementedType:
-        if cls is FlashcardGroup:
-            if any(getattr(c, '__subclasshook__')(subclass) is False
-                   for c in cls.__mro__ if c is not cls and hasattr(c, '__subclasshook__'))\
-                or any(all(p not in c.__dict__ or c.__dict__[p] is None
-                       for c in subclass.__mro__)
-                       for p in (cls.__str__.__name__,)):
-                return False
-        return NotImplemented
+        return _util.abc_subclasshook_check(FlashcardGroup, cls, subclass,
+                                            names=(cls.__str__.__name__,))
 
 
 @_typing.final

@@ -11,6 +11,7 @@ import types as _types
 import typing as _typing
 
 from .. import globals as _globals
+from .. import util as _util
 from . import options as _options
 from . import virenv as _virenv
 from .virenv import util as _virenv_util
@@ -42,12 +43,8 @@ class Reader(metaclass=_abc.ABCMeta):
 
     @classmethod
     def __subclasshook__(cls: type[_typing.Self], subclass: type) -> bool | _types.NotImplementedType:
-        if cls is Reader:
-            if any(all(p not in c.__dict__ or c.__dict__[p] is None
-                       for c in subclass.__mro__)
-                   for p in ('path', 'options', cls.read.__name__, cls.pipe.__name__)):
-                return False
-        return NotImplemented
+        return _util.abc_subclasshook_check(Reader, cls, subclass,
+                                            names=('path', 'options', cls.read.__name__, cls.pipe.__name__,))
 
 
 def _Python_env(reader: Reader) -> _typing.Mapping[str, _typing.Any]:
