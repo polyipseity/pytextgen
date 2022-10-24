@@ -11,8 +11,8 @@ class TypedTuple(_typing.Generic[_T], tuple[_T, ...]):
     element_type: type[_T]
 
     def __init_subclass__(cls: type[_typing.Self], element_type: type[_T], **kwargs: _typing.Any) -> None:
+        super().__init_subclass__(**kwargs)
         cls.element_type = element_type
-        return super().__init_subclass__(**kwargs)
 
     @_typing.overload
     def __new__(cls: type[_typing.Self], iterable: _typing.Iterable[_T], /) -> _typing.Self:

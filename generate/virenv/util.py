@@ -163,8 +163,8 @@ class FileSection:
         def __init_subclass__(cls: type[_typing.Self],
                               value_type: type['FileSection.__CacheData'],
                               **kwargs: _typing.Any) -> None:
+            super().__init_subclass__(**kwargs)
             cls.__ValueType = value_type
-            return super().__init_subclass__(**kwargs)
 
         def __init__(self: _typing.Self) -> None:
             super().__init__()
