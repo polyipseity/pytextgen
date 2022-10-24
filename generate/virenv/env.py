@@ -34,10 +34,9 @@ class Environment:
         return self.__locals
 
     def exec(self: _typing.Self, code: _typing.Any) -> _typing.Any:
-        env = _types.SimpleNamespace()
-        env.result = None
-        env.__dict__.update(self.__env)
-        locals: _typing.MutableMapping[str, _typing.Any] = dict(self.__locals)
-        locals['__env__'] = env
-        exec(code, dict(self.__globals), locals)
-        return locals['__env__'].result
+        env: _types.SimpleNamespace = _types.SimpleNamespace(
+            result=None, **self.__env)
+        locals: _types.SimpleNamespace = _types.SimpleNamespace(
+            __env__=env, **self.__locals)
+        exec(code, dict(self.__globals), locals.__dict__)
+        return env.result
