@@ -112,8 +112,7 @@ def markdown_sanitizer(text: str) -> str:
             else:
                 tags.add(tag)
                 stack.append(match)
-
-        matches.sort(key=lambda match: match.start())
+        matches.sort(key=_re.Match[str].start)
 
         def ret_gen() -> _typing.Iterator[str]:
             prev: int = 0
@@ -127,7 +126,7 @@ def markdown_sanitizer(text: str) -> str:
     tags: _typing.AbstractSet[str]
     text, tags = get_and_remove_html_tags(text)
     distingusher: str = (
-        '\0' * (len(max(tags, key=lambda tag: len(tag), default='')) + 1))
+        '\0' * (len(max(tags, key=len, default='')) + 1))
     md_regex: _MarkdownRegex
     for md_regex in _markdown_regexes:
         suffix: str = ('/>' if md_regex.desugared.endswith('/>') else
