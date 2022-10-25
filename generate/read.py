@@ -25,7 +25,7 @@ class Reader(metaclass=_abc.ABCMeta):
     @_abc.abstractmethod
     def __init__(self: _typing.Self, *,
                  path: _pathlib.Path,
-                 comment: _options.Options) -> None: ...
+                 options: _options.Options) -> None: ...
 
     @property
     @_abc.abstractmethod
