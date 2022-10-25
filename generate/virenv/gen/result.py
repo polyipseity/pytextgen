@@ -1,7 +1,7 @@
 import dataclasses as _dataclasses
 import typing as _typing
 from .... import util as _util
-from .. import util as _util2
+from .. import util as _util1
 
 
 @_typing.final
@@ -15,7 +15,7 @@ from .. import util as _util2
                         kw_only=True,
                         slots=True,)
 class Result:
-    location: _util2.Location
+    location: _util1.Location
     text: str
 
 

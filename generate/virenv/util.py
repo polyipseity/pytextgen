@@ -13,28 +13,28 @@ import typing as _typing
 from ... import globals as _globals
 from ... import util as _util
 
-_CoT = _typing.TypeVar('_CoT', covariant=True)
-_CoU = _typing.TypeVar('_CoU', covariant=True)
+_T_co = _typing.TypeVar('_T_co', covariant=True)
+_T1_co = _typing.TypeVar('_T1_co', covariant=True)
 _ExtendsUnit = _typing.TypeVar('_ExtendsUnit', bound='Unit[_typing.Any]')
 
 
 @_typing.final
-class Unit(_typing.Generic[_CoT]):
+class Unit(_typing.Generic[_T_co]):
     __slots__: _typing.ClassVar = ('__value',)
 
-    def __init__(self: _typing.Self, value: _CoT) -> None:
-        self.__value: _CoT = value
+    def __init__(self: _typing.Self, value: _T_co) -> None:
+        self.__value: _T_co = value
 
-    def counit(self: _typing.Self) -> _CoT:
+    def counit(self: _typing.Self) -> _T_co:
         return self.__value
 
-    def bind(self: _typing.Self, func: _typing.Callable[[_CoT], _ExtendsUnit]) -> _ExtendsUnit:
+    def bind(self: _typing.Self, func: _typing.Callable[[_T_co], _ExtendsUnit]) -> _ExtendsUnit:
         return func(self.counit())
 
-    def extend(self: _typing.Self, func: _typing.Callable[[_typing.Self], _CoU]) -> 'Unit[_CoU]':
+    def extend(self: _typing.Self, func: _typing.Callable[[_typing.Self], _T1_co]) -> 'Unit[_T1_co]':
         return Unit(func(self))
 
-    def map(self: _typing.Self, func: _typing.Callable[[_CoT], _CoU]) -> 'Unit[_CoU]':
+    def map(self: _typing.Self, func: _typing.Callable[[_T_co], _T1_co]) -> 'Unit[_T1_co]':
         return Unit(func(self.counit()))
 
     def join(self: 'Unit[_ExtendsUnit]') -> _ExtendsUnit:
