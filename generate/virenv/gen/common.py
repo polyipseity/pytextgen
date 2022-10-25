@@ -1,8 +1,10 @@
 import dataclasses as _dataclasses
+import functools as _functools
 import re as _re
 import typing as _typing
 
-from .. import util as _util
+from .... import util as _util
+from .. import util as _util1
 from . import flashcard as _flashcard
 from . import misc as _misc
 from . import text_code as _text_code
@@ -46,48 +48,47 @@ _html_tag_regex: _re.Pattern[str] = _re.compile(r'<([^>]+)>', flags=0)
 
 def quote_text(code: _text_code.TextCode, /, *,
                tag: _misc.TagStr = _misc.Tag.TEXT) -> str:
-    return (_util.Unit(code)
-            .map(lambda code: _misc.code_to_str(code, tag=tag))
-            .map(lambda text: _misc.affix_lines(text, prefix='> '))
+    return (_util1.Unit(code)
+            .map(_functools.partial(_misc.code_to_str, tag=tag))
+            .map(_functools.partial(_misc.affix_lines, prefix='> '))
             .map(_misc.strip_lines)
-            .map(lambda text: f'\n{text}\n')
+            .map('\n{}\n'.format)
             .counit())
 
 
 def memorize_linked_seq(code: _text_code.TextCode, /, *,
                         hinted: _typing.Sequence[bool],
-                        states: _typing.Iterable[_util.FlashcardStateGroup],
+                        states: _typing.Iterable[_util1.FlashcardStateGroup],
                         sanitizer: _typing.Callable[[
-                            str], str] = lambda str_: str_,
+                            str], str] = _util.identity,
                         reversible: bool = True,) -> str:
-    return (_util.Unit(code)
-            .map(lambda code: _misc.code_to_strs(code, tag=_misc.Tag.MEMORIZE))
-            .map(lambda strs: _flashcard.memorize_linked_seq(strs,
-                                                             reversible=reversible,
-                                                             hinter=_flashcard.punctuation_hinter(
-                                                                 hinted.__getitem__, sanitizer=sanitizer)
-                                                             ))
-            .map(lambda fcs: _flashcard.attach_flashcard_states(fcs, states=states))
+    return (_util1.Unit(code)
+            .map(_functools.partial(_misc.code_to_strs, tag=_misc.Tag.MEMORIZE))
+            .map(_functools.partial(_flashcard.memorize_linked_seq,
+                                    reversible=reversible,
+                                    hinter=_flashcard.punctuation_hinter(
+                                        hinted.__getitem__, sanitizer=sanitizer)))
+            .map(_functools.partial(_flashcard.attach_flashcard_states, states=states))
             .map(_flashcard.listify_flashcards)
             .map(_misc.strip_lines)
-            .map(lambda text: f'\n{text}\n')
+            .map('\n{}\n'.format)
             .counit())
 
 
 def semantics_seq_map(text: _text_code.TextCode, sem: _text_code.TextCode, *,
-                      states: _typing.Iterable[_util.FlashcardStateGroup],
+                      states: _typing.Iterable[_util1.FlashcardStateGroup],
                       reversible: bool = False,) -> str:
-    return (_util.Unit((text, sem))
+    return (_util1.Unit((text, sem))
             .map(lambda codes: (
                 _misc.code_to_strs(codes[0], tag=_misc.Tag.SEMANTICS),
                 _misc.code_to_strs(codes[1], tag=_misc.Tag.SEMANTICS)
             ))
             .map(lambda strss: zip(*strss, strict=True))
-            .map(lambda map: _flashcard.semantics_seq_map(map, reversible=reversible))
-            .map(lambda fcs: _flashcard.attach_flashcard_states(fcs, states=states))
+            .map(_functools.partial(_flashcard.semantics_seq_map, reversible=reversible))
+            .map(_functools.partial(_flashcard.attach_flashcard_states, states=states))
             .map(_flashcard.listify_flashcards)
             .map(_misc.strip_lines)
-            .map(lambda text: f'\n{text}\n')
+            .map('\n{}\n'.format)
             .counit())
 
 

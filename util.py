@@ -8,6 +8,16 @@ StrPath: _typing.TypeAlias = str | _os.PathLike[str]
 _T = _typing.TypeVar('_T')
 
 
+def identity(var: _T) -> _T:
+    return var
+
+
+def constant(var: _T) -> _typing.Callable[..., _T]:
+    def func(*_: _typing.Any) -> _T:
+        return var
+    return func
+
+
 def abc_subclasshook_check(impl_cls: _abc.ABCMeta,
                            cls: _abc.ABCMeta,
                            subclass: type, /, *,
