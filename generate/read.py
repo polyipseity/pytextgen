@@ -62,7 +62,7 @@ def _Python_env(reader: Reader) -> _typing.Mapping[str, _typing.Any | None]:
 
 
 class MarkdownReader:
-    __slots__: _typing.ClassVar = ('__path', '__codes', '__options')
+    __slots__: _typing.ClassVar = ('__codes', '__options', '__path',)
     builtins_exclude: _typing.ClassVar[_typing.AbstractSet[str]] = frozenset(
         # constants: https://docs.python.org/library/constants.html
         # functions: https://docs.python.org/library/functions.html

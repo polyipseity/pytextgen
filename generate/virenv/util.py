@@ -227,7 +227,7 @@ class FileSection:
         if self.section:
             @_typing.final
             class IO(_io.StringIO):
-                __slots__: _typing.ClassVar = ('__file', '__slice')
+                __slots__: _typing.ClassVar = ('__file', '__slice',)
 
                 def __init__(self: _typing.Self, closure: FileSection, /) -> None:
                     ext: str

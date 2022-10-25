@@ -7,7 +7,7 @@ import typing as _typing
 
 @_typing.final
 class TextCode:
-    __slots__: _typing.ClassVar = ('__blocks', '__by_tag')
+    __slots__: _typing.ClassVar = ('__blocks', '__by_tag',)
 
     @_typing.final
     @_dataclasses.dataclass(init=True,

@@ -26,7 +26,7 @@ class Writer(metaclass=_abc.ABCMeta):
 
 
 class PythonWriter:
-    __slots__: _typing.ClassVar = ('__code', '__env', '__options')
+    __slots__: _typing.ClassVar = ('__code', '__env', '__options',)
 
     def __init__(self: _typing.Self,
                  code: _types.CodeType, /, *,
