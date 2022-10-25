@@ -44,7 +44,7 @@ class Reader(metaclass=_abc.ABCMeta):
     @classmethod
     def __subclasshook__(cls: type[_typing.Self], subclass: type) -> bool | _types.NotImplementedType:
         return _util.abc_subclasshook_check(Reader, cls, subclass,
-                                            names=('path', 'options', cls.read.__name__, cls.pipe.__name__,))
+                                            names=('options', 'path', cls.pipe.__name__, cls.read.__name__,))
 
 
 def _Python_env(reader: Reader) -> _typing.Mapping[str, _typing.Any]:
