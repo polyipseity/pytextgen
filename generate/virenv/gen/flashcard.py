@@ -44,27 +44,27 @@ def memorize_linked_seq(strs: _typing.Iterable[str], /, *,
     prev: HintedStr = HintedStr(str_, *hinter(index, str_))
     for index, str_ in iter:
         cur: HintedStr = HintedStr(str_, *hinter(index, str_))
-        yield _typing.cast(
-            _util.FlashcardGroup,
-            _util.TwoSidedFlashcard(
-                prev.str_ + cur.left, prev.right + cur.str_,
-                reversible=reversible,
-            )
+        ret: _util.TwoSidedFlashcard = _util.TwoSidedFlashcard(
+            prev.str_ + cur.left, prev.right + cur.str_,
+            reversible=reversible,
         )
+        assert isinstance(ret, _util.FlashcardGroup)
+        yield ret
         prev = cur
 
 
 def semantics_seq_map(map: _typing.Iterable[tuple[str, str]], /, *,
                       reversible: bool = False
                       ) -> _typing.Iterator[_util.FlashcardGroup]:
+    text: str
+    sem: str
     for text, sem in map:
-        yield _typing.cast(
-            _util.FlashcardGroup,
-            _util.TwoSidedFlashcard(
-                text, sem,
-                reversible=reversible,
-            )
+        ret: _util.TwoSidedFlashcard = _util.TwoSidedFlashcard(
+            text, sem,
+            reversible=reversible,
         )
+        assert isinstance(ret, _util.FlashcardGroup)
+        yield ret
 
 
 def punctuation_hinter(hinted: _typing.Callable[[int], bool] = lambda _: True, *,

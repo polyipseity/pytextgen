@@ -49,10 +49,11 @@ class Reader(metaclass=_abc.ABCMeta):
 
 def _Python_env(reader: Reader) -> _typing.Mapping[str, _typing.Any]:
     def cwf_section(section: str) -> _virenv_util.Location:
-        return _typing.cast(_virenv_util.Location,
-                            _virenv_util.FileSection(
-                                path=reader.path, section=section)
-                            )
+        ret: _virenv_util.FileSection = _virenv_util.FileSection(
+            path=reader.path, section=section)
+        assert isinstance(ret, _virenv_util.Location)
+        return ret
+
     return _types.MappingProxyType({
         'cwf': reader.path,
         'cwd': reader.path.parent,
@@ -100,6 +101,8 @@ class MarkdownReader:
             start = text.find(self.start, stop + len(self.stop))
 
     def pipe(self: _typing.Self) -> _typing.Collection[_write.Writer]:
+        assert isinstance(self, Reader)
+
         def gen_env() -> _virenv.Environment:
             spec: _importlib_machinery.ModuleSpec = _virenv.__spec__
             mod = _importlib_util.module_from_spec(spec)
@@ -133,7 +136,7 @@ class MarkdownReader:
             vars['__builtins__'] = {k: v for k, v in _builtins.__dict__.items()
                                     if k not in self.builtins_exclude}
             return _virenv.Environment(
-                env=_Python_env(_typing.cast(Reader, self)),
+                env=_Python_env(self),
                 globals=vars,
                 locals=vars
             )
