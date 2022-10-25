@@ -9,6 +9,8 @@ from . import flashcard as _flashcard
 from . import misc as _misc
 from . import text_code as _text_code
 
+_section_text_format: str = '\n\n{}\n'
+
 
 @_typing.final
 @_dataclasses.dataclass(init=True,
@@ -52,7 +54,7 @@ def quote_text(code: _text_code.TextCode, /, *,
             .map(_functools.partial(_misc.code_to_str, tag=tag))
             .map(_functools.partial(_misc.affix_lines, prefix='> '))
             .map(_misc.strip_lines)
-            .map('\n{}\n'.format)
+            .map(_section_text_format.format)
             .counit())
 
 
@@ -71,7 +73,7 @@ def memorize_linked_seq(code: _text_code.TextCode, /, *,
             .map(_functools.partial(_flashcard.attach_flashcard_states, states=states))
             .map(_flashcard.listify_flashcards)
             .map(_misc.strip_lines)
-            .map('\n{}\n'.format)
+            .map(_section_text_format.format)
             .counit())
 
 
@@ -88,7 +90,7 @@ def semantics_seq_map(text: _text_code.TextCode, sem: _text_code.TextCode, *,
             .map(_functools.partial(_flashcard.attach_flashcard_states, states=states))
             .map(_flashcard.listify_flashcards)
             .map(_misc.strip_lines)
-            .map('\n{}\n'.format)
+            .map(_section_text_format.format)
             .counit())
 
 
