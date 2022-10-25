@@ -80,8 +80,8 @@ class MarkdownReader:
                  path: _pathlib.Path,
                  options: _options.Options) -> None:
         self.__path: _pathlib.Path = path.resolve(strict=True)
-        self.__codes: _typing.MutableSequence[_types.CodeType] = []
         self.__options: _options.Options = options
+        self.__codes: _typing.MutableSequence[_types.CodeType] = []
 
     def read(self: _typing.Self, text: str, /) -> None:
         start: int = text.find(self.start)
