@@ -1,6 +1,7 @@
 import argparse as _argparse
 import contextlib as _contextlib
 import dataclasses as _dataclasses
+import itertools as _itertools
 import logging as _logging
 import os as _os
 import pathlib as _pathlib
@@ -12,51 +13,6 @@ from .. import version as _version
 from . import options as _options
 from . import read as _read
 from . import write as _write
-
-
-def main(argv: _typing.Sequence[str]) -> None:
-    args: Arguments = parse_argv(argv)
-    writers: _typing.MutableSequence[_write.Writer] = []
-    input: _pathlib.Path
-    for input in args.inputs:
-        try:
-            file: _typing.TextIO = open(
-                input, mode='rt', **_globals.open_options)
-        except OSError:
-            _logging.exception(f'Cannot open file: {input}')
-            continue
-        except ValueError:
-            _logging.exception(f'Encoding error opening file: {input}')
-            continue
-        with file:
-            try:
-                ext: str
-                _, ext = _os.path.splitext(input)
-                reader: _read.Reader = _read.Reader.registry[ext](
-                    path=input,
-                    options=args.options,
-                )
-                reader.read(file.read())
-                writers.extend(reader.pipe())
-            except Exception:
-                _logging.exception(f'Exception reading file: {input}')
-                continue
-
-    writer_stack: _contextlib.ExitStack = _contextlib.ExitStack().__enter__()
-    try:
-        writer: _write.Writer
-        for writer in writers:
-            try:
-                writer_stack.enter_context(writer.write())
-            except Exception:
-                _logging.exception(f'Error while validation: {writer}')
-                continue
-    finally:
-        try:
-            writer_stack.close()
-        except Exception as ex:
-            _logging.exception(f'Error while writing')
-            raise ex
 
 
 @_typing.final
@@ -76,6 +32,50 @@ class Arguments:
     def __post_init__(self: _typing.Self) -> None:
         object.__setattr__(self, 'inputs', tuple(
             input.resolve(strict=True) for input in self.inputs))
+
+
+def main(argv: _typing.Sequence[str]) -> None:
+    args: Arguments = parse_argv(argv)
+
+    def read(input: _pathlib.Path) -> _typing.Iterable[_write.Writer]:
+        try:
+            file: _typing.TextIO = open(
+                input, mode='rt', **_globals.open_options)
+        except OSError:
+            _logging.exception(f'Cannot open file: {input}')
+            return ()
+        except ValueError:
+            _logging.exception(f'Encoding error opening file: {input}')
+            return ()
+        with file:
+            try:
+                ext: str
+                _, ext = _os.path.splitext(input)
+                reader: _read.Reader = _read.Reader.registry[ext](
+                    path=input,
+                    options=args.options,
+                )
+                reader.read(file.read())
+                return reader.pipe()
+            except Exception:
+                _logging.exception(f'Exception reading file: {input}')
+                return ()
+    writers: _typing.Iterable[_write.Writer] = _itertools.chain(
+        *map(read, args.inputs))
+    writer_stack: _contextlib.ExitStack = _contextlib.ExitStack().__enter__()
+    try:
+        writer: _write.Writer
+        for writer in writers:
+            try:
+                writer_stack.enter_context(writer.write())
+            except Exception:
+                _logging.exception(f'Error while validation: {writer}')
+                continue
+    finally:
+        try:
+            writer_stack.close()
+        except Exception:
+            _logging.exception('Error while writing')
 
 
 def parse_argv(argv: _typing.Sequence[str]) -> Arguments | _typing.NoReturn:
