@@ -47,7 +47,7 @@ class Reader(metaclass=_abc.ABCMeta):
                                             names=('options', 'path', cls.pipe.__name__, cls.read.__name__,))
 
 
-def _Python_env(reader: Reader) -> _typing.Mapping[str, _typing.Any]:
+def _Python_env(reader: Reader) -> _typing.Mapping[str, _typing.Any | None]:
     def cwf_section(section: str) -> _virenv_util.Location:
         ret: _virenv_util.FileSection = _virenv_util.FileSection(
             path=reader.path, section=section)
@@ -132,7 +132,8 @@ class MarkdownReader:
                         )
                     return old(self0)
                 cls.__str__ = new
-            vars: _typing.MutableMapping[str, _typing.Any] = mod.__dict__
+            vars: _typing.MutableMapping[str,
+                                         _typing.Any | None] = mod.__dict__
             vars['__builtins__'] = {k: v for k, v in _builtins.__dict__.items()
                                     if k not in self.builtins_exclude}
             return _virenv.Environment(

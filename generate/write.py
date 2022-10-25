@@ -41,7 +41,7 @@ class PythonWriter:
 
     @_contextlib.contextmanager
     def write(self: _typing.Self) -> _typing.Iterator[None]:
-        results0: _typing.Any = self.__env.exec(self.__code)
+        results0: _typing.Any | None = self.__env.exec(self.__code)
         if not isinstance(results0, _virenv_gen.Results):
             raise TypeError(results0)
         results: _virenv_gen.Results = results0

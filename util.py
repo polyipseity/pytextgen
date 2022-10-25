@@ -37,7 +37,7 @@ class TypedTuple(_typing.Generic[_T], tuple[_T, ...]):
     __slots__: _typing.ClassVar = ()
     element_type: type[_T]
 
-    def __init_subclass__(cls: type[_typing.Self], element_type: type[_T], **kwargs: _typing.Any) -> None:
+    def __init_subclass__(cls: type[_typing.Self], element_type: type[_T], **kwargs: _typing.Any | None) -> None:
         super().__init_subclass__(**kwargs)
         cls.element_type = element_type
 
