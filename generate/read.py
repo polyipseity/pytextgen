@@ -25,21 +25,26 @@ class Reader(metaclass=_abc.ABCMeta):
     @_abc.abstractmethod
     def __init__(self: _typing.Self, *,
                  path: _pathlib.Path,
-                 options: _options.Options) -> None: ...
+                 options: _options.Options) -> None:
+        raise NotImplementedError(self)
 
     @property
     @_abc.abstractmethod
-    def path(self: _typing.Self) -> _pathlib.Path: ...
+    def path(self: _typing.Self) -> _pathlib.Path:
+        raise NotImplementedError(self)
 
     @property
     @_abc.abstractmethod
-    def options(self: _typing.Self) -> _options.Options: ...
+    def options(self: _typing.Self) -> _options.Options:
+        raise NotImplementedError(self)
 
     @_abc.abstractmethod
-    def read(self: _typing.Self, text: str, /) -> None: ...
+    def read(self: _typing.Self, text: str, /) -> None:
+        raise NotImplementedError(self)
 
     @_abc.abstractmethod
-    def pipe(self: _typing.Self) -> _typing.Collection[_write.Writer]: ...
+    def pipe(self: _typing.Self) -> _typing.Collection[_write.Writer]:
+        raise NotImplementedError(self)
 
     @classmethod
     def __subclasshook__(cls: type[_typing.Self], subclass: type) -> bool | _types.NotImplementedType:

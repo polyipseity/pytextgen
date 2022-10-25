@@ -48,7 +48,8 @@ class Location(metaclass=_abc.ABCMeta):
     __slots__: _typing.ClassVar = ()
 
     @_abc.abstractmethod
-    def open(self: _typing.Self) -> _typing.TextIO: ...
+    def open(self: _typing.Self) -> _typing.TextIO:
+        raise NotImplementedError(self)
 
     @classmethod
     def __subclasshook__(cls: type[_typing.Self], subclass: type) -> bool | _types.NotImplementedType:
@@ -287,7 +288,8 @@ class FlashcardGroup(_typing.Sequence[str], metaclass=_abc.ABCMeta):
     __slots__: _typing.ClassVar = ()
 
     @_abc.abstractmethod
-    def __str__(self: _typing.Self) -> str: ...
+    def __str__(self: _typing.Self) -> str:
+        raise NotImplementedError(self)
 
     @classmethod
     def __subclasshook__(cls: type[_typing.Self], subclass: type) -> bool | _types.NotImplementedType:

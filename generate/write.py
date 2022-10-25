@@ -17,7 +17,8 @@ class Writer(metaclass=_abc.ABCMeta):
 
     @_contextlib.contextmanager
     @_abc.abstractmethod
-    def write(self: _typing.Self) -> _typing.Iterator[None]: ...
+    def write(self: _typing.Self) -> _typing.Iterator[None]:
+        raise NotImplementedError(self)
 
     @classmethod
     def __subclasshook__(cls: type[_typing.Self], subclass: type) -> bool | _types.NotImplementedType:
