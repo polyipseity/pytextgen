@@ -60,7 +60,7 @@ def quote_text(code: _text_code.TextCode, /, *,
 
 def memorize_linked_seq(code: _text_code.TextCode, /, *,
                         hinted: _typing.Callable[[
-                            int], bool] | _typing.Sequence[bool] = _util.constant(True),
+                            int], bool] | _typing.Sequence[bool] | bool = True,
                         states: _typing.Iterable[_util.FlashcardStateGroup],
                         sanitizer: _typing.Callable[[
                             str], str] = _util.identity,
@@ -71,8 +71,9 @@ def memorize_linked_seq(code: _text_code.TextCode, /, *,
             .map(_functools.partial(_flashcard.memorize_linked_seq,
                                     reversible=reversible,
                                     hinter=_flashcard.punctuation_hinter(
-                                        hinted.__getitem__ if isinstance(
-                                            hinted, _typing.Sequence) else hinted,
+                                        (_util.constant(hinted) if isinstance(hinted, bool) else
+                                         hinted.__getitem__ if isinstance(hinted, _typing.Sequence) else
+                                         hinted),
                                         sanitizer=sanitizer,
                                     )))
             .map(_functools.partial(_flashcard.attach_flashcard_states, states=states))
@@ -83,16 +84,17 @@ def memorize_linked_seq(code: _text_code.TextCode, /, *,
 
 
 def memorize_indexed_seq(code: _text_code.TextCode, /, *,
-                         indices: _typing.Callable[[int], int | None] | _typing.Sequence[int | None] = (
-                             int(1).__add__),
+                         indices: _typing.Callable[[
+                             int], int | None] | _typing.Sequence[int | None] | int = 1,
                          states: _typing.Iterable[_util.FlashcardStateGroup],
                          reversible: bool = True,
                          ) -> str:
     return (_util.Unit(code)
             .map(_functools.partial(_misc.code_to_strs, tag=_misc.Tag.MEMORIZE))
             .map(_functools.partial(_flashcard.memorize_indexed_seq,
-                                    indices=indices.__getitem__ if isinstance(
-                                        indices, _typing.Sequence) else indices,
+                                    indices=(indices.__add__ if isinstance(indices, int) else
+                                             indices.__getitem__ if isinstance(indices, _typing.Sequence) else
+                                             indices),
                                     reversible=reversible,))
             .map(_functools.partial(_flashcard.attach_flashcard_states, states=states))
             .map(_flashcard.listify_flashcards)
