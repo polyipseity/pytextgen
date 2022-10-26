@@ -8,6 +8,8 @@ import typing as _typing
 @_typing.final
 class TextCode:
     __slots__: _typing.ClassVar = ('__blocks', '__by_tag',)
+    escapes: _typing.ClassVar[_typing.Collection[str]
+                              ] = frozenset({'\\', '{', '}', ': ', })
 
     @_typing.final
     @_dataclasses.dataclass(init=True,
@@ -32,9 +34,9 @@ class TextCode:
 
         def __str__(self: _typing.Self) -> str:
             if self.special:
-                return f'{{{self.tag}:{self.text}}}'
+                return f'{{{self.tag}:{TextCode.escape(self.text)}}}'
             if self.text:
-                return self.text
+                return TextCode.escape(self.text)
             return '{:}'
 
     @_typing.final
@@ -78,6 +80,14 @@ class TextCode:
 
     def affix(self: _typing.Self, /, *, prefix: str = '', suffix: str = '') -> _typing.Self:
         return self.compile(''.join((prefix, str(self), suffix,)))
+
+    @classmethod
+    def escape(cls: type[_typing.Self], text: str) -> str:
+        def translate(char: str) -> str:
+            if char in cls.escapes:
+                return f'\\{char}'
+            return char
+        return ''.join(map(translate, text))
 
     @staticmethod
     def compiler(code: str) -> _typing.Iterator[Block]:
