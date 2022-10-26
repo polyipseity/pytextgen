@@ -29,7 +29,7 @@ def listify_flashcards(flashcards: _typing.Iterable[_util1.StatefulFlashcardGrou
 def memorize_linked_seq(strs: _typing.Iterable[str], /, *,
                         reversible: bool = True,
                         hinter: _typing.Callable[[
-                            int, str], tuple[str, str]] = _util.constant(('→', '←'))
+                            int, str], tuple[str, str]] = _util.constant(('→', '←')),
                         ) -> _typing.Iterator[_util1.FlashcardGroup]:
     class HintedStr(_typing.NamedTuple):
         str_: str
@@ -52,6 +52,25 @@ def memorize_linked_seq(strs: _typing.Iterable[str], /, *,
         assert isinstance(ret, _util1.FlashcardGroup)
         yield ret
         prev = cur
+
+
+def memorize_indexed_seq(strs: _typing.Iterable[str], /, *,
+                         indices: _typing.Callable[[
+                             int], int | None] = int(1).__add__,
+                         reversible: bool = True,
+                         ) -> _typing.Iterator[_util1.FlashcardGroup]:
+    idx: int
+    str_: str
+    for idx, str_ in enumerate(strs):
+        index: int | None = indices(idx)
+        if index is None:
+            continue
+        ret: _util1.TwoSidedFlashcard = _util1.TwoSidedFlashcard(
+            str(index), str_,
+            reversible=reversible,
+        )
+        assert isinstance(ret, _util1.FlashcardGroup)
+        yield ret
 
 
 def semantics_seq_map(map: _typing.Iterable[tuple[str, str]], /, *,
