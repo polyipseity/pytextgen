@@ -11,37 +11,8 @@ import types as _types
 import typing as _typing
 
 from ... import globals as _globals
-from ... import util as _util
 
-_T_co = _typing.TypeVar('_T_co', covariant=True)
-_T1_co = _typing.TypeVar('_T1_co', covariant=True)
-_ExtendsUnit = _typing.TypeVar('_ExtendsUnit', bound='Unit[_typing.Any]')
-
-
-@_typing.final
-class Unit(_typing.Generic[_T_co]):
-    __slots__: _typing.ClassVar = ('__value',)
-
-    def __init__(self: _typing.Self, value: _T_co) -> None:
-        self.__value: _T_co = value
-
-    def counit(self: _typing.Self) -> _T_co:
-        return self.__value
-
-    def bind(self: _typing.Self, func: _typing.Callable[[_T_co], _ExtendsUnit]) -> _ExtendsUnit:
-        return func(self.counit())
-
-    def extend(self: _typing.Self, func: _typing.Callable[[_typing.Self], _T1_co]) -> 'Unit[_T1_co]':
-        return Unit(func(self))
-
-    def map(self: _typing.Self, func: _typing.Callable[[_T_co], _T1_co]) -> 'Unit[_T1_co]':
-        return Unit(func(self.counit()))
-
-    def join(self: 'Unit[_ExtendsUnit]') -> _ExtendsUnit:
-        return self.counit()
-
-    def duplicate(self: _typing.Self) -> 'Unit[_typing.Self]':
-        return Unit(self)
+from ...util import *
 
 
 class Location(metaclass=_abc.ABCMeta):
@@ -53,8 +24,8 @@ class Location(metaclass=_abc.ABCMeta):
 
     @classmethod
     def __subclasshook__(cls: type[_typing.Self], subclass: type) -> bool | _types.NotImplementedType:
-        return _util.abc_subclasshook_check(Location, cls, subclass,
-                                            names=(cls.open.__name__,))
+        return abc_subclasshook_check(Location, cls, subclass,
+                                      names=(cls.open.__name__,))
 
 
 @_typing.final
@@ -293,8 +264,8 @@ class FlashcardGroup(_typing.Sequence[str], metaclass=_abc.ABCMeta):
 
     @classmethod
     def __subclasshook__(cls: type[_typing.Self], subclass: type) -> bool | _types.NotImplementedType:
-        return _util.abc_subclasshook_check(FlashcardGroup, cls, subclass,
-                                            names=(cls.__str__.__name__,))
+        return abc_subclasshook_check(FlashcardGroup, cls, subclass,
+                                      names=(cls.__str__.__name__,))
 
 
 @_typing.final
@@ -405,7 +376,7 @@ class FlashcardState:
 
 
 @_typing.final
-class FlashcardStateGroup(_util.TypedTuple[FlashcardState], element_type=FlashcardState):
+class FlashcardStateGroup(TypedTuple[FlashcardState], element_type=FlashcardState):
     __slots__: _typing.ClassVar = ()
     format: _typing.ClassVar[str] = '<!--SR:{states}-->'
     regex: _typing.ClassVar[_re.Pattern[str]] = _re.compile(

@@ -3,8 +3,7 @@ import functools as _functools
 import re as _re
 import typing as _typing
 
-from .... import util as _util
-from .. import util as _util1
+from .. import util as _util
 from . import flashcard as _flashcard
 from . import misc as _misc
 from . import text_code as _text_code
@@ -51,7 +50,7 @@ _html_tag_regex: _re.Pattern[str] = _re.compile(r'<([^>]+)>', flags=0)
 def quote_text(code: _text_code.TextCode, /, *,
                tag: _misc.TagStr = _misc.Tag.TEXT,
                ) -> str:
-    return (_util1.Unit(code)
+    return (_util.Unit(code)
             .map(_functools.partial(_misc.code_to_str, tag=tag))
             .map(_functools.partial(_misc.affix_lines, prefix='> '))
             .map(_misc.strip_lines)
@@ -62,12 +61,12 @@ def quote_text(code: _text_code.TextCode, /, *,
 def memorize_linked_seq(code: _text_code.TextCode, /, *,
                         hinted: _typing.Callable[[
                             int], bool] | _typing.Sequence[bool] = _util.constant(True),
-                        states: _typing.Iterable[_util1.FlashcardStateGroup],
+                        states: _typing.Iterable[_util.FlashcardStateGroup],
                         sanitizer: _typing.Callable[[
                             str], str] = _util.identity,
                         reversible: bool = True,
                         ) -> str:
-    return (_util1.Unit(code)
+    return (_util.Unit(code)
             .map(_functools.partial(_misc.code_to_strs, tag=_misc.Tag.MEMORIZE))
             .map(_functools.partial(_flashcard.memorize_linked_seq,
                                     reversible=reversible,
@@ -86,10 +85,10 @@ def memorize_linked_seq(code: _text_code.TextCode, /, *,
 def memorize_indexed_seq(code: _text_code.TextCode, /, *,
                          indices: _typing.Callable[[int], int | None] | _typing.Sequence[int | None] = (
                              int(1).__add__),
-                         states: _typing.Iterable[_util1.FlashcardStateGroup],
+                         states: _typing.Iterable[_util.FlashcardStateGroup],
                          reversible: bool = True,
                          ) -> str:
-    return (_util1.Unit(code)
+    return (_util.Unit(code)
             .map(_functools.partial(_misc.code_to_strs, tag=_misc.Tag.MEMORIZE))
             .map(_functools.partial(_flashcard.memorize_indexed_seq,
                                     indices=indices.__getitem__ if isinstance(
@@ -103,10 +102,10 @@ def memorize_indexed_seq(code: _text_code.TextCode, /, *,
 
 
 def semantics_seq_map(text: _text_code.TextCode, sem: _text_code.TextCode, *,
-                      states: _typing.Iterable[_util1.FlashcardStateGroup],
+                      states: _typing.Iterable[_util.FlashcardStateGroup],
                       reversible: bool = False,
                       ) -> str:
-    return (_util1.Unit((text, sem))
+    return (_util.Unit((text, sem))
             .map(lambda codes: (
                 _misc.code_to_strs(codes[0], tag=_misc.Tag.SEMANTICS),
                 _misc.code_to_strs(codes[1], tag=_misc.Tag.SEMANTICS)

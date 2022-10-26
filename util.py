@@ -3,9 +3,12 @@ import os as _os
 import types as _types
 import typing as _typing
 
-StrPath: _typing.TypeAlias = str | _os.PathLike[str]
-
 _T = _typing.TypeVar('_T')
+_T_co = _typing.TypeVar('_T_co', covariant=True)
+_T1_co = _typing.TypeVar('_T1_co', covariant=True)
+_ExtendsUnit = _typing.TypeVar('_ExtendsUnit', bound='Unit[_typing.Any]')
+
+StrPath: _typing.TypeAlias = str | _os.PathLike[str]
 
 
 def identity(var: _T) -> _T:
@@ -41,6 +44,32 @@ def abc_subclasshook_check(impl_cls: _abc.ABCMeta,
         else:
             raise ValueError(typing)
     return NotImplemented
+
+
+@_typing.final
+class Unit(_typing.Generic[_T_co]):
+    __slots__: _typing.ClassVar = ('__value',)
+
+    def __init__(self: _typing.Self, value: _T_co) -> None:
+        self.__value: _T_co = value
+
+    def counit(self: _typing.Self) -> _T_co:
+        return self.__value
+
+    def bind(self: _typing.Self, func: _typing.Callable[[_T_co], _ExtendsUnit]) -> _ExtendsUnit:
+        return func(self.counit())
+
+    def extend(self: _typing.Self, func: _typing.Callable[[_typing.Self], _T1_co]) -> 'Unit[_T1_co]':
+        return Unit(func(self))
+
+    def map(self: _typing.Self, func: _typing.Callable[[_T_co], _T1_co]) -> 'Unit[_T1_co]':
+        return Unit(func(self.counit()))
+
+    def join(self: 'Unit[_ExtendsUnit]') -> _ExtendsUnit:
+        return self.counit()
+
+    def duplicate(self: _typing.Self) -> 'Unit[_typing.Self]':
+        return Unit(self)
 
 
 class TypedTuple(_typing.Generic[_T], tuple[_T, ...]):
