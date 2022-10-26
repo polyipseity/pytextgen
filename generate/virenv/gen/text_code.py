@@ -30,6 +30,13 @@ class TextCode:
         @property
         def common(self: _typing.Self) -> bool: return not self.special
 
+        def __str__(self: _typing.Self) -> str:
+            if self.special:
+                return f'{{{self.tag}:{self.text}}}'
+            if self.text:
+                return self.text
+            return '{:}'
+
     @_typing.final
     @_dataclasses.dataclass(init=True,
                             repr=True,
@@ -58,6 +65,9 @@ class TextCode:
     def __repr__(self: _typing.Self) -> str:
         return f'{TextCode.Block.__qualname__}(blocks={self.__blocks!r})'
 
+    def __str__(self: _typing.Self) -> str:
+        return ''.join(map(str, self.__blocks))
+
     @property
     def blocks(
         self: _typing.Self) -> _typing.Sequence[Block]: return self.__blocks
@@ -65,6 +75,9 @@ class TextCode:
     @property
     def by_tag(self: _typing.Self) -> _typing.Mapping[str, _typing.Sequence[ByTagValue]]:
         return self.__by_tag
+
+    def affix(self: _typing.Self, /, *, prefix: str = '', suffix: str = '') -> _typing.Self:
+        return self.compile(''.join((prefix, str(self), suffix,)))
 
     @staticmethod
     def compiler(code: str) -> _typing.Iterator[Block]:
