@@ -78,9 +78,6 @@ class TextCode:
     def by_tag(self: _typing.Self) -> _typing.Mapping[str, _typing.Sequence[ByTagValue]]:
         return self.__by_tag
 
-    def affix(self: _typing.Self, /, *, prefix: str = '', suffix: str = '') -> _typing.Self:
-        return self.compile(''.join((prefix, str(self), suffix,)))
-
     @classmethod
     def escape(cls: type[_typing.Self], text: str) -> str:
         def translate(char: str) -> str:

@@ -59,3 +59,10 @@ def code_to_strs(code: _text_code.TextCode, /, *,
 def code_to_str(code: _text_code.TextCode, /, *,
                 tag: TagStr = Tag.COMMON) -> str:
     return ''.join(code_to_strs(code, tag=tag))
+
+
+def affix_code(code: _text_code.TextCode, /, *,
+               prefix: str = '',
+               suffix: str = '',
+               ) -> _text_code.TextCode:
+    return code.compile(''.join((prefix, str(code), suffix,)))
