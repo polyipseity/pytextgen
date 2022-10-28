@@ -21,6 +21,10 @@ def constant(var: _T) -> _typing.Callable[..., _T]:
     return func
 
 
+def tuple1(var: _T) -> tuple[_T]:
+    return (var,)
+
+
 def abc_subclasshook_check(impl_cls: _abc.ABCMeta,
                            cls: _abc.ABCMeta,
                            subclass: type, /, *,
