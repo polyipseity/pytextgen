@@ -49,10 +49,11 @@ _html_tag_regex: _re.Pattern[str] = _re.compile(r'<([^>]+)>', flags=0)
 
 def quote_text(code: _text_code.TextCode, /, *,
                tag: _misc.TagStr = _misc.Tag.TEXT,
+               line_prefix: str = '> ',
                ) -> str:
     return (_util.Unit(code)
             .map(_functools.partial(_text_code.code_to_str, tag=tag))
-            .map(_functools.partial(_misc.affix_lines, prefix='> '))
+            .map(_functools.partial(_misc.affix_lines, prefix=line_prefix))
             .map(_misc.strip_lines)
             .map(_section_text_format.format)
             .counit())
@@ -60,18 +61,20 @@ def quote_text(code: _text_code.TextCode, /, *,
 
 def cloze_text(code: _text_code.TextCode, /, *,
                tag: _misc.TagStr = _misc.Tag.TEXT,
-               separator: _misc.TagStr = _misc.Tag.CLOZE_SEPARATOR,
+               sep_tag: _misc.TagStr = _misc.Tag.CLOZE_SEPARATOR,
                token: str = '==',
+               line_prefix: str = '> ',
+               separator: str = '\n\n',
                states: _typing.Iterable[_util.FlashcardStateGroup],
                ) -> str:
     return (_util.Unit(code)
-            .map(_functools.partial(_text_code.separate_code_by_tag, tag=separator))
+            .map(_functools.partial(_text_code.separate_code_by_tag, tag=sep_tag))
             .map(lambda codes: map(_functools.partial(_text_code.code_to_str, tag=tag), codes))
             .map(_functools.partial(_flashcard.cloze_texts, token=token))
             .map(_functools.partial(_flashcard.attach_flashcard_states, states=states))
             .map(lambda groups: map(str, groups))
-            .map(lambda strs: map(_functools.partial(_misc.affix_lines, prefix='> '), strs))
-            .map('\n\n'.join)
+            .map(lambda strs: map(_functools.partial(_misc.affix_lines, prefix=line_prefix), strs))
+            .map(separator.join)
             .map(_misc.strip_lines)
             .map(_section_text_format.format)
             .counit())
@@ -227,7 +230,7 @@ def map_to_code(map: _typing.Mapping[str, str], /, *,
 
 
 def maps_to_code(maps: _typing.Mapping[str, _typing.Mapping[str, str]], /, *,
-                 separator: _misc.TagStr = _misc.Tag.CLOZE_SEPARATOR,
+                 sep_tag: _misc.TagStr = _misc.Tag.CLOZE_SEPARATOR,
                  token: str = '==',
                  ) -> _text_code.TextCode:
     def codegen() -> _typing.Iterator[str]:
@@ -235,4 +238,4 @@ def maps_to_code(maps: _typing.Mapping[str, _typing.Mapping[str, str]], /, *,
         value: _typing.Mapping[str, str]
         for key, value in maps.items():
             yield str(map_to_code(value, name=key, token=token))
-    return _text_code.TextCode.compile(f'{{{_text_code.TextCode.escape(str(separator))}:}}'.join(codegen()))
+    return _text_code.TextCode.compile(f'{{{_text_code.TextCode.escape(str(sep_tag))}:}}'.join(codegen()))
