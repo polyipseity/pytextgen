@@ -109,7 +109,7 @@ class TextCode:
                     text: _io.StringIO = _typing.cast(_io.StringIO, stack[-1])
                     text0: str = text.getvalue()
                     if text0:
-                        yield TextCode.Block(text0, char=index)
+                        yield TextCode.Block(text0, char=index - len(text0))
                         text.seek(0)
                         text.truncate()
                     stack.append(_io.StringIO())
@@ -149,7 +149,9 @@ class TextCode:
                     text: _io.StringIO = _typing.cast(
                         _io.StringIO, stack.pop())
                     tag: _io.StringIO = _typing.cast(_io.StringIO, stack.pop())
-                    yield TextCode.Block(text.getvalue(), char=index, tag=tag.getvalue())
+                    text0: str = text.getvalue()
+                    tag0: str = tag.getvalue()
+                    yield TextCode.Block(text0, char=index - len('{') - len(tag0) - len(':') - len(text0), tag=tag0)
                     state = State.NORMAL
                 else:
                     _typing.cast(_io.StringIO, stack[-1]).write(char)
