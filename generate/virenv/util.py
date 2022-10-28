@@ -326,6 +326,54 @@ FlashcardGroup.register(TwoSidedFlashcard)
 assert issubclass(TwoSidedFlashcard, FlashcardGroup)
 
 
+@_dataclasses.dataclass(init=True,
+                        repr=True,
+                        eq=True,
+                        order=False,
+                        unsafe_hash=False,
+                        frozen=True,
+                        match_args=True,
+                        kw_only=False,
+                        slots=True,)
+class ClozeFlashcardGroup:
+    __pattern_cache: _typing.ClassVar[_typing.MutableMapping[str, _re.Pattern[str]]] = {
+    }
+
+    context: str
+    _: _dataclasses.KW_ONLY
+    token: str = '=='
+    _clozes: _typing.Sequence[str] = _dataclasses.field(
+        init=False,
+        repr=False,
+        hash=False,
+        compare=False,
+    )
+
+    def __post_init__(self: _typing.Self) -> None:
+        pattern: _re.Pattern[str]
+        try:
+            pattern = self.__pattern_cache[self.token]
+        except KeyError:
+            etoken: str = _re.escape(self.token)
+            self.__pattern_cache[self.token] = pattern = _re.compile(
+                rf'[{etoken}]+(?<={etoken})([^{etoken}]+)(?={etoken})[{etoken}]+', flags=0)
+        object.__setattr__(self, '_clozes',
+                           tuple(match.group(1) for match in pattern.finditer(self.context)))
+
+    def __str__(self: _typing.Self) -> str:
+        return self.context
+
+    def __len__(self: _typing.Self) -> int:
+        return len(self._clozes)
+
+    def __getitem__(self: _typing.Self, index: int) -> str:
+        return self._clozes[index]
+
+
+FlashcardGroup.register(ClozeFlashcardGroup)
+assert issubclass(ClozeFlashcardGroup, FlashcardGroup)
+
+
 @_typing.final
 @_dataclasses.dataclass(init=True,
                         repr=True,
