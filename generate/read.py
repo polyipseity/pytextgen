@@ -1,6 +1,7 @@
 import abc as _abc
 import ast as _ast
 import builtins as _builtins
+import dataclasses as _dataclasses
 import datetime as _datetime
 import functools as _functools
 import importlib.machinery as _importlib_machinery
@@ -121,21 +122,18 @@ class MarkdownReader:
 
                 @_functools.wraps(old)
                 def new(self: _virenv_util.StatefulFlashcardGroup) -> str:
-                    self0: _virenv_util.StatefulFlashcardGroup = self
                     diff: int = len(self.flashcard) - len(self.state)
                     if diff > 0:
-                        self0 = type(self)(
-                            flashcard=self.flashcard,
-                            state=type(self.state)(_itertools.chain(
-                                self.state,
-                                _itertools.repeat(type(self.state).element_type(
-                                    date=_datetime.date.today(),
-                                    interval=1,
-                                    ease=_globals.flashcard_ease_default,
-                                ), diff),
-                            )),
-                        )
-                    return old(self0)
+                        self = _dataclasses.replace(self,
+                                                    state=type(self.state)(_itertools.chain(
+                                                        self.state,
+                                                        _itertools.repeat(type(self.state).element_type(
+                                                            date=_datetime.date.today(),
+                                                            interval=1,
+                                                            ease=_globals.flashcard_ease_default,
+                                                        ), diff),
+                                                    )))
+                    return old(self)
                 cls.__str__ = new
             vars: _typing.MutableMapping[str,
                                          _typing.Any | None] = mod.__dict__
