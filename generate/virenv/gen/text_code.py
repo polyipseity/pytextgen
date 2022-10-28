@@ -24,6 +24,7 @@ class TextCode:
     class Block:
         text: str
         _: _dataclasses.KW_ONLY
+        char: int
         tag: str = ''
 
         @property
@@ -108,7 +109,7 @@ class TextCode:
                     text: _io.StringIO = _typing.cast(_io.StringIO, stack[-1])
                     text0: str = text.getvalue()
                     if text0:
-                        yield TextCode.Block(text0)
+                        yield TextCode.Block(text0, char=index)
                         text.seek(0)
                         text.truncate()
                     stack.append(_io.StringIO())
@@ -148,7 +149,7 @@ class TextCode:
                     text: _io.StringIO = _typing.cast(
                         _io.StringIO, stack.pop())
                     tag: _io.StringIO = _typing.cast(_io.StringIO, stack.pop())
-                    yield TextCode.Block(text.getvalue(), tag=tag.getvalue())
+                    yield TextCode.Block(text.getvalue(), char=index, tag=tag.getvalue())
                     state = State.NORMAL
                 else:
                     _typing.cast(_io.StringIO, stack[-1]).write(char)
