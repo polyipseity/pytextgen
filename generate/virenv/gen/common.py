@@ -51,7 +51,7 @@ def quote_text(code: _text_code.TextCode, /, *,
                tag: _misc.TagStr = _misc.Tag.TEXT,
                ) -> str:
     return (_util.Unit(code)
-            .map(_functools.partial(_misc.code_to_str, tag=tag))
+            .map(_functools.partial(_text_code.code_to_str, tag=tag))
             .map(_functools.partial(_misc.affix_lines, prefix='> '))
             .map(_misc.strip_lines)
             .map(_section_text_format.format)
@@ -67,7 +67,7 @@ def memorize_linked_seq(code: _text_code.TextCode, /, *,
                         reversible: bool = True,
                         ) -> str:
     return (_util.Unit(code)
-            .map(_functools.partial(_misc.code_to_strs, tag=_misc.Tag.MEMORIZE))
+            .map(_functools.partial(_text_code.code_to_strs, tag=_misc.Tag.MEMORIZE))
             .map(_functools.partial(_flashcard.memorize_linked_seq,
                                     reversible=reversible,
                                     hinter=_flashcard.punctuation_hinter(
@@ -90,7 +90,7 @@ def memorize_indexed_seq(code: _text_code.TextCode, /, *,
                          reversible: bool = True,
                          ) -> str:
     return (_util.Unit(code)
-            .map(_functools.partial(_misc.code_to_strs, tag=_misc.Tag.MEMORIZE))
+            .map(_functools.partial(_text_code.code_to_strs, tag=_misc.Tag.MEMORIZE))
             .map(_functools.partial(_flashcard.memorize_indexed_seq,
                                     indices=(indices.__add__ if isinstance(indices, int) else
                                              indices.__getitem__ if isinstance(indices, _typing.Sequence) else
@@ -109,8 +109,8 @@ def semantics_seq_map(text: _text_code.TextCode, sem: _text_code.TextCode, *,
                       ) -> str:
     return (_util.Unit((text, sem))
             .map(lambda codes: (
-                _misc.code_to_strs(codes[0], tag=_misc.Tag.SEMANTICS),
-                _misc.code_to_strs(codes[1], tag=_misc.Tag.SEMANTICS)
+                _text_code.code_to_strs(codes[0], tag=_misc.Tag.SEMANTICS),
+                _text_code.code_to_strs(codes[1], tag=_misc.Tag.SEMANTICS)
             ))
             .map(lambda strss: zip(*strss, strict=True))
             .map(_functools.partial(_flashcard.semantics_seq_map, reversible=reversible))

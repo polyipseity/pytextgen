@@ -4,6 +4,8 @@ import io as _io
 import types as _types
 import typing as _typing
 
+from . import misc as _misc
+
 
 @_typing.final
 class TextCode:
@@ -161,3 +163,20 @@ class TextCode:
     @classmethod
     def compile(cls: type[_typing.Self], text: str) -> _typing.Self:
         return cls(cls.compiler(text))
+
+
+def code_to_strs(code: TextCode, /, *,
+                 tag: _misc.TagStr = _misc.Tag.COMMON) -> _typing.Iterator[str]:
+    return (block.text for block in code.blocks if block.common or block.tag == str(tag))
+
+
+def code_to_str(code: TextCode, /, *,
+                tag: _misc.TagStr = _misc.Tag.COMMON) -> str:
+    return ''.join(code_to_strs(code, tag=tag))
+
+
+def affix_code(code: TextCode, /, *,
+               prefix: str = '',
+               suffix: str = '',
+               ) -> TextCode:
+    return code.compile(''.join((prefix, str(code), suffix,)))

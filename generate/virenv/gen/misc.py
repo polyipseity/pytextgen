@@ -5,8 +5,6 @@ import sys as _sys
 import typing as _typing
 import unicodedata as _unicodedata
 
-from . import text_code as _text_code
-
 _punctuations: _typing.Collection[str] = tuple(chr(char) for char in range(_sys.maxunicode)
                                                if _unicodedata.category(chr(char)).startswith('P'))
 _punctuation_regex: _regex.Pattern[str] = _regex.compile(
@@ -52,20 +50,3 @@ def strip_lines(text: str, /, *, chars: str | None = None) -> str:
 
 def split_by_punctuations(text: str) -> _typing.Iterator[str]:
     return _punctuation_regex.splititer(text)
-
-
-def code_to_strs(code: _text_code.TextCode, /, *,
-                 tag: TagStr = Tag.COMMON) -> _typing.Iterator[str]:
-    return (block.text for block in code.blocks if block.common or block.tag == str(tag))
-
-
-def code_to_str(code: _text_code.TextCode, /, *,
-                tag: TagStr = Tag.COMMON) -> str:
-    return ''.join(code_to_strs(code, tag=tag))
-
-
-def affix_code(code: _text_code.TextCode, /, *,
-               prefix: str = '',
-               suffix: str = '',
-               ) -> _text_code.TextCode:
-    return code.compile(''.join((prefix, str(code), suffix,)))
