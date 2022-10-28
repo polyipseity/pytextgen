@@ -25,6 +25,10 @@ class Tag(_enum.Enum):
     TEXT: _typing.ClassVar = 'text'
     MEMORIZE: _typing.ClassVar = 'mem'
     SEMANTICS: _typing.ClassVar = 'sem'
+    CLOZE_SEPARATOR: _typing.ClassVar = 'cloze sep'
+
+    def __str__(self: _typing.Self) -> str:
+        return self.value
 
 
 TagStr: _typing.TypeAlias = Tag | str
@@ -52,8 +56,7 @@ def split_by_punctuations(text: str) -> _typing.Iterator[str]:
 
 def code_to_strs(code: _text_code.TextCode, /, *,
                  tag: TagStr = Tag.COMMON) -> _typing.Iterator[str]:
-    tag_name: str = tag.value if isinstance(tag, Tag) else tag
-    return (block.text for block in code.blocks if block.common or block.tag == tag_name)
+    return (block.text for block in code.blocks if block.common or block.tag == str(tag))
 
 
 def code_to_str(code: _text_code.TextCode, /, *,
