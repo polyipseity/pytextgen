@@ -58,6 +58,25 @@ def quote_text(code: _text_code.TextCode, /, *,
             .counit())
 
 
+def cloze_text(code: _text_code.TextCode, /, *,
+               tag: _misc.TagStr = _misc.Tag.TEXT,
+               separator: _misc.TagStr = _misc.Tag.CLOZE_SEPARATOR,
+               token: str = '==',
+               states: _typing.Iterable[_util.FlashcardStateGroup],
+               ) -> str:
+    return (_util.Unit(code)
+            .map(_functools.partial(_text_code.separate_code_by_tag, tag=separator))
+            .map(lambda codes: map(_functools.partial(_text_code.code_to_str, tag=tag), codes))
+            .map(_functools.partial(_flashcard.cloze_texts, token=token))
+            .map(_functools.partial(_flashcard.attach_flashcard_states, states=states))
+            .map(lambda groups: map(str, groups))
+            .map(lambda strs: map(_functools.partial(_misc.affix_lines, prefix='> '), strs))
+            .map('\n\n'.join)
+            .map(_misc.strip_lines)
+            .map(_section_text_format.format)
+            .counit())
+
+
 def memorize_linked_seq(code: _text_code.TextCode, /, *,
                         hinted: _typing.Callable[[
                             int], bool] | _typing.Sequence[bool] | bool = True,
@@ -165,3 +184,55 @@ def markdown_sanitizer(text: str) -> str:
                                   text)
     text, _ = get_and_remove_html_tags(text)
     return text
+
+
+def seq_to_code(seq: _typing.Sequence[str], /, *,
+                index: int = 1,
+                ) -> _text_code.TextCode:
+    def gen_code() -> _typing.Iterator[str]:
+        newline: str = ''
+        idx: int
+        str_: str
+        for idx, str_ in enumerate(seq):
+            yield '{text:'
+            yield newline
+            yield str(index + idx)
+            yield '. }'
+            yield str_
+            newline = '\n'
+    return _text_code.TextCode.compile(''.join(gen_code()))
+
+
+def map_to_code(map: _typing.Mapping[str, str], /, *,
+                name: str = '',
+                token: str = '==',
+                ) -> _text_code.TextCode:
+    def gen_code() -> _typing.Iterator[str]:
+        newline: str = ''
+        if name:
+            yield name
+            newline = '\n'
+        key: str
+        value: str
+        for key, value in map.items():
+            yield newline
+            yield '- '
+            yield key
+            yield ': '
+            yield token
+            yield value
+            yield token
+            newline = '\n'
+    return _text_code.TextCode.compile(''.join(gen_code()))
+
+
+def maps_to_code(maps: _typing.Mapping[str, _typing.Mapping[str, str]], /, *,
+                 separator: _misc.TagStr = _misc.Tag.CLOZE_SEPARATOR,
+                 token: str = '==',
+                 ) -> _text_code.TextCode:
+    def codegen() -> _typing.Iterator[str]:
+        key: str
+        value: _typing.Mapping[str, str]
+        for key, value in maps.items():
+            yield str(map_to_code(value, name=key, token=token))
+    return _text_code.TextCode.compile(f'{{{_text_code.TextCode.escape(str(separator))}:}}'.join(codegen()))

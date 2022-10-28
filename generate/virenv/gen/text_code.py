@@ -180,3 +180,15 @@ def affix_code(code: TextCode, /, *,
                suffix: str = '',
                ) -> TextCode:
     return code.compile(''.join((prefix, str(code), suffix,)))
+
+
+def separate_code_by_tag(code: TextCode, /, *,
+                         tag: _misc.TagStr
+                         ) -> _typing.Iterator[TextCode]:
+    source: str = str(code)
+    cur: int | None = None
+    index: int
+    for index in (block.block.char for block in code.by_tag[str(tag)]):
+        yield code.compile(source[cur:index])
+        cur = index
+    yield code.compile(source[cur:])

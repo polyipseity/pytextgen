@@ -96,3 +96,13 @@ def punctuation_hinter(hinted: _typing.Callable[[int], bool] = _util.constant(Tr
             return (f'→{count}', f'{count}←')
         return ('→', '←')
     return ret
+
+
+def cloze_texts(texts: _typing.Iterable[str], /, *,
+                token: str = '==') -> _typing.Iterator[_util.FlashcardGroup]:
+    text: str
+    for text in texts:
+        ret: _util.ClozeFlashcardGroup = _util.ClozeFlashcardGroup(
+            text, token=token)
+        assert isinstance(ret, _util.FlashcardGroup)
+        yield ret
