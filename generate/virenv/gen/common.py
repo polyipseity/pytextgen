@@ -94,6 +94,32 @@ def memorize(code: _text_code.TextCode, /, *,
             .counit())
 
 
+def memorize_two_sided(code: _text_code.TextCode, /, *,
+                       offsets: _typing.Callable[[
+                           int], int | None] | _typing.Sequence[int] | int = 1,
+                       hinted: _typing.Callable[[
+                           int], bool] | _typing.Sequence[bool] | bool = True,
+                       sanitizer: _typing.Callable[[
+                           str], str] = _util.identity,
+                       reversible: bool = True,
+                       **kwargs: _typing.Any,
+                       ) -> str:
+    return memorize(code,
+                    func=_functools.partial(_flashcard.memorize_two_sided,
+                                            offsets=(_util.constant(offsets) if isinstance(offsets, int) else
+                                                     offsets.__getitem__ if isinstance(offsets, _typing.Sequence) else
+                                                     offsets),
+                                            reversible=reversible,
+                                            hinter=_flashcard.punctuation_hinter(
+                                                (_util.constant(hinted) if isinstance(hinted, bool) else
+                                                 hinted.__getitem__ if isinstance(hinted, _typing.Sequence) else
+                                                 hinted),
+                                                sanitizer=sanitizer,
+                                            )),
+                    **kwargs
+                    )
+
+
 def memorize_linked_seq(code: _text_code.TextCode, /, *,
                         hinted: _typing.Callable[[
                             int], bool] | _typing.Sequence[bool] | bool = True,

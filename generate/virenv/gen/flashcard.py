@@ -4,6 +4,8 @@ import typing as _typing
 from .. import util as _util
 from . import misc as _misc
 
+_T_co = _typing.TypeVar('_T_co', covariant=True)
+
 
 def attach_flashcard_states(flashcards: _typing.Iterable[_util.FlashcardGroup], /, *,
                             states: _typing.Iterable[_util.FlashcardStateGroup]
@@ -25,32 +27,51 @@ def listify_flashcards(flashcards: _typing.Iterable[_util.StatefulFlashcardGroup
     return ''.join(ret_gen())
 
 
-def memorize_linked_seq(strs: _typing.Iterable[str], /, *,
-                        reversible: bool = True,
-                        hinter: _typing.Callable[[
-                            int, str], tuple[str, str]] = _util.constant(('→', '←')),
-                        ) -> _typing.Iterator[_util.FlashcardGroup]:
+def memorize_two_sided(strs: _typing.Iterable[str], /, *,
+                       offsets: _typing.Callable[[int],
+                                                 int | None] = _util.constant(1),
+                       reversible: bool = True,
+                       hinter: _typing.Callable[[
+                           int, str], tuple[str, str]] = _util.constant(('→', '←')),
+                       ) -> _typing.Iterator[_util.FlashcardGroup]:
+    @_typing.final
     class HintedStr(_typing.NamedTuple):
         str_: str
         left: str
         right: str
-    iter: enumerate[str] = enumerate(strs)
-    index: int
-    str_: str
-    try:
-        index, str_ = next(iter)
-    except StopIteration:
-        return
-    prev: HintedStr = HintedStr(str_, *hinter(index, str_))
-    for index, str_ in iter:
-        cur: HintedStr = HintedStr(str_, *hinter(index, str_))
+    strs_seq: _typing.Sequence[str] = _util.LazyIterableSequence(strs)
+
+    def offseted() -> _typing.Iterator[HintedStr]:
+        index: int = -1
+        while True:
+            offset: int | None = offsets(index)
+            if offset is None:
+                break
+            index += offset
+            try:
+                str_: str = strs_seq[index]
+            except IndexError:
+                break
+            yield HintedStr(str_, *hinter(index, str_))
+    iter: _typing.Iterator[HintedStr] = offseted()
+    left: HintedStr
+    right: HintedStr
+    for left, right in zip(iter, iter):
         ret: _util.TwoSidedFlashcard = _util.TwoSidedFlashcard(
-            prev.str_ + cur.left, prev.right + cur.str_,
+            left.str_ + right.left, left.right + right.str_,
             reversible=reversible,
         )
         assert isinstance(ret, _util.FlashcardGroup)
         yield ret
-        prev = cur
+
+
+def memorize_linked_seq(strs: _typing.Iterable[str], /,
+                        **kwargs: _typing.Any
+                        ) -> _typing.Iterator[_util.FlashcardGroup]:
+    return memorize_two_sided(strs,
+                              offsets=_util.ignore_args(_itertools.chain(
+                                  (1,), _itertools.cycle((1, 0,))).__next__),
+                              **kwargs)
 
 
 def memorize_indexed_seq(strs: _typing.Iterable[str], /, *,

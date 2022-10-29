@@ -1,5 +1,8 @@
 import abc as _abc
+import functools as _functools
+import itertools as _itertools
 import os as _os
+import threading as _threading
 import types as _types
 import typing as _typing
 
@@ -19,6 +22,13 @@ def constant(var: _T) -> _typing.Callable[..., _T]:
     def func(*_: _typing.Any) -> _T:
         return var
     return func
+
+
+def ignore_args(func: _typing.Callable[[], _T]) -> _typing.Callable[..., _T]:
+    @_functools.wraps(func)
+    def func0(*_: _typing.Any) -> _T:
+        return func()
+    return func0
 
 
 def tuple1(var: _T) -> tuple[_T]:
@@ -99,3 +109,46 @@ class TypedTuple(_typing.Generic[_T], tuple[_T, ...]):
 
     def __repr__(self: _typing.Self) -> str:
         return type(self).__qualname__ + super().__repr__()
+
+
+@_typing.final
+class LazyIterableSequence(_typing.Generic[_T_co], _typing.Sequence[_T_co]):
+    __slots__: _typing.ClassVar = (
+        '__cache', '__done', '__iterable', '__lock',)
+
+    def __init__(self: _typing.Self, iterable: _typing.Iterable[_T_co]) -> None:
+        self.__lock: _threading.Lock = _threading.Lock()
+        self.__iterable: _typing.Iterable[_T_co] = iterable
+        self.__cache: _typing.MutableSequence[_T_co] = []
+        self.__done: bool = False
+
+    def __cache_to(self: _typing.Self, length: int | None) -> int:
+        cur_len: int = len(self.__cache)
+        if self.__done or (length is not None and cur_len >= length):
+            return cur_len
+        if length is None:
+            with self.__lock:
+                self.__cache.extend(self.__iterable)
+            self.__done = True
+            return len(self.__cache)
+        with self.__lock:
+            extend: int = length - len(self.__cache)
+            if extend > 0:
+                self.__cache.extend(
+                    _itertools.islice(self.__iterable, extend))
+        new_len: int = len(self.__cache)
+        if new_len < cur_len + extend:
+            self.__done = True
+        return new_len
+
+    def __getitem__(self: _typing.Self, index: int) -> _T_co:
+        available: int = self.__cache_to(index + 1)
+        if index >= available:
+            raise IndexError(index)
+        return self.__cache[index]
+
+    def __len__(self: _typing.Self) -> int:
+        return self.__cache_to(None)
+
+
+assert issubclass(LazyIterableSequence, _typing.Sequence)
