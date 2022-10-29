@@ -209,33 +209,43 @@ def seq_to_code(seq: _typing.Sequence[str], /, *,
 def map_to_code(map: _typing.Mapping[str, str], /, *,
                 name: str = '',
                 token: str = '==',
+                name_cloze: bool = False,
+                key_cloze: bool = False,
+                value_cloze: bool = True,
                 ) -> _text_code.TextCode:
+    name_token: str = token if name_cloze else ''
+    key_token: str = token if key_cloze else ''
+    value_token: str = token if value_cloze else ''
+
     def gen_code() -> _typing.Iterator[str]:
         newline: str = ''
         if name:
+            yield name_token
             yield name
+            yield name_token
             newline = '\n'
         key: str
         value: str
         for key, value in map.items():
             yield newline
             yield '- '
+            yield key_token
             yield key
+            yield key_token
             yield ': '
-            yield token
+            yield value_token
             yield value
-            yield token
+            yield value_token
             newline = '\n'
     return _text_code.TextCode.compile(''.join(gen_code()))
 
 
 def maps_to_code(maps: _typing.Mapping[str, _typing.Mapping[str, str]], /, *,
                  sep_tag: _misc.TagStr = _misc.Tag.CLOZE_SEPARATOR,
-                 token: str = '==',
-                 ) -> _text_code.TextCode:
+                 **kwargs: _typing.Any) -> _text_code.TextCode:
     def codegen() -> _typing.Iterator[str]:
         key: str
         value: _typing.Mapping[str, str]
         for key, value in maps.items():
-            yield str(map_to_code(value, name=key, token=token))
+            yield str(map_to_code(value, name=key, **kwargs))
     return _text_code.TextCode.compile(f'{{{_text_code.TextCode.escape(str(sep_tag))}:}}'.join(codegen()))
