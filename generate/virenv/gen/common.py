@@ -80,49 +80,55 @@ def cloze_text(code: _text_code.TextCode, /, *,
             .counit())
 
 
-def memorize_linked_seq(code: _text_code.TextCode, /, *,
-                        hinted: _typing.Callable[[
-                            int], bool] | _typing.Sequence[bool] | bool = True,
-                        states: _typing.Iterable[_util.FlashcardStateGroup],
-                        sanitizer: _typing.Callable[[
-                            str], str] = _util.identity,
-                        reversible: bool = True,
-                        ) -> str:
+def memorize(code: _text_code.TextCode, /, *,
+             func: _typing.Callable[[_typing.Iterable[str]], _typing.Iterable[_util.FlashcardGroup]],
+             states: _typing.Iterable[_util.FlashcardStateGroup],
+             ) -> str:
     return (_util.Unit(code)
             .map(_functools.partial(_text_code.code_to_strs, tag=_misc.Tag.MEMORIZE))
-            .map(_functools.partial(_flashcard.memorize_linked_seq,
-                                    reversible=reversible,
-                                    hinter=_flashcard.punctuation_hinter(
-                                        (_util.constant(hinted) if isinstance(hinted, bool) else
-                                         hinted.__getitem__ if isinstance(hinted, _typing.Sequence) else
-                                         hinted),
-                                        sanitizer=sanitizer,
-                                    )))
+            .map(func)
             .map(_functools.partial(_flashcard.attach_flashcard_states, states=states))
             .map(_flashcard.listify_flashcards)
             .map(_misc.strip_lines)
             .map(_section_text_format.format)
             .counit())
+
+
+def memorize_linked_seq(code: _text_code.TextCode, /, *,
+                        hinted: _typing.Callable[[
+                            int], bool] | _typing.Sequence[bool] | bool = True,
+                        sanitizer: _typing.Callable[[
+                            str], str] = _util.identity,
+                        reversible: bool = True,
+                        **kwargs: _typing.Any,
+                        ) -> str:
+    return memorize(code,
+                    func=_functools.partial(_flashcard.memorize_linked_seq,
+                                            reversible=reversible,
+                                            hinter=_flashcard.punctuation_hinter(
+                                                (_util.constant(hinted) if isinstance(hinted, bool) else
+                                                 hinted.__getitem__ if isinstance(hinted, _typing.Sequence) else
+                                                 hinted),
+                                                sanitizer=sanitizer,
+                                            )),
+                    **kwargs
+                    )
 
 
 def memorize_indexed_seq(code: _text_code.TextCode, /, *,
                          indices: _typing.Callable[[
                              int], int | None] | _typing.Sequence[int | None] | int = 1,
-                         states: _typing.Iterable[_util.FlashcardStateGroup],
                          reversible: bool = True,
+                         **kwargs: _typing.Any,
                          ) -> str:
-    return (_util.Unit(code)
-            .map(_functools.partial(_text_code.code_to_strs, tag=_misc.Tag.MEMORIZE))
-            .map(_functools.partial(_flashcard.memorize_indexed_seq,
-                                    indices=(indices.__add__ if isinstance(indices, int) else
-                                             indices.__getitem__ if isinstance(indices, _typing.Sequence) else
-                                             indices),
-                                    reversible=reversible,))
-            .map(_functools.partial(_flashcard.attach_flashcard_states, states=states))
-            .map(_flashcard.listify_flashcards)
-            .map(_misc.strip_lines)
-            .map(_section_text_format.format)
-            .counit())
+    return memorize(code,
+                    func=_functools.partial(_flashcard.memorize_indexed_seq,
+                                            indices=(indices.__add__ if isinstance(indices, int) else
+                                                     indices.__getitem__ if isinstance(indices, _typing.Sequence) else
+                                                     indices),
+                                            reversible=reversible,),
+                    **kwargs
+                    )
 
 
 def semantics_seq_map(text: _text_code.TextCode, sem: _text_code.TextCode, *,
