@@ -11,7 +11,7 @@ from . import misc as _misc
 class TextCode:
     __slots__: _typing.ClassVar = ('__blocks', '__by_tag',)
     escapes: _typing.ClassVar[_typing.Collection[str]
-                              ] = frozenset({'\\', '{', '}', ': ', })
+                              ] = frozenset({'\\', '{', '}', ':', })
 
     @_typing.final
     @_dataclasses.dataclass(init=True,
