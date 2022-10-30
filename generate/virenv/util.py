@@ -350,9 +350,8 @@ class ClozeFlashcardGroup:
     )
 
     def __post_init__(self: _typing.Self) -> None:
-        pattern: _re.Pattern[str]
         try:
-            pattern = self.__pattern_cache[self.token]
+            pattern: _re.Pattern[str] = self.__pattern_cache[self.token]
         except KeyError:
             etoken: str = _re.escape(self.token)
             self.__pattern_cache[self.token] = pattern = _re.compile(
