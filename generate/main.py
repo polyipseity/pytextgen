@@ -1,6 +1,7 @@
 import argparse as _argparse
 import contextlib as _contextlib
 import dataclasses as _dataclasses
+import enum as _enum
 import itertools as _itertools
 import logging as _logging
 import os as _os
@@ -13,6 +14,14 @@ from .. import version as _version
 from . import options as _options
 from . import read as _read
 from . import write as _write
+
+
+@_typing.final
+@_enum.unique
+class ExitCode(_enum.IntFlag):
+    READ_ERROR: _typing.ClassVar = _enum.auto()
+    VALIDATE_ERROR: _typing.ClassVar = _enum.auto()
+    WRITE_ERROR: _typing.ClassVar = _enum.auto()
 
 
 @_typing.final
@@ -34,17 +43,21 @@ class Arguments:
             input.resolve(strict=True) for input in self.inputs))
 
 
-def main(argv: _typing.Sequence[str]) -> None:
+def main(argv: _typing.Sequence[str]) -> _typing.NoReturn:
     args: Arguments = parse_argv(argv)
+    exit_code: ExitCode = ExitCode(0)
 
     def read(input: _pathlib.Path) -> _typing.Iterable[_write.Writer]:
+        nonlocal exit_code
         try:
             file: _typing.TextIO = open(
                 input, mode='rt', **_globals.open_options)
         except OSError:
+            exit_code |= ExitCode.READ_ERROR
             _logging.exception(f'Cannot open file: {input}')
             return ()
         except ValueError:
+            exit_code |= ExitCode.READ_ERROR
             _logging.exception(f'Encoding error opening file: {input}')
             return ()
         with file:
@@ -58,6 +71,7 @@ def main(argv: _typing.Sequence[str]) -> None:
                 reader.read(file.read())
                 return reader.pipe()
             except Exception:
+                exit_code |= ExitCode.READ_ERROR
                 _logging.exception(f'Exception reading file: {input}')
                 return ()
     writers: _typing.Iterable[_write.Writer] = _itertools.chain(
@@ -69,13 +83,17 @@ def main(argv: _typing.Sequence[str]) -> None:
             try:
                 writer_stack.enter_context(writer.write())
             except Exception:
+                exit_code |= ExitCode.VALIDATE_ERROR
                 _logging.exception(f'Error while validation: {writer}')
                 continue
     finally:
         try:
             writer_stack.close()
         except Exception:
+            exit_code |= ExitCode.WRITE_ERROR
             _logging.exception('Error while writing')
+
+    _sys.exit(exit_code)
 
 
 def parse_argv(argv: _typing.Sequence[str]) -> Arguments | _typing.NoReturn:
