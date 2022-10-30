@@ -47,6 +47,13 @@ _markdown_regexes: _typing.Sequence[_MarkdownRegex] = (
 _html_tag_regex: _re.Pattern[str] = _re.compile(r'<([^>]+)>', flags=0)
 
 
+def text(text: str) -> str:
+    return (_util.Unit(text)
+            .map(_misc.strip_lines)
+            .map(_section_text_format.format)
+            .counit())
+
+
 def quote_text(code: _text_code.TextCode, /, *,
                tag: _misc.TagStr = _misc.Tag.TEXT,
                line_prefix: str = '> ',
@@ -54,8 +61,7 @@ def quote_text(code: _text_code.TextCode, /, *,
     return (_util.Unit(code)
             .map(_functools.partial(_text_code.code_to_str, tag=tag))
             .map(_functools.partial(_misc.affix_lines, prefix=line_prefix))
-            .map(_misc.strip_lines)
-            .map(_section_text_format.format)
+            .map(text)
             .counit())
 
 
@@ -75,8 +81,7 @@ def cloze_text(code: _text_code.TextCode, /, *,
             .map(lambda groups: map(str, groups))
             .map(lambda strs: map(_functools.partial(_misc.affix_lines, prefix=line_prefix), strs))
             .map(separator.join)
-            .map(_misc.strip_lines)
-            .map(_section_text_format.format)
+            .map(text)
             .counit())
 
 
@@ -89,8 +94,7 @@ def memorize(code: _text_code.TextCode, /, *,
             .map(func)
             .map(_functools.partial(_flashcard.attach_flashcard_states, states=states))
             .map(_flashcard.listify_flashcards)
-            .map(_misc.strip_lines)
-            .map(_section_text_format.format)
+            .map(text)
             .counit())
 
 
@@ -157,11 +161,11 @@ def memorize_indexed_seq(code: _text_code.TextCode, /, *,
                     )
 
 
-def semantics_seq_map(text: _text_code.TextCode, sem: _text_code.TextCode, *,
+def semantics_seq_map(code: _text_code.TextCode, sem: _text_code.TextCode, *,
                       states: _typing.Iterable[_util.FlashcardStateGroup],
                       reversible: bool = False,
                       ) -> str:
-    return (_util.Unit((text, sem))
+    return (_util.Unit((code, sem))
             .map(lambda codes: (
                 _text_code.code_to_strs(codes[0], tag=_misc.Tag.SEMANTICS),
                 _text_code.code_to_strs(codes[1], tag=_misc.Tag.SEMANTICS)
@@ -170,8 +174,7 @@ def semantics_seq_map(text: _text_code.TextCode, sem: _text_code.TextCode, *,
             .map(_functools.partial(_flashcard.semantics_seq_map, reversible=reversible))
             .map(_functools.partial(_flashcard.attach_flashcard_states, states=states))
             .map(_flashcard.listify_flashcards)
-            .map(_misc.strip_lines)
-            .map(_section_text_format.format)
+            .map(text)
             .counit())
 
 
