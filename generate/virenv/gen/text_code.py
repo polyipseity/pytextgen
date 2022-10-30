@@ -91,6 +91,7 @@ class TextCode:
 
     @staticmethod
     def compiler(code: str) -> _typing.Iterator[Block]:
+        @_typing.final
         @_enum.unique
         class State(_enum.Enum):
             __slots__: _typing.ClassVar = ()

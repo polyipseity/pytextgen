@@ -14,6 +14,7 @@ _punctuation_regex: _regex.Pattern[str] = _regex.compile(
 )
 
 
+@_typing.final
 @_enum.unique
 class Tag(_enum.Enum):
     __slots__: _typing.ClassVar = ()
