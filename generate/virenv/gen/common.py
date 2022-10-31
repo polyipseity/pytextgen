@@ -1,5 +1,6 @@
 import dataclasses as _dataclasses
 import functools as _functools
+import html as _html
 import re as _re
 import typing as _typing
 
@@ -179,6 +180,8 @@ def semantics_seq_map(code: _text_code.TextCode, sem: _text_code.TextCode, *,
 
 
 def markdown_sanitizer(text: str) -> str:
+    text = _html.unescape(text)
+
     def get_and_remove_html_tags(text: str) -> tuple[str, _typing.AbstractSet[str]]:
         tags: _typing.MutableSet[str] = set()
         matches: _typing.MutableSequence[_re.Match[str]] = []
