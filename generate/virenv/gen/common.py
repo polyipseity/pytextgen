@@ -1,7 +1,9 @@
 import dataclasses as _dataclasses
 import functools as _functools
 import html as _html
+import itertools as _itertools
 import re as _re
+import types as _types
 import typing as _typing
 
 from .. import util as _util
@@ -9,7 +11,17 @@ from . import flashcard as _flashcard
 from . import misc as _misc
 from . import text_code as _text_code
 
+_T = _typing.TypeVar('_T')
+
 _section_text_format: str = '\n\n{}\n'
+_table_aligns: _typing.Mapping[_typing.Literal['default', 'left', 'right', 'center'], str] = (
+    _types.MappingProxyType[_typing.Literal['default', 'left', 'right', 'center'], str]({
+        'default': '-',
+        'left': ':-',
+        'right': '-:',
+        'center': ':-:',
+    })
+)
 
 
 @_typing.final
@@ -287,3 +299,24 @@ def maps_to_code(maps: _typing.Mapping[str, _typing.Mapping[str, str]], /, *,
         for key, value in maps.items():
             yield str(map_to_code(value, name=key, **kwargs))
     return _text_code.TextCode.compile(f'{{{_text_code.TextCode.escape(str(sep_tag))}:}}'.join(codegen()))
+
+
+def rows_to_table(rows: _typing.Iterable[_T], /, *,
+                  names: _typing.Iterable[str | tuple[str, _typing.Literal['default', 'left', 'right', 'center']]],
+                  values: _typing.Callable[[_T], _typing.Iterable[_typing.Any]]) -> str:
+    sep: str = ' | '
+    lf: str = '\n'
+    return f'''{sep.join(name if isinstance(name, str) else name[0] for name in names)}
+{sep.join(_table_aligns['default' if isinstance(name, str) else name[1]] for name in names)}
+{lf.join(sep.join(map(str, values(row))) for row in rows)}'''
+
+
+def two_columns_to_code(rows: _typing.Iterable[_T], /, *,
+                        left: _typing.Callable[[_T], str],
+                        right: _typing.Callable[[_T], str],
+                        ) -> _text_code.TextCode:
+    return _text_code.TextCode.compile(
+        '{}'.join(_itertools.chain(
+            *((left(row), right(row)) for row in rows)
+        ))
+    )
