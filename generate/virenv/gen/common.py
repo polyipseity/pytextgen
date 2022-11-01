@@ -101,9 +101,10 @@ def cloze_text(code: _text_code.TextCode, /, *,
 def memorize(code: _text_code.TextCode, /, *,
              func: _typing.Callable[[_typing.Iterable[str]], _typing.Iterable[_util.FlashcardGroup]],
              states: _typing.Iterable[_util.FlashcardStateGroup],
+             tag: _misc.TagStr = _misc.Tag.MEMORIZE
              ) -> str:
     return (_util.Unit(code)
-            .map(_functools.partial(_text_code.code_to_strs, tag=_misc.Tag.MEMORIZE))
+            .map(_functools.partial(_text_code.code_to_strs, tag=tag))
             .map(func)
             .map(_functools.partial(_flashcard.attach_flashcard_states, states=states))
             .map(_flashcard.listify_flashcards)
@@ -176,12 +177,13 @@ def memorize_indexed_seq(code: _text_code.TextCode, /, *,
 
 def semantics_seq_map(code: _text_code.TextCode, sem: _text_code.TextCode, *,
                       states: _typing.Iterable[_util.FlashcardStateGroup],
+                      tag: _misc.TagStr = _misc.Tag.SEMANTICS,
                       reversible: bool = False,
                       ) -> str:
     return (_util.Unit((code, sem))
             .map(lambda codes: (
-                _text_code.code_to_strs(codes[0], tag=_misc.Tag.SEMANTICS),
-                _text_code.code_to_strs(codes[1], tag=_misc.Tag.SEMANTICS)
+                _text_code.code_to_strs(codes[0], tag=tag),
+                _text_code.code_to_strs(codes[1], tag=tag)
             ))
             .map(lambda strss: zip(*strss, strict=True))
             .map(_functools.partial(_flashcard.semantics_seq_map, reversible=reversible))
@@ -241,8 +243,11 @@ def markdown_sanitizer(text: str) -> str:
 
 def seq_to_code(seq: _typing.Sequence[str], /, *,
                 index: int = 1,
+                prefix: str = '',
+                suffix: str = '',
                 ) -> _text_code.TextCode:
     def gen_code() -> _typing.Iterator[str]:
+        yield prefix
         newline: str = ''
         idx: int
         str_: str
@@ -253,6 +258,7 @@ def seq_to_code(seq: _typing.Sequence[str], /, *,
             yield '. }'
             yield str_
             newline = '\n'
+        yield suffix
     return _text_code.TextCode.compile(''.join(gen_code()))
 
 
