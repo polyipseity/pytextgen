@@ -1,9 +1,11 @@
+import collections as _collections
 import dataclasses as _dataclasses
 import enum as _enum
 import io as _io
 import types as _types
 import typing as _typing
 
+from .. import util as _util
 from . import misc as _misc
 
 
@@ -63,9 +65,10 @@ class TextCode:
         for idx, block in enumerate(self.__blocks):
             by_tag.setdefault(block.tag, []).append(
                 TextCode.ByTagValue(idx=idx, block=block))
-        self.__by_tag: _typing.Mapping[str, _typing.Sequence[TextCode.ByTagValue]] = _types.MappingProxyType({
-            k: tuple(v) for k, v in by_tag.items()
-        })
+        self.__by_tag: _typing.Mapping[str, _typing.Sequence[TextCode.ByTagValue]] = _types.MappingProxyType(
+            _collections.defaultdict(_util.constant(()),
+                                     {k: tuple(v) for k, v in by_tag.items()})
+        )
 
     def __repr__(self: _typing.Self) -> str:
         return f'{TextCode.Block.__qualname__}(blocks={self.__blocks!r})'
