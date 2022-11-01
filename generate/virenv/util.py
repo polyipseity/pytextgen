@@ -357,7 +357,7 @@ class ClozeFlashcardGroup:
             self.__pattern_cache[self.token] = pattern = _re.compile(
                 rf'[{etoken}]+(?<={etoken})([^{etoken}]+)(?={etoken})[{etoken}]+', flags=0)
         object.__setattr__(self, '_clozes',
-                           tuple(match.group(1) for match in pattern.finditer(self.context)))
+                           tuple(match[1] for match in pattern.finditer(self.context)))
 
     def __str__(self: _typing.Self) -> str:
         return self.context
@@ -402,9 +402,9 @@ class FlashcardState:
         match: _re.Match[str]
         for match in cls.regex.finditer(text):
             yield cls(
-                date=_datetime.date.fromisoformat(match.group(1)),
-                interval=int(match.group(2)),
-                ease=int(match.group(3)),
+                date=_datetime.date.fromisoformat(match[1]),
+                interval=int(match[2]),
+                ease=int(match[3]),
             )
 
     @classmethod
