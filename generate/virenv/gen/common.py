@@ -310,11 +310,10 @@ def maps_to_code(maps: _typing.Mapping[str, _typing.Mapping[str, str]], /, *,
 def rows_to_table(rows: _typing.Iterable[_T], /, *,
                   names: _typing.Iterable[str | tuple[str, _typing.Literal['default', 'left', 'right', 'center']]],
                   values: _typing.Callable[[_T], _typing.Iterable[_typing.Any]]) -> str:
-    sep: str = ' | '
     lf: str = '\n'
-    return f'''{sep.join(name if isinstance(name, str) else name[0] for name in names)}
-{sep.join(_table_aligns['default' if isinstance(name, str) else name[1]] for name in names)}
-{lf.join(sep.join(map(str, values(row))) for row in rows)}'''
+    return f'''{' | '.join(name if isinstance(name, str) else name[0] for name in names)}
+{'|'.join(_table_aligns['default' if isinstance(name, str) else name[1]] for name in names)}
+{lf.join(' | '.join(map(str, values(row))) for row in rows)}'''
 
 
 def two_columns_to_code(rows: _typing.Iterable[_T], /, *,
