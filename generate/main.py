@@ -72,8 +72,8 @@ def main(argv: _typing.Sequence[str]) -> _typing.NoReturn:
                 exit_code |= ExitCode.READ_ERROR
                 _logging.exception(f'Exception reading file: {input}')
                 return ()
-    writers: _typing.Iterable[Writer] = _itertools.chain(
-        *map(read, args.inputs))
+    writers: _typing.Iterable[Writer] = _itertools.chain.from_iterable(
+        map(read, args.inputs))
     writer_stack: _contextlib.ExitStack = _contextlib.ExitStack().__enter__()
     try:
         writer: Writer

@@ -319,8 +319,4 @@ def two_columns_to_code(rows: _typing.Iterable[_T], /, *,
                         left: _typing.Callable[[_T], str],
                         right: _typing.Callable[[_T], str],
                         ) -> TextCode:
-    return TextCode.compile(
-        '{}'.join(_itertools.chain(
-            *((left(row), right(row)) for row in rows)
-        ))
-    )
+    return TextCode.compile('{}'.join(_itertools.chain.from_iterable((left(row), right(row),) for row in rows)))
