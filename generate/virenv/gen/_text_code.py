@@ -171,7 +171,7 @@ class TextCode:
 
 def code_to_strs(code: TextCode, /, *,
                  tag: TagStr = Tag.COMMON) -> _typing.Iterator[str]:
-    return (block.text for block in code.blocks if block.common or block.tag == str(tag))
+    return (block.text for block in code.blocks if block.common or block.tag == tag)
 
 
 def code_to_str(code: TextCode, /, *,
@@ -192,7 +192,7 @@ def separate_code_by_tag(code: TextCode, /, *,
     source: str = str(code)
     cur: int | None = None
     index: int
-    for index in (block.block.char for block in code.by_tag[str(tag)]):
+    for index in (block.block.char for block in code.by_tag[tag]):
         yield code.compile(source[cur:index])
         cur = index
     yield code.compile(source[cur:])

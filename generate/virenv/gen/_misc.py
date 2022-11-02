@@ -16,7 +16,7 @@ _punctuation_regex: _regex.Pattern[str] = _regex.compile(
 
 @_typing.final
 @_enum.unique
-class Tag(_enum.Enum):
+class Tag(_enum.StrEnum):
     __slots__: _typing.ClassVar = ()
 
     COMMON: _typing.ClassVar = ''
@@ -25,9 +25,6 @@ class Tag(_enum.Enum):
     MEMORIZE: _typing.ClassVar = 'mem'
     SEMANTICS: _typing.ClassVar = 'sem'
     CLOZE_SEPARATOR: _typing.ClassVar = 'cloze sep'
-
-    def __str__(self: _typing.Self) -> str:
-        return self.value
 
 
 TagStr: _typing.TypeAlias = Tag | str

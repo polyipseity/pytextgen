@@ -303,7 +303,7 @@ def maps_to_code(maps: _typing.Mapping[str, _typing.Mapping[str, str]], /, *,
         value: _typing.Mapping[str, str]
         for key, value in maps.items():
             yield str(map_to_code(value, name=key, **kwargs))
-    return TextCode.compile(f'{{{TextCode.escape(str(sep_tag))}:}}'.join(codegen()))
+    return TextCode.compile(f'{{{TextCode.escape(sep_tag)}:}}'.join(codegen()))
 
 
 def rows_to_table(rows: _typing.Iterable[_T], /, *,
