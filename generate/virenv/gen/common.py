@@ -6,10 +6,9 @@ import re as _re
 import types as _types
 import typing as _typing
 
+from .. import gen as _gen
 from .. import util as _util
-from . import flashcard as _flashcard
-from . import misc as _misc
-from . import text_code as _text_code
+from . import *
 
 _T = _typing.TypeVar('_T')
 
@@ -62,57 +61,57 @@ _html_tag_regex: _re.Pattern[str] = _re.compile(r'<([^>]+)>', flags=0)
 
 def text(text: str) -> str:
     return (_util.Unit(text)
-            .map(_misc.strip_lines)
+            .map(strip_lines)
             .map(_section_text_format.format)
             .counit())
 
 
-def quote_text(code: _text_code.TextCode, /, *,
-               tag: _misc.TagStr = _misc.Tag.TEXT,
+def quote_text(code: TextCode, /, *,
+               tag: TagStr = Tag.TEXT,
                line_prefix: str = '> ',
                ) -> str:
     return (_util.Unit(code)
-            .map(_functools.partial(_text_code.code_to_str, tag=tag))
-            .map(_functools.partial(_misc.affix_lines, prefix=line_prefix))
+            .map(_functools.partial(code_to_str, tag=tag))
+            .map(_functools.partial(affix_lines, prefix=line_prefix))
             .map(text)
             .counit())
 
 
-def cloze_text(code: _text_code.TextCode, /, *,
-               tag: _misc.TagStr = _misc.Tag.TEXT,
-               sep_tag: _misc.TagStr = _misc.Tag.CLOZE_SEPARATOR,
+def cloze_text(code: TextCode, /, *,
+               tag: TagStr = Tag.TEXT,
+               sep_tag: TagStr = Tag.CLOZE_SEPARATOR,
                token: str = '==',
                line_prefix: str = '> ',
                separator: str = '\n\n',
                states: _typing.Iterable[_util.FlashcardStateGroup],
                ) -> str:
     return (_util.Unit(code)
-            .map(_functools.partial(_text_code.separate_code_by_tag, tag=sep_tag))
-            .map(lambda codes: map(_functools.partial(_text_code.code_to_str, tag=tag), codes))
-            .map(_functools.partial(_flashcard.cloze_texts, token=token))
-            .map(_functools.partial(_flashcard.attach_flashcard_states, states=states))
+            .map(_functools.partial(separate_code_by_tag, tag=sep_tag))
+            .map(lambda codes: map(_functools.partial(code_to_str, tag=tag), codes))
+            .map(_functools.partial(cloze_texts, token=token))
+            .map(_functools.partial(attach_flashcard_states, states=states))
             .map(lambda groups: map(str, groups))
-            .map(lambda strs: map(_functools.partial(_misc.affix_lines, prefix=line_prefix), strs))
+            .map(lambda strs: map(_functools.partial(affix_lines, prefix=line_prefix), strs))
             .map(separator.join)
             .map(text)
             .counit())
 
 
-def memorize(code: _text_code.TextCode, /, *,
+def memorize(code: TextCode, /, *,
              func: _typing.Callable[[_typing.Iterable[str]], _typing.Iterable[_util.FlashcardGroup]],
              states: _typing.Iterable[_util.FlashcardStateGroup],
-             tag: _misc.TagStr = _misc.Tag.MEMORIZE
+             tag: TagStr = Tag.MEMORIZE
              ) -> str:
     return (_util.Unit(code)
-            .map(_functools.partial(_text_code.code_to_strs, tag=tag))
+            .map(_functools.partial(code_to_strs, tag=tag))
             .map(func)
-            .map(_functools.partial(_flashcard.attach_flashcard_states, states=states))
-            .map(_flashcard.listify_flashcards)
+            .map(_functools.partial(attach_flashcard_states, states=states))
+            .map(listify_flashcards)
             .map(text)
             .counit())
 
 
-def memorize_two_sided(code: _text_code.TextCode, /, *,
+def memorize_two_sided(code: TextCode, /, *,
                        offsets: _typing.Callable[[
                            int], int | None] | _typing.Sequence[int] | int = 1,
                        hinted: _typing.Callable[[
@@ -123,12 +122,12 @@ def memorize_two_sided(code: _text_code.TextCode, /, *,
                        **kwargs: _typing.Any,
                        ) -> str:
     return memorize(code,
-                    func=_functools.partial(_flashcard.memorize_two_sided,
+                    func=_functools.partial(_gen.memorize_two_sided,
                                             offsets=(_util.constant(offsets) if isinstance(offsets, int) else
                                                      offsets.__getitem__ if isinstance(offsets, _typing.Sequence) else
                                                      offsets),
                                             reversible=reversible,
-                                            hinter=_flashcard.punctuation_hinter(
+                                            hinter=punctuation_hinter(
                                                 (_util.constant(hinted) if isinstance(hinted, bool) else
                                                  hinted.__getitem__ if isinstance(hinted, _typing.Sequence) else
                                                  hinted),
@@ -138,7 +137,7 @@ def memorize_two_sided(code: _text_code.TextCode, /, *,
                     )
 
 
-def memorize_linked_seq(code: _text_code.TextCode, /, *,
+def memorize_linked_seq(code: TextCode, /, *,
                         hinted: _typing.Callable[[
                             int], bool] | _typing.Sequence[bool] | bool = True,
                         sanitizer: _typing.Callable[[
@@ -147,9 +146,9 @@ def memorize_linked_seq(code: _text_code.TextCode, /, *,
                         **kwargs: _typing.Any,
                         ) -> str:
     return memorize(code,
-                    func=_functools.partial(_flashcard.memorize_linked_seq,
+                    func=_functools.partial(_gen.memorize_linked_seq,
                                             reversible=reversible,
-                                            hinter=_flashcard.punctuation_hinter(
+                                            hinter=punctuation_hinter(
                                                 (_util.constant(hinted) if isinstance(hinted, bool) else
                                                  hinted.__getitem__ if isinstance(hinted, _typing.Sequence) else
                                                  hinted),
@@ -159,14 +158,14 @@ def memorize_linked_seq(code: _text_code.TextCode, /, *,
                     )
 
 
-def memorize_indexed_seq(code: _text_code.TextCode, /, *,
+def memorize_indexed_seq(code: TextCode, /, *,
                          indices: _typing.Callable[[
                              int], int | None] | _typing.Sequence[int | None] | int = 1,
                          reversible: bool = True,
                          **kwargs: _typing.Any,
                          ) -> str:
     return memorize(code,
-                    func=_functools.partial(_flashcard.memorize_indexed_seq,
+                    func=_functools.partial(_gen.memorize_indexed_seq,
                                             indices=(indices.__add__ if isinstance(indices, int) else
                                                      indices.__getitem__ if isinstance(indices, _typing.Sequence) else
                                                      indices),
@@ -175,20 +174,20 @@ def memorize_indexed_seq(code: _text_code.TextCode, /, *,
                     )
 
 
-def semantics_seq_map(code: _text_code.TextCode, sem: _text_code.TextCode, *,
+def semantics_seq_map(code: TextCode, sem: TextCode, *,
                       states: _typing.Iterable[_util.FlashcardStateGroup],
-                      tag: _misc.TagStr = _misc.Tag.SEMANTICS,
+                      tag: TagStr = Tag.SEMANTICS,
                       reversible: bool = False,
                       ) -> str:
     return (_util.Unit((code, sem))
             .map(lambda codes: (
-                _text_code.code_to_strs(codes[0], tag=tag),
-                _text_code.code_to_strs(codes[1], tag=tag)
+                code_to_strs(codes[0], tag=tag),
+                code_to_strs(codes[1], tag=tag)
             ))
             .map(lambda strss: zip(*strss, strict=True))
-            .map(_functools.partial(_flashcard.semantics_seq_map, reversible=reversible))
-            .map(_functools.partial(_flashcard.attach_flashcard_states, states=states))
-            .map(_flashcard.listify_flashcards)
+            .map(_functools.partial(_gen.semantics_seq_map, reversible=reversible))
+            .map(_functools.partial(attach_flashcard_states, states=states))
+            .map(listify_flashcards)
             .map(text)
             .counit())
 
@@ -245,7 +244,7 @@ def seq_to_code(seq: _typing.Sequence[str], /, *,
                 index: int = 1,
                 prefix: str = '',
                 suffix: str = '',
-                ) -> _text_code.TextCode:
+                ) -> TextCode:
     def gen_code() -> _typing.Iterator[str]:
         yield prefix
         newline: str = ''
@@ -259,7 +258,7 @@ def seq_to_code(seq: _typing.Sequence[str], /, *,
             yield str_
             newline = '\n'
         yield suffix
-    return _text_code.TextCode.compile(''.join(gen_code()))
+    return TextCode.compile(''.join(gen_code()))
 
 
 def map_to_code(map: _typing.Mapping[str, str], /, *,
@@ -268,7 +267,7 @@ def map_to_code(map: _typing.Mapping[str, str], /, *,
                 name_cloze: bool = False,
                 key_cloze: bool = False,
                 value_cloze: bool = True,
-                ) -> _text_code.TextCode:
+                ) -> TextCode:
     name_token: str = token if name_cloze else ''
     key_token: str = token if key_cloze else ''
     value_token: str = token if value_cloze else ''
@@ -293,18 +292,18 @@ def map_to_code(map: _typing.Mapping[str, str], /, *,
             yield value
             yield value_token
             newline = '\n'
-    return _text_code.TextCode.compile(''.join(gen_code()))
+    return TextCode.compile(''.join(gen_code()))
 
 
 def maps_to_code(maps: _typing.Mapping[str, _typing.Mapping[str, str]], /, *,
-                 sep_tag: _misc.TagStr = _misc.Tag.CLOZE_SEPARATOR,
-                 **kwargs: _typing.Any) -> _text_code.TextCode:
+                 sep_tag: TagStr = Tag.CLOZE_SEPARATOR,
+                 **kwargs: _typing.Any) -> TextCode:
     def codegen() -> _typing.Iterator[str]:
         key: str
         value: _typing.Mapping[str, str]
         for key, value in maps.items():
             yield str(map_to_code(value, name=key, **kwargs))
-    return _text_code.TextCode.compile(f'{{{_text_code.TextCode.escape(str(sep_tag))}:}}'.join(codegen()))
+    return TextCode.compile(f'{{{TextCode.escape(str(sep_tag))}:}}'.join(codegen()))
 
 
 def rows_to_table(rows: _typing.Iterable[_T], /, *,
@@ -319,8 +318,8 @@ def rows_to_table(rows: _typing.Iterable[_T], /, *,
 def two_columns_to_code(rows: _typing.Iterable[_T], /, *,
                         left: _typing.Callable[[_T], str],
                         right: _typing.Callable[[_T], str],
-                        ) -> _text_code.TextCode:
-    return _text_code.TextCode.compile(
+                        ) -> TextCode:
+    return TextCode.compile(
         '{}'.join(_itertools.chain(
             *((left(row), right(row)) for row in rows)
         ))

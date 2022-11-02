@@ -11,9 +11,7 @@ import typing as _typing
 
 from .. import globals as _globals
 from .. import version as _version
-from . import options as _options
-from . import read as _read
-from . import write as _write
+from . import *
 
 
 @_typing.final
@@ -36,7 +34,7 @@ class ExitCode(_enum.IntFlag):
                         slots=True,)
 class Arguments:
     inputs: _typing.Sequence[_pathlib.Path]
-    options: _options.Options
+    options: Options
 
     def __post_init__(self: _typing.Self) -> None:
         object.__setattr__(self, 'inputs', tuple(
@@ -47,7 +45,7 @@ def main(argv: _typing.Sequence[str]) -> _typing.NoReturn:
     args: Arguments = parse_argv(argv)
     exit_code: ExitCode = ExitCode(0)
 
-    def read(input: _pathlib.Path) -> _typing.Iterable[_write.Writer]:
+    def read(input: _pathlib.Path) -> _typing.Iterable[Writer]:
         nonlocal exit_code
         try:
             file: _typing.TextIO = open(
@@ -64,7 +62,7 @@ def main(argv: _typing.Sequence[str]) -> _typing.NoReturn:
             try:
                 ext: str
                 _, ext = _os.path.splitext(input)
-                reader: _read.Reader = _read.Reader.registry[ext](
+                reader: Reader = Reader.registry[ext](
                     path=input,
                     options=args.options,
                 )
@@ -74,11 +72,11 @@ def main(argv: _typing.Sequence[str]) -> _typing.NoReturn:
                 exit_code |= ExitCode.READ_ERROR
                 _logging.exception(f'Exception reading file: {input}')
                 return ()
-    writers: _typing.Iterable[_write.Writer] = _itertools.chain(
+    writers: _typing.Iterable[Writer] = _itertools.chain(
         *map(read, args.inputs))
     writer_stack: _contextlib.ExitStack = _contextlib.ExitStack().__enter__()
     try:
-        writer: _write.Writer
+        writer: Writer
         for writer in writers:
             try:
                 writer_stack.enter_context(writer.write())
@@ -141,7 +139,7 @@ def parse_argv(argv: _typing.Sequence[str]) -> Arguments | _typing.NoReturn:
     input: _argparse.Namespace = parser.parse_args(argv[1:])
     return Arguments(
         inputs=input.inputs,
-        options=_options.Options(
+        options=Options(
             timestamp=input.timestamp,
             init_flashcards=input.init_flashcards,
         ),

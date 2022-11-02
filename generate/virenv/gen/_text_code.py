@@ -6,7 +6,7 @@ import types as _types
 import typing as _typing
 
 from .. import util as _util
-from . import misc as _misc
+from . import *
 
 
 @_typing.final
@@ -170,12 +170,12 @@ class TextCode:
 
 
 def code_to_strs(code: TextCode, /, *,
-                 tag: _misc.TagStr = _misc.Tag.COMMON) -> _typing.Iterator[str]:
+                 tag: TagStr = Tag.COMMON) -> _typing.Iterator[str]:
     return (block.text for block in code.blocks if block.common or block.tag == str(tag))
 
 
 def code_to_str(code: TextCode, /, *,
-                tag: _misc.TagStr = _misc.Tag.COMMON) -> str:
+                tag: TagStr = Tag.COMMON) -> str:
     return ''.join(code_to_strs(code, tag=tag))
 
 
@@ -187,7 +187,7 @@ def affix_code(code: TextCode, /, *,
 
 
 def separate_code_by_tag(code: TextCode, /, *,
-                         tag: _misc.TagStr
+                         tag: TagStr
                          ) -> _typing.Iterator[TextCode]:
     source: str = str(code)
     cur: int | None = None

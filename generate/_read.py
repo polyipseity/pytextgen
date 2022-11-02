@@ -13,10 +13,9 @@ import typing as _typing
 
 from .. import globals as _globals
 from .. import util as _util
-from . import options as _options
 from . import virenv as _virenv
 from .virenv import util as _virenv_util
-from . import write as _write
+from . import *
 
 
 class Reader(metaclass=_abc.ABCMeta):
@@ -26,7 +25,7 @@ class Reader(metaclass=_abc.ABCMeta):
     @_abc.abstractmethod
     def __init__(self: _typing.Self, *,
                  path: _pathlib.Path,
-                 options: _options.Options) -> None:
+                 options: Options) -> None:
         raise NotImplementedError(self)
 
     @property
@@ -36,7 +35,7 @@ class Reader(metaclass=_abc.ABCMeta):
 
     @property
     @_abc.abstractmethod
-    def options(self: _typing.Self) -> _options.Options:
+    def options(self: _typing.Self) -> Options:
         raise NotImplementedError(self)
 
     @_abc.abstractmethod
@@ -44,7 +43,7 @@ class Reader(metaclass=_abc.ABCMeta):
         raise NotImplementedError(self)
 
     @_abc.abstractmethod
-    def pipe(self: _typing.Self) -> _typing.Collection[_write.Writer]:
+    def pipe(self: _typing.Self) -> _typing.Collection[Writer]:
         raise NotImplementedError(self)
 
     @classmethod
@@ -80,13 +79,13 @@ class MarkdownReader:
     def path(self: _typing.Self) -> _pathlib.Path: return self.__path
 
     @property
-    def options(self: _typing.Self) -> _options.Options: return self.__options
+    def options(self: _typing.Self) -> Options: return self.__options
 
     def __init__(self: _typing.Self, *,
                  path: _pathlib.Path,
-                 options: _options.Options) -> None:
+                 options: Options) -> None:
         self.__path: _pathlib.Path = path.resolve(strict=True)
-        self.__options: _options.Options = options
+        self.__options: Options = options
         self.__codes: _typing.MutableSequence[_types.CodeType] = []
 
     def read(self: _typing.Self, text: str, /) -> None:
@@ -106,7 +105,7 @@ class MarkdownReader:
             )
             start = text.find(self.start, stop + len(self.stop))
 
-    def pipe(self: _typing.Self) -> _typing.Collection[_write.Writer]:
+    def pipe(self: _typing.Self) -> _typing.Collection[Writer]:
         assert isinstance(self, Reader)
 
         def gen_env() -> _virenv.Environment:
@@ -145,12 +144,12 @@ class MarkdownReader:
                 locals=vars
             )
 
-        def ret_gen() -> _typing.Iterator[_write.Writer]:
+        def ret_gen() -> _typing.Iterator[Writer]:
             code: _types.CodeType
             for code in self.__codes:
-                ret: _write.PythonWriter = _write.PythonWriter(
+                ret: PythonWriter = PythonWriter(
                     code, env=gen_env(), options=self.__options)
-                assert isinstance(ret, _write.Writer)
+                assert isinstance(ret, Writer)
                 yield ret
         return tuple(ret_gen())
 

@@ -2,9 +2,7 @@ import itertools as _itertools
 import typing as _typing
 
 from .. import util as _util
-from . import misc as _misc
-
-_T_co = _typing.TypeVar('_T_co', covariant=True)
+from . import *
 
 
 def attach_flashcard_states(flashcards: _typing.Iterable[_util.FlashcardGroup], /, *,
@@ -113,7 +111,7 @@ def punctuation_hinter(hinted: _typing.Callable[[int], bool] = _util.constant(Tr
     def ret(index: int, str_: str) -> tuple[str, str]:
         if hinted(index):
             count: int = sum(
-                1 for _ in _misc.split_by_punctuations(sanitizer(str_)))
+                1 for _ in split_by_punctuations(sanitizer(str_)))
             return (f'→{count}', f'{count}←')
         return ('→', '←')
     return ret

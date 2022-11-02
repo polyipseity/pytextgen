@@ -7,9 +7,9 @@ import typing as _typing
 
 from .. import globals as _globals
 from .. import util as _util
-from . import options as _options
 from . import virenv as _virenv
 from .virenv import gen as _virenv_gen
+from . import *
 
 
 class Writer(metaclass=_abc.ABCMeta):
@@ -32,10 +32,10 @@ class PythonWriter:
     def __init__(self: _typing.Self,
                  code: _types.CodeType, /, *,
                  env: _virenv.Environment,
-                 options: _options.Options) -> None:
+                 options: Options) -> None:
         self.__code: _types.CodeType = code
         self.__env: _virenv.Environment = env
-        self.__options: _options.Options = options
+        self.__options: Options = options
 
     def __repr__(self: _typing.Self) -> str:
         return f'{PythonWriter.__qualname__}({self.__code!r}, env={self.__env!r}, options={self.__options!r})'
@@ -59,7 +59,7 @@ class PythonWriter:
                         text)
                     if result.text != (text[:timestamp.start()] + text[timestamp.end():] if timestamp else text):
                         io.seek(0)
-                        if self.__options.timestamp:
+                        if self._timestamp:
                             io.write(_globals.generate_comment.format(
                                 now=_datetime.datetime.now().astimezone().isoformat()))
                         elif timestamp:
