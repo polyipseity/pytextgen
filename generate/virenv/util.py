@@ -166,7 +166,7 @@ class FileSection:
                         section: str = text[start.start(1):start.end(1)]
                         if section in sections:
                             raise ValueError(
-                                f'Duplicated section {section}: {key}')
+                                f'Duplicated section "{section}": {key}')
                         sections.add(section)
                         end_str: str = format.stop.format(section=section)
                         try:
