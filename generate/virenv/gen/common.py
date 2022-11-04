@@ -12,7 +12,7 @@ from . import *
 
 _T = _typing.TypeVar('_T')
 
-_section_text_format: str = '\n\n{}\n'
+_section_text_format: str = '\n\n{}\n\n'
 _table_aligns: _typing.Mapping[_typing.Literal['default', 'left', 'right', 'center'], str] = (
     _types.MappingProxyType[_typing.Literal['default', 'left', 'right', 'center'], str]({
         'default': '-',
