@@ -59,7 +59,7 @@ class PythonWriter:
                         text)
                     if result.text != (text[:timestamp.start()] + text[timestamp.end():] if timestamp else text):
                         io.seek(0)
-                        if self._timestamp:
+                        if self.__options.timestamp:
                             io.write(_globals.generate_comment.format(
                                 now=_datetime.datetime.now().astimezone().isoformat()))
                         elif timestamp:
