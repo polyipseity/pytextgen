@@ -114,10 +114,8 @@ def memorize(code: TextCode, /, *,
 def memorize_two_sided(code: TextCode, /, *,
                        offsets: _typing.Callable[[
                            int], int | None] | _typing.Sequence[int] | int = 1,
-                       hinted: _typing.Callable[[
-                           int], bool] | _typing.Sequence[bool] | bool = True,
-                       sanitizer: _typing.Callable[[
-                           str], str] = _util.identity,
+                       hinter: _typing.Callable[[
+                           int, str], tuple[str, str]] = _util.constant(('', '')),
                        reversible: bool = True,
                        **kwargs: _typing.Any,
                        ) -> str:
@@ -127,12 +125,7 @@ def memorize_two_sided(code: TextCode, /, *,
                                                      offsets.__getitem__ if isinstance(offsets, _typing.Sequence) else
                                                      offsets),
                                             reversible=reversible,
-                                            hinter=punctuation_hinter(
-                                                (_util.constant(hinted) if isinstance(hinted, bool) else
-                                                 hinted.__getitem__ if isinstance(hinted, _typing.Sequence) else
-                                                 hinted),
-                                                sanitizer=sanitizer,
-                                            )),
+                                            hinter=hinter),
                     **kwargs
                     )
 

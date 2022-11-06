@@ -30,7 +30,7 @@ def memorize_two_sided(strs: _typing.Iterable[str], /, *,
                                                  int | None] = _util.constant(1),
                        reversible: bool = True,
                        hinter: _typing.Callable[[
-                           int, str], tuple[str, str]] = _util.constant(('→', '←')),
+                           int, str], tuple[str, str]] = _util.constant(('', '')),
                        ) -> _typing.Iterator[_util.FlashcardGroup]:
     @_typing.final
     class HintedStr(_typing.NamedTuple):
@@ -64,11 +64,14 @@ def memorize_two_sided(strs: _typing.Iterable[str], /, *,
 
 
 def memorize_linked_seq(strs: _typing.Iterable[str], /,
+                        hinter: _typing.Callable[[
+                            int, str], tuple[str, str]] = _util.constant(('→', '←')),
                         **kwargs: _typing.Any
                         ) -> _typing.Iterator[_util.FlashcardGroup]:
     return memorize_two_sided(strs,
                               offsets=_util.ignore_args(_itertools.chain(
                                   (1,), _itertools.cycle((1, 0,))).__next__),
+                              hinter=hinter,
                               **kwargs)
 
 
