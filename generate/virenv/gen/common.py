@@ -67,7 +67,7 @@ def text(text: str) -> str:
 
 
 def quote_text(code: TextCode, /, *,
-               tag: TagStr = Tag.TEXT,
+               tag: str = Tag.TEXT,
                line_prefix: str = '> ',
                ) -> str:
     return (_util.Unit(code)
@@ -78,8 +78,8 @@ def quote_text(code: TextCode, /, *,
 
 
 def cloze_text(code: TextCode, /, *,
-               tag: TagStr = Tag.TEXT,
-               sep_tag: TagStr = Tag.CLOZE_SEPARATOR,
+               tag: str = Tag.TEXT,
+               sep_tag: str = Tag.CLOZE_SEPARATOR,
                token: str = '==',
                line_prefix: str = '> ',
                separator: str = '\n\n',
@@ -100,7 +100,7 @@ def cloze_text(code: TextCode, /, *,
 def memorize(code: TextCode, /, *,
              func: _typing.Callable[[_typing.Iterable[str]], _typing.Iterable[_util.FlashcardGroup]],
              states: _typing.Iterable[_util.FlashcardStateGroup],
-             tag: TagStr = Tag.MEMORIZE
+             tag: str = Tag.MEMORIZE,
              ) -> str:
     return (_util.Unit(code)
             .map(_functools.partial(code_to_strs, tag=tag))
@@ -176,7 +176,7 @@ def memorize_indexed_seq(code: TextCode, /, *,
 
 def semantics_seq_map(code: TextCode, sem: TextCode, *,
                       states: _typing.Iterable[_util.FlashcardStateGroup],
-                      tag: TagStr = Tag.SEMANTICS,
+                      tag: str = Tag.SEMANTICS,
                       reversible: bool = False,
                       ) -> str:
     return (_util.Unit((code, sem))
@@ -296,7 +296,7 @@ def map_to_code(map: _typing.Mapping[str, str], /, *,
 
 
 def maps_to_code(maps: _typing.Mapping[str, _typing.Mapping[str, str]], /, *,
-                 sep_tag: TagStr = Tag.CLOZE_SEPARATOR,
+                 sep_tag: str = Tag.CLOZE_SEPARATOR,
                  **kwargs: _typing.Any) -> TextCode:
     def codegen() -> _typing.Iterator[str]:
         key: str

@@ -170,12 +170,12 @@ class TextCode:
 
 
 def code_to_strs(code: TextCode, /, *,
-                 tag: TagStr = Tag.COMMON) -> _typing.Iterator[str]:
+                 tag: str = Tag.COMMON) -> _typing.Iterator[str]:
     return (block.text for block in code.blocks if block.common or block.tag == tag)
 
 
 def code_to_str(code: TextCode, /, *,
-                tag: TagStr = Tag.COMMON) -> str:
+                tag: str = Tag.COMMON) -> str:
     return ''.join(code_to_strs(code, tag=tag))
 
 
@@ -187,7 +187,7 @@ def affix_code(code: TextCode, /, *,
 
 
 def separate_code_by_tag(code: TextCode, /, *,
-                         tag: TagStr
+                         tag: str,
                          ) -> _typing.Iterator[TextCode]:
     source: str = str(code)
     cur: int | None = None

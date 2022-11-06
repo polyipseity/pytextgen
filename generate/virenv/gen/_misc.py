@@ -27,9 +27,6 @@ class Tag(_enum.StrEnum):
     CLOZE_SEPARATOR: _typing.ClassVar = 'cloze sep'
 
 
-TagStr: _typing.TypeAlias = Tag | str
-
-
 def affix_lines(text: str, /, *, prefix: str = '', suffix: str = '') -> str:
     def ret_gen() -> _typing.Iterator[str]:
         newline: str = ''
