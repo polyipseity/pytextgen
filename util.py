@@ -1,10 +1,24 @@
+from __future__ import annotations
+
 import abc as _abc
+import ast as _ast
+import dataclasses as _dataclasses
 import functools as _functools
 import itertools as _itertools
+import json as _json
+import logging as _logging
+import marshal as _marshal
 import os as _os
+import pathlib as _pathlib
 import threading as _threading
+import time as _time
 import types as _types
 import typing as _typing
+import uuid as _uuid
+if _typing.TYPE_CHECKING:
+    import _typeshed as _typeshed
+
+from . import globals as _globals
 
 _T = _typing.TypeVar('_T')
 _T_co = _typing.TypeVar('_T_co', covariant=True)
@@ -152,3 +166,196 @@ class LazyIterableSequence(_typing.Generic[_T_co], _typing.Sequence[_T_co]):
 
 
 assert issubclass(LazyIterableSequence, _typing.Sequence)
+
+
+@_typing.final
+class Compiler(_typing.Protocol):
+    def __call__(self: _typing.Self,
+                 source: str | _typeshed.ReadableBuffer | _ast.AST,
+                 filename: str | _typeshed.ReadableBuffer | _os.PathLike[_typing.Any],
+                 mode: str,
+                 flags: int = ...,
+                 dont_inherit: bool = ...,
+                 optimize: int = ...,
+                 ) -> _types.CodeType: ...
+
+
+@_typing.final
+class CompileCache:
+    __slots__: _typing.ClassVar = ('__cache', '__cache_names', '__folder',)
+    __metadata_filename: str = 'metadata.json'
+    __cache_name_format: str = '{}.pyc'
+    __timeout: int = 86400
+
+    @_typing.final
+    class MetadataKey(_typing.TypedDict):
+        source: str
+        filename: str
+        mode: str
+        flags: int
+        dont_inherit: bool
+        optimize: int
+
+    @_typing.final
+    class MetadataValue(_typing.TypedDict):
+        cache_name: str
+        access_time: int
+
+    @_typing.final
+    class MetadataEntry(_typing.TypedDict):
+        key: CompileCache.MetadataKey
+        value: CompileCache.MetadataValue
+
+    @_typing.final
+    @_dataclasses.dataclass(init=True,
+                            repr=True,
+                            eq=True,
+                            order=False,
+                            unsafe_hash=False,
+                            frozen=True,
+                            match_args=True,
+                            kw_only=True,
+                            slots=True,)
+    class CacheKey:
+        source: str
+        filename: str
+        mode: str
+        flags: int
+        dont_inherit: bool
+        optimize: int
+
+        @classmethod
+        def from_metadata(cls: type[_typing.Self], data: CompileCache.MetadataKey) -> _typing.Self:
+            return cls(**data)
+
+        def to_metadata(self: _typing.Self) -> CompileCache.MetadataKey:
+            return CompileCache.MetadataKey(**_dataclasses.asdict(self))
+
+    @_typing.final
+    @_dataclasses.dataclass(init=True,
+                            repr=True,
+                            eq=True,
+                            order=False,
+                            unsafe_hash=False,
+                            frozen=True,
+                            match_args=True,
+                            kw_only=True,
+                            slots=True,)
+    class CacheEntry:
+        value: CompileCache.MetadataValue
+        code: _types.CodeType
+
+    @classmethod
+    def __time(cls: type[_typing.Self]) -> int:
+        return int(_time.time())
+
+    def __gen_cache_name(self: _typing.Self) -> str:
+        ret: str = self.__cache_name_format.format(str(_uuid.uuid4()))
+        while ret in self.__cache_names:
+            ret = self.__cache_name_format.format(str(_uuid.uuid4()))
+        return ret
+
+    def __init__(self: _typing.Self, *, folder: _pathlib.Path) -> None:
+        folder.mkdir(parents=True, exist_ok=True)
+        self.__folder: _pathlib.Path = folder.resolve(strict=True)
+        metadata_path: _pathlib.Path = self.__folder / self.__metadata_filename
+        if not metadata_path.exists():
+            metadata_path.write_text('[]', **_globals.open_options)
+        metadata_file: _typing.TextIO
+        with open(metadata_path, mode='rt', **_globals.open_options) as metadata_file:
+            metadata: _typing.Collection[CompileCache.MetadataEntry] = _json.load(
+                metadata_file)
+        self.__cache: _typing.MutableMapping[CompileCache.CacheKey, CompileCache.CacheEntry] = {
+        }
+        self.__cache_names: _typing.MutableSet[str] = set()
+        entry: CompileCache.MetadataEntry
+        for entry in metadata:
+            try:
+                key: CompileCache.MetadataKey = entry['key']
+                value: CompileCache.MetadataValue = entry['value']
+                cache_name: str = value['cache_name']
+            except KeyError:
+                continue
+            cache_path: _pathlib.Path = self.__folder / cache_name
+            try:
+                cache_file: _typing.BinaryIO = open(cache_path, mode='rb')
+            except OSError | ValueError:
+                _logging.exception(
+                    f'Cannot open code cache: {cache_path}')
+                continue
+            with cache_file:
+                try:
+                    code: _types.CodeType | None = _marshal.load(
+                        cache_file)
+                    if code is None:
+                        raise ValueError
+                except EOFError | ValueError | TypeError:
+                    _logging.exception(f'Cannot load code cache: {cache_path}')
+                    continue
+            self.__cache_names.add(cache_name)
+            self.__cache[CompileCache.CacheKey.from_metadata(key)] = CompileCache.CacheEntry(
+                value=value, code=code)
+
+    def compile(self: _typing.Self,
+                source: str | _typeshed.ReadableBuffer | _ast.AST,
+                filename: str | _typeshed.ReadableBuffer | _os.PathLike[_typing.Any],
+                mode: str,
+                flags: int = 0,
+                dont_inherit: bool = False,
+                optimize: int = -1,
+                ) -> _types.CodeType:
+        key: CompileCache.CacheKey = CompileCache.CacheKey(
+            source=repr(source), filename=repr(filename), mode=mode, flags=flags, dont_inherit=dont_inherit, optimize=optimize)
+        try:
+            entry: CompileCache.CacheEntry = self.__cache[key]
+            entry.value['access_time'] = self.__time()
+        except KeyError:
+            cache_name: str = self.__gen_cache_name()
+            self.__cache_names.add(cache_name)
+            self.__cache[key] = entry = CompileCache.CacheEntry(
+                value=CompileCache.MetadataValue(
+                    cache_name=cache_name, access_time=self.__time()),
+                code=compile(source=source, filename=filename, mode=mode,
+                             flags=flags, dont_inherit=dont_inherit, optimize=optimize),
+            )
+        return entry.code
+
+    def save(self: _typing.Self) -> None:
+        cur_time: int = self.__time()
+
+        def save_cache() -> _typing.Iterator[CompileCache.MetadataEntry]:
+            key: CompileCache.CacheKey
+            cache: CompileCache.CacheEntry
+            for key, cache in self.__cache.items():
+                cache_path: _pathlib.Path = (
+                    self.__folder / cache.value['cache_name'])
+                if cur_time - cache.value['access_time'] >= self.__timeout:
+                    try:
+                        _os.remove(cache_path)
+                    except FileNotFoundError:
+                        pass
+                    continue
+                if cache_path.exists():
+                    continue
+                cache_file: _typing.BinaryIO
+                with open(cache_path, mode='wb') as cache_file:
+                    try:
+                        _marshal.dump(cache.code, cache_file)
+                    except ValueError:
+                        _logging.exception(
+                            f'Cannot save cache with key: {key}')
+                        cache_file.close()
+                        try:
+                            _os.remove(cache_path)
+                        except FileNotFoundError:
+                            pass
+                        continue
+                yield CompileCache.MetadataEntry(key=key.to_metadata(), value=cache.value)
+
+        metadata_file: _typing.TextIO
+        with open(self.__folder / self.__metadata_filename, mode='wt', **_globals.open_options) as metadata_file:
+            _json.dump(tuple(save_cache()), metadata_file,
+                       ensure_ascii=False, sort_keys=True, indent=2)
+
+    def __repr__(self: _typing.Self) -> str:
+        return f'{type(self).__qualname__}(folder={self.__folder!r})'
