@@ -19,7 +19,7 @@ class Environment:
         assert '__env__' not in self.__locals
 
     def __repr__(self: _typing.Self) -> str:
-        return f'{Environment.__qualname__}(env={self.__env!r}, globals={self.__globals!r}, locals={self.__locals!r})'
+        return f'{type(self).__qualname__}(env={self.__env!r}, globals={self.__globals!r}, locals={self.__locals!r})'
 
     @property
     def env(self: _typing.Self) -> _typing.Mapping[str, _typing.Any | None]:

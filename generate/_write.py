@@ -38,7 +38,7 @@ class PythonWriter:
         self.__options: Options = options
 
     def __repr__(self: _typing.Self) -> str:
-        return f'{PythonWriter.__qualname__}({self.__code!r}, env={self.__env!r}, options={self.__options!r})'
+        return f'{type(self).__qualname__}({self.__code!r}, env={self.__env!r}, options={self.__options!r})'
 
     @_contextlib.contextmanager
     def write(self: _typing.Self) -> _typing.Iterator[None]:

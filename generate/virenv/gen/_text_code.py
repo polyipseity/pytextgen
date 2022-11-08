@@ -71,7 +71,7 @@ class TextCode:
         )
 
     def __repr__(self: _typing.Self) -> str:
-        return f'{TextCode.Block.__qualname__}(blocks={self.__blocks!r})'
+        return f'{type(self).__qualname__}(blocks={self.__blocks!r})'
 
     def __str__(self: _typing.Self) -> str:
         return ''.join(map(str, self.__blocks))
