@@ -1,6 +1,8 @@
 import dataclasses as _dataclasses
 import typing as _typing
 
+from .. import util as _util
+
 
 @_typing.final
 @_dataclasses.dataclass(init=True,
@@ -15,3 +17,4 @@ import typing as _typing
 class Options:
     timestamp: bool
     init_flashcards: bool
+    compiler: _util.Compiler

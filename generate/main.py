@@ -1,4 +1,5 @@
 import argparse as _argparse
+import atexit as _atexit
 import contextlib as _contextlib
 import dataclasses as _dataclasses
 import enum as _enum
@@ -10,6 +11,7 @@ import sys as _sys
 import typing as _typing
 
 from .. import globals as _globals
+from .. import util as _util
 from .. import version as _version
 from . import *
 
@@ -130,6 +132,18 @@ def parse_argv(argv: _typing.Sequence[str]) -> Arguments | _typing.NoReturn:
                         default=True,
                         help='do not initialize flashcards (default)',
                         dest='init_flashcards',)
+    parser.add_argument('--code-cache',
+                        action='store',
+                        default=_pathlib.Path('./__pycache__/'),
+                        type=_pathlib.Path,
+                        help='specify code cache (default: ./__pycache__/)',
+                        dest='code_cache',)
+    parser.add_argument('--no-code-cache',
+                        action='store_const',
+                        const=None,
+                        default=False,
+                        help='do not use code cache',
+                        dest='code_cache',)
     parser.add_argument('inputs',
                         action='store',
                         nargs=_argparse.ONE_OR_MORE,
@@ -137,10 +151,18 @@ def parse_argv(argv: _typing.Sequence[str]) -> Arguments | _typing.NoReturn:
                         _pathlib.Path(path).resolve(strict=True),
                         help='sequence of input(s) to read',)
     input: _argparse.Namespace = parser.parse_args(argv[1:])
+    if input.code_cache is None:
+        compiler: _util.Compiler = compile
+    else:
+        code_cache: _util.CompileCache = _util.CompileCache(
+            folder=input.code_cache)
+        _atexit.register(code_cache.save)
+        compiler = code_cache.compile
     return Arguments(
         inputs=input.inputs,
         options=Options(
             timestamp=input.timestamp,
             init_flashcards=input.init_flashcards,
+            compiler=compiler,
         ),
     )
