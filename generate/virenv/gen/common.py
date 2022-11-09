@@ -237,7 +237,7 @@ def seq_to_code(seq: _typing.Sequence[str], /, *,
                 index: int = 1,
                 prefix: str = '',
                 suffix: str = '',
-                ) -> TextCode:
+                escape: bool = False,) -> TextCode:
     def gen_code() -> _typing.Iterator[str]:
         yield prefix
         newline: str = ''
@@ -248,7 +248,7 @@ def seq_to_code(seq: _typing.Sequence[str], /, *,
             yield newline
             yield str(index + idx)
             yield '. }'
-            yield str_
+            yield TextCode.escape(str_) if escape else str_
             newline = '\n'
         yield suffix
     return TextCode.compile(''.join(gen_code()))
