@@ -1,5 +1,4 @@
 from __future__ import annotations
-
 import abc as _abc
 import ast as _ast
 import dataclasses as _dataclasses
