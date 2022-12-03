@@ -11,86 +11,101 @@ from . import *
 
 @_typing.final
 class TextCode:
-    __slots__: _typing.ClassVar = ('__blocks', '__by_tag',)
-    escapes: _typing.ClassVar[_typing.Collection[str]
-                              ] = frozenset({'\\', '{', '}', ':', })
+    __slots__: _typing.ClassVar = ("__blocks", "__by_tag")
+    escapes: _typing.ClassVar[_typing.Collection[str]] = frozenset(
+        {"\\", "{", "}", ":"}
+    )
 
     @_typing.final
-    @_dataclasses.dataclass(init=True,
-                            repr=True,
-                            eq=True,
-                            order=False,
-                            unsafe_hash=False,
-                            frozen=True,
-                            match_args=True,
-                            kw_only=False,
-                            slots=True,)
+    @_dataclasses.dataclass(
+        init=True,
+        repr=True,
+        eq=True,
+        order=False,
+        unsafe_hash=False,
+        frozen=True,
+        match_args=True,
+        kw_only=False,
+        slots=True,
+    )
     class Block:
         text: str
         _: _dataclasses.KW_ONLY
         char: int
-        tag: str = ''
+        tag: str = ""
 
         @property
-        def special(self: _typing.Self) -> bool: return bool(self.tag)
+        def special(self: _typing.Self) -> bool:
+            return bool(self.tag)
 
         @property
-        def common(self: _typing.Self) -> bool: return not self.special
+        def common(self: _typing.Self) -> bool:
+            return not self.special
 
         def __str__(self: _typing.Self) -> str:
             if self.special:
-                return f'{{{self.tag}:{TextCode.escape(self.text)}}}'
+                return f"{{{self.tag}:{TextCode.escape(self.text)}}}"
             if self.text:
                 return TextCode.escape(self.text)
-            return '{:}'
+            return "{:}"
 
     @_typing.final
-    @_dataclasses.dataclass(init=True,
-                            repr=True,
-                            eq=True,
-                            order=False,
-                            unsafe_hash=False,
-                            frozen=True,
-                            match_args=True,
-                            kw_only=True,
-                            slots=True,)
+    @_dataclasses.dataclass(
+        init=True,
+        repr=True,
+        eq=True,
+        order=False,
+        unsafe_hash=False,
+        frozen=True,
+        match_args=True,
+        kw_only=True,
+        slots=True,
+    )
     class ByTagValue:
         idx: int
-        block: 'TextCode.Block'
+        block: "TextCode.Block"
 
     def __init__(self: _typing.Self, blocks: _typing.Iterable[Block]) -> None:
         self.__blocks: _typing.Sequence[TextCode.Block] = tuple(blocks)
-        by_tag: _typing.MutableMapping[str,
-                                       _typing.MutableSequence[TextCode.ByTagValue]] = {}
+        by_tag: _typing.MutableMapping[
+            str, _typing.MutableSequence[TextCode.ByTagValue]
+        ] = {}
         for idx, block in enumerate(self.__blocks):
             by_tag.setdefault(block.tag, []).append(
-                TextCode.ByTagValue(idx=idx, block=block))
-        self.__by_tag: _typing.Mapping[str, _typing.Sequence[TextCode.ByTagValue]] = _types.MappingProxyType(
-            _collections.defaultdict(_util.constant(()),
-                                     {k: tuple(v) for k, v in by_tag.items()})
+                TextCode.ByTagValue(idx=idx, block=block)
+            )
+        self.__by_tag: _typing.Mapping[
+            str, _typing.Sequence[TextCode.ByTagValue]
+        ] = _types.MappingProxyType(
+            _collections.defaultdict(
+                _util.constant(()), {k: tuple(v) for k, v in by_tag.items()}
+            )
         )
 
     def __repr__(self: _typing.Self) -> str:
-        return f'{type(self).__qualname__}(blocks={self.__blocks!r})'
+        return f"{type(self).__qualname__}(blocks={self.__blocks!r})"
 
     def __str__(self: _typing.Self) -> str:
-        return ''.join(map(str, self.__blocks))
+        return "".join(map(str, self.__blocks))
 
     @property
-    def blocks(
-        self: _typing.Self) -> _typing.Sequence[Block]: return self.__blocks
+    def blocks(self: _typing.Self) -> _typing.Sequence[Block]:
+        return self.__blocks
 
     @property
-    def by_tag(self: _typing.Self) -> _typing.Mapping[str, _typing.Sequence[ByTagValue]]:
+    def by_tag(
+        self: _typing.Self,
+    ) -> _typing.Mapping[str, _typing.Sequence[ByTagValue]]:
         return self.__by_tag
 
     @classmethod
     def escape(cls: type[_typing.Self], text: str) -> str:
         def translate(char: str) -> str:
             if char in cls.escapes:
-                return f'\\{char}'
+                return f"\\{char}"
             return char
-        return ''.join(map(translate, text))
+
+        return "".join(map(translate, text))
 
     @staticmethod
     def compiler(code: str) -> _typing.Iterator[Block]:
@@ -103,15 +118,18 @@ class TextCode:
             ESCAPE: _typing.ClassVar = _enum.auto()
             TAG: _typing.ClassVar = _enum.auto()
             BLOCK: _typing.ClassVar = _enum.auto()
+
         state: State = State.NORMAL
         stack: _typing.MutableSequence[_io.StringIO | State] = []
         stack.append(_io.StringIO())
-        for index, char in enumerate(code + '{}' if not code.endswith('}') or code.endswith('{}') else code):
+        for index, char in enumerate(
+            code + "{}" if not code.endswith("}") or code.endswith("{}") else code
+        ):
             if state == State.NORMAL:
-                if char == '\\':
+                if char == "\\":
                     stack.append(state)
                     state = State.ESCAPE
-                elif char == '{':
+                elif char == "{":
                     text: _io.StringIO = _typing.cast(_io.StringIO, stack[-1])
                     text0: str = text.getvalue()
                     if text0:
@@ -120,8 +138,8 @@ class TextCode:
                         text.truncate()
                     stack.append(_io.StringIO())
                     state = State.TAG
-                elif char == '}':
-                    raise ValueError(f'Unexpected char at {index}: {code}')
+                elif char == "}":
+                    raise ValueError(f"Unexpected char at {index}: {code}")
                 else:
                     _typing.cast(_io.StringIO, stack[-1]).write(char)
             elif state == State.ESCAPE:
@@ -129,35 +147,37 @@ class TextCode:
                 _typing.cast(_io.StringIO, stack[-1]).write(char)
                 state = prev_state
             elif state == State.TAG:
-                if char == '\\':
+                if char == "\\":
                     stack.append(state)
                     state = State.ESCAPE
-                elif char == '{':
-                    raise ValueError(f'Unexpected char at {index}: {code}')
-                elif char == ':':
+                elif char == "{":
+                    raise ValueError(f"Unexpected char at {index}: {code}")
+                elif char == ":":
                     stack.append(_io.StringIO())
                     state = State.BLOCK
-                elif char == '}':
-                    text: _io.StringIO = _typing.cast(
-                        _io.StringIO, stack.pop())
+                elif char == "}":
+                    text: _io.StringIO = _typing.cast(_io.StringIO, stack.pop())
                     if text.getvalue():
-                        raise ValueError(f'Unexpected char at {index}: {code}')
+                        raise ValueError(f"Unexpected char at {index}: {code}")
                     state = State.NORMAL
                 else:
                     _typing.cast(_io.StringIO, stack[-1]).write(char)
             elif state == State.BLOCK:
-                if char == '\\':
+                if char == "\\":
                     stack.append(state)
                     state = State.ESCAPE
-                elif char == '{' or char == ':':
-                    raise ValueError(f'Unexpected char at {index}: {code}')
-                elif char == '}':
-                    text: _io.StringIO = _typing.cast(
-                        _io.StringIO, stack.pop())
+                elif char == "{" or char == ":":
+                    raise ValueError(f"Unexpected char at {index}: {code}")
+                elif char == "}":
+                    text: _io.StringIO = _typing.cast(_io.StringIO, stack.pop())
                     tag: _io.StringIO = _typing.cast(_io.StringIO, stack.pop())
                     text0: str = text.getvalue()
                     tag0: str = tag.getvalue()
-                    yield TextCode.Block(text0, char=index - len('{') - len(tag0) - len(':') - len(text0), tag=tag0)
+                    yield TextCode.Block(
+                        text0,
+                        char=index - len("{") - len(tag0) - len(":") - len(text0),
+                        tag=tag0,
+                    )
                     state = State.NORMAL
                 else:
                     _typing.cast(_io.StringIO, stack[-1]).write(char)
@@ -169,26 +189,30 @@ class TextCode:
         return cls(cls.compiler(text))
 
 
-def code_to_strs(code: TextCode, /, *,
-                 tag: str = Tag.COMMON) -> _typing.Iterator[str]:
+def code_to_strs(code: TextCode, /, *, tag: str = Tag.COMMON) -> _typing.Iterator[str]:
     return (block.text for block in code.blocks if block.common or block.tag == tag)
 
 
-def code_to_str(code: TextCode, /, *,
-                tag: str = Tag.COMMON) -> str:
-    return ''.join(code_to_strs(code, tag=tag))
+def code_to_str(code: TextCode, /, *, tag: str = Tag.COMMON) -> str:
+    return "".join(code_to_strs(code, tag=tag))
 
 
-def affix_code(code: TextCode, /, *,
-               prefix: str = '',
-               suffix: str = '',
-               ) -> TextCode:
-    return code.compile(''.join((prefix, str(code), suffix,)))
+def affix_code(
+    code: TextCode,
+    /,
+    *,
+    prefix: str = "",
+    suffix: str = "",
+) -> TextCode:
+    return code.compile("".join((prefix, str(code), suffix)))
 
 
-def separate_code_by_tag(code: TextCode, /, *,
-                         tag: str,
-                         ) -> _typing.Iterator[TextCode]:
+def separate_code_by_tag(
+    code: TextCode,
+    /,
+    *,
+    tag: str,
+) -> _typing.Iterator[TextCode]:
     source: str = str(code)
     cur: int | None = None
     index: int

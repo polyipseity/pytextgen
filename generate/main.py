@@ -25,22 +25,25 @@ class ExitCode(_enum.IntFlag):
 
 
 @_typing.final
-@_dataclasses.dataclass(init=True,
-                        repr=True,
-                        eq=True,
-                        order=False,
-                        unsafe_hash=False,
-                        frozen=True,
-                        match_args=True,
-                        kw_only=True,
-                        slots=True,)
+@_dataclasses.dataclass(
+    init=True,
+    repr=True,
+    eq=True,
+    order=False,
+    unsafe_hash=False,
+    frozen=True,
+    match_args=True,
+    kw_only=True,
+    slots=True,
+)
 class Arguments:
     inputs: _typing.Sequence[_pathlib.Path]
     options: Options
 
     def __post_init__(self: _typing.Self) -> None:
-        object.__setattr__(self, 'inputs', tuple(
-            input.resolve(strict=True) for input in self.inputs))
+        object.__setattr__(
+            self, "inputs", tuple(input.resolve(strict=True) for input in self.inputs)
+        )
 
 
 def main(argv: _typing.Sequence[str]) -> _typing.NoReturn:
@@ -50,15 +53,14 @@ def main(argv: _typing.Sequence[str]) -> _typing.NoReturn:
     def read(input: _pathlib.Path) -> _typing.Iterable[Writer]:
         nonlocal exit_code
         try:
-            file: _typing.TextIO = open(
-                input, mode='rt', **_globals.open_options)
+            file: _typing.TextIO = open(input, mode="rt", **_globals.open_options)
         except OSError:
             exit_code |= ExitCode.READ_ERROR
-            _logging.exception(f'Cannot open file: {input}')
+            _logging.exception(f"Cannot open file: {input}")
             return ()
         except ValueError:
             exit_code |= ExitCode.READ_ERROR
-            _logging.exception(f'Encoding error opening file: {input}')
+            _logging.exception(f"Encoding error opening file: {input}")
             return ()
         with file:
             try:
@@ -72,10 +74,12 @@ def main(argv: _typing.Sequence[str]) -> _typing.NoReturn:
                 return reader.pipe()
             except Exception:
                 exit_code |= ExitCode.READ_ERROR
-                _logging.exception(f'Exception reading file: {input}')
+                _logging.exception(f"Exception reading file: {input}")
                 return ()
+
     writers: _typing.Iterable[Writer] = _itertools.chain.from_iterable(
-        map(read, args.inputs))
+        map(read, args.inputs)
+    )
     writer_stack: _contextlib.ExitStack = _contextlib.ExitStack().__enter__()
     try:
         writer: Writer
@@ -84,14 +88,14 @@ def main(argv: _typing.Sequence[str]) -> _typing.NoReturn:
                 writer_stack.enter_context(writer.write())
             except Exception:
                 exit_code |= ExitCode.VALIDATE_ERROR
-                _logging.exception(f'Error while validation: {writer}')
+                _logging.exception(f"Error while validation: {writer}")
                 continue
     finally:
         try:
             writer_stack.close()
         except Exception:
             exit_code |= ExitCode.WRITE_ERROR
-            _logging.exception('Error while writing')
+            _logging.exception("Error while writing")
 
     _sys.exit(exit_code)
 
@@ -102,60 +106,77 @@ def parse_argv(argv: _typing.Sequence[str]) -> Arguments | _typing.NoReturn:
     del prog0
 
     parser: _argparse.ArgumentParser = _argparse.ArgumentParser(
-        prog=f'python -m {prog}',
-        description='generate text from input',
+        prog=f"python -m {prog}",
+        description="generate text from input",
         add_help=True,
         allow_abbrev=False,
         exit_on_error=False,
     )
-    parser.add_argument('-v', '--version',
-                        action='version',
-                        version=f'{prog} v{_version.version}',
-                        help='print version and exit',)
-    parser.add_argument('-t', '--timestamp',
-                        action='store_true',
-                        default=True,
-                        help='update or write timestamp (default)',
-                        dest='timestamp',)
-    parser.add_argument('-T', '--no-timestamp',
-                        action='store_false',
-                        default=False,
-                        help='do not update or write timestamp',
-                        dest='timestamp',)
-    parser.add_argument('--init-flashcards',
-                        action='store_true',
-                        default=False,
-                        help='initialize flashcards',
-                        dest='init_flashcards',)
-    parser.add_argument('--no-init-flashcards',
-                        action='store_false',
-                        default=True,
-                        help='do not initialize flashcards (default)',
-                        dest='init_flashcards',)
-    parser.add_argument('--code-cache',
-                        action='store',
-                        default=_pathlib.Path('./__pycache__/'),
-                        type=_pathlib.Path,
-                        help='specify code cache (default: ./__pycache__/)',
-                        dest='code_cache',)
-    parser.add_argument('--no-code-cache',
-                        action='store_const',
-                        const=None,
-                        default=False,
-                        help='do not use code cache',
-                        dest='code_cache',)
-    parser.add_argument('inputs',
-                        action='store',
-                        nargs=_argparse.ONE_OR_MORE,
-                        type=lambda path:
-                        _pathlib.Path(path).resolve(strict=True),
-                        help='sequence of input(s) to read',)
+    parser.add_argument(
+        "-v",
+        "--version",
+        action="version",
+        version=f"{prog} v{_version.version}",
+        help="print version and exit",
+    )
+    parser.add_argument(
+        "-t",
+        "--timestamp",
+        action="store_true",
+        default=True,
+        help="update or write timestamp (default)",
+        dest="timestamp",
+    )
+    parser.add_argument(
+        "-T",
+        "--no-timestamp",
+        action="store_false",
+        default=False,
+        help="do not update or write timestamp",
+        dest="timestamp",
+    )
+    parser.add_argument(
+        "--init-flashcards",
+        action="store_true",
+        default=False,
+        help="initialize flashcards",
+        dest="init_flashcards",
+    )
+    parser.add_argument(
+        "--no-init-flashcards",
+        action="store_false",
+        default=True,
+        help="do not initialize flashcards (default)",
+        dest="init_flashcards",
+    )
+    parser.add_argument(
+        "--code-cache",
+        action="store",
+        default=_pathlib.Path("./__pycache__/"),
+        type=_pathlib.Path,
+        help="specify code cache (default: ./__pycache__/)",
+        dest="code_cache",
+    )
+    parser.add_argument(
+        "--no-code-cache",
+        action="store_const",
+        const=None,
+        default=False,
+        help="do not use code cache",
+        dest="code_cache",
+    )
+    parser.add_argument(
+        "inputs",
+        action="store",
+        nargs=_argparse.ONE_OR_MORE,
+        type=lambda path: _pathlib.Path(path).resolve(strict=True),
+        help="sequence of input(s) to read",
+    )
     input: _argparse.Namespace = parser.parse_args(argv[1:])
     if input.code_cache is None:
         compiler: _util.Compiler = compile
     else:
-        code_cache: _util.CompileCache = _util.CompileCache(
-            folder=input.code_cache)
+        code_cache: _util.CompileCache = _util.CompileCache(folder=input.code_cache)
         _atexit.register(code_cache.save)
         compiler = code_cache.compile
     return Arguments(

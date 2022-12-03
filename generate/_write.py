@@ -21,24 +21,31 @@ class Writer(metaclass=_abc.ABCMeta):
         raise NotImplementedError(self)
 
     @classmethod
-    def __subclasshook__(cls: type[_typing.Self], subclass: type) -> bool | _types.NotImplementedType:
-        return _util.abc_subclasshook_check(Writer, cls, subclass,
-                                            names=(cls.write.__name__,))
+    def __subclasshook__(
+        cls: type[_typing.Self], subclass: type
+    ) -> bool | _types.NotImplementedType:
+        return _util.abc_subclasshook_check(
+            Writer, cls, subclass, names=(cls.write.__name__,)
+        )
 
 
 class PythonWriter:
-    __slots__: _typing.ClassVar = ('__code', '__env', '__options',)
+    __slots__: _typing.ClassVar = ("__code", "__env", "__options")
 
-    def __init__(self: _typing.Self,
-                 code: _types.CodeType, /, *,
-                 env: _virenv.Environment,
-                 options: Options) -> None:
+    def __init__(
+        self: _typing.Self,
+        code: _types.CodeType,
+        /,
+        *,
+        env: _virenv.Environment,
+        options: Options,
+    ) -> None:
         self.__code: _types.CodeType = code
         self.__env: _virenv.Environment = env
         self.__options: Options = options
 
     def __repr__(self: _typing.Self) -> str:
-        return f'{type(self).__qualname__}({self.__code!r}, env={self.__env!r}, options={self.__options!r})'
+        return f"{type(self).__qualname__}({self.__code!r}, env={self.__env!r}, options={self.__options!r})"
 
     @_contextlib.contextmanager
     def write(self: _typing.Self) -> _typing.Iterator[None]:
@@ -55,15 +62,25 @@ class PythonWriter:
                 io: _typing.TextIO
                 with result.location.open() as io:
                     text: str = io.read()
-                    timestamp: _re.Match[str] | None = _globals.generate_comment_regex.search(
-                        text)
-                    if result.text != (text[:timestamp.start()] + text[timestamp.end():] if timestamp else text):
+                    timestamp: _re.Match[
+                        str
+                    ] | None = _globals.generate_comment_regex.search(text)
+                    if result.text != (
+                        text[: timestamp.start()] + text[timestamp.end() :]
+                        if timestamp
+                        else text
+                    ):
                         io.seek(0)
                         if self.__options.timestamp:
-                            io.write(_globals.generate_comment.format(
-                                now=_datetime.datetime.now().astimezone().isoformat()))
+                            io.write(
+                                _globals.generate_comment.format(
+                                    now=_datetime.datetime.now()
+                                    .astimezone()
+                                    .isoformat()
+                                )
+                            )
                         elif timestamp:
-                            io.write(text[timestamp.start():timestamp.end()])
+                            io.write(text[timestamp.start() : timestamp.end()])
                         io.write(result.text)
                         io.truncate()
 

@@ -5,12 +5,16 @@ import sys as _sys
 import typing as _typing
 import unicodedata as _unicodedata
 
-_punctuations: _typing.Collection[str] = tuple(chr(char) for char in range(_sys.maxunicode)
-                                               if _unicodedata.category(chr(char)).startswith('P'))
+_punctuations: _typing.Collection[str] = tuple(
+    chr(char)
+    for char in range(_sys.maxunicode)
+    if _unicodedata.category(chr(char)).startswith("P")
+)
 _punctuation_regex: _regex.Pattern[str] = _regex.compile(
-    r'(?<={delims})(?<!^(?:{delims})+)(?!$|{delims})'.format(
-        delims=r'|'.join(map(_re.escape, _punctuations))),
-    flags=_regex.VERSION0
+    r"(?<={delims})(?<!^(?:{delims})+)(?!$|{delims})".format(
+        delims=r"|".join(map(_re.escape, _punctuations))
+    ),
+    flags=_regex.VERSION0,
 )
 
 
@@ -19,28 +23,29 @@ _punctuation_regex: _regex.Pattern[str] = _regex.compile(
 class Tag(_enum.StrEnum):
     __slots__: _typing.ClassVar = ()
 
-    COMMON: _typing.ClassVar = ''
-    COMMENT: _typing.ClassVar = 'cmt'
-    TEXT: _typing.ClassVar = 'text'
-    MEMORIZE: _typing.ClassVar = 'mem'
-    SEMANTICS: _typing.ClassVar = 'sem'
-    CLOZE_SEPARATOR: _typing.ClassVar = 'cloze sep'
+    COMMON: _typing.ClassVar = ""
+    COMMENT: _typing.ClassVar = "cmt"
+    TEXT: _typing.ClassVar = "text"
+    MEMORIZE: _typing.ClassVar = "mem"
+    SEMANTICS: _typing.ClassVar = "sem"
+    CLOZE_SEPARATOR: _typing.ClassVar = "cloze sep"
 
 
-def affix_lines(text: str, /, *, prefix: str = '', suffix: str = '') -> str:
+def affix_lines(text: str, /, *, prefix: str = "", suffix: str = "") -> str:
     def ret_gen() -> _typing.Iterator[str]:
-        newline: str = ''
+        newline: str = ""
         for line in text.splitlines():
             yield newline
             yield prefix
             yield line
             yield suffix
-            newline = '\n'
-    return ''.join(ret_gen())
+            newline = "\n"
+
+    return "".join(ret_gen())
 
 
 def strip_lines(text: str, /, *, chars: str | None = None) -> str:
-    return '\n'.join(line.strip(chars) for line in text.splitlines())
+    return "\n".join(line.strip(chars) for line in text.splitlines())
 
 
 def split_by_punctuations(text: str) -> _typing.Iterator[str]:

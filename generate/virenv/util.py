@@ -23,29 +23,34 @@ class Location(metaclass=_abc.ABCMeta):
         raise NotImplementedError(self)
 
     @classmethod
-    def __subclasshook__(cls: type[_typing.Self], subclass: type) -> bool | _types.NotImplementedType:
-        return abc_subclasshook_check(Location, cls, subclass,
-                                      names=(cls.open.__name__,))
+    def __subclasshook__(
+        cls: type[_typing.Self], subclass: type
+    ) -> bool | _types.NotImplementedType:
+        return abc_subclasshook_check(
+            Location, cls, subclass, names=(cls.open.__name__,)
+        )
 
 
 @_typing.final
-@_dataclasses.dataclass(init=True,
-                        repr=True,
-                        eq=True,
-                        order=False,
-                        unsafe_hash=False,
-                        frozen=True,
-                        match_args=True,
-                        kw_only=True,
-                        slots=True,)
+@_dataclasses.dataclass(
+    init=True,
+    repr=True,
+    eq=True,
+    order=False,
+    unsafe_hash=False,
+    frozen=True,
+    match_args=True,
+    kw_only=True,
+    slots=True,
+)
 class PathLocation:
     path: _pathlib.Path
 
     def open(self: _typing.Self) -> _typing.TextIO:
-        return open(self.path, mode='r+t', **_globals.open_options)
+        return open(self.path, mode="r+t", **_globals.open_options)
 
     def __post_init__(self: _typing.Self) -> None:
-        object.__setattr__(self, 'path', self.path.resolve(strict=True))
+        object.__setattr__(self, "path", self.path.resolve(strict=True))
 
 
 Location.register(PathLocation)
@@ -53,84 +58,91 @@ assert issubclass(PathLocation, Location)
 
 
 @_typing.final
-@_dataclasses.dataclass(init=True,
-                        repr=True,
-                        eq=True,
-                        order=False,
-                        unsafe_hash=False,
-                        frozen=True,
-                        match_args=True,
-                        kw_only=True,
-                        slots=True,)
+@_dataclasses.dataclass(
+    init=True,
+    repr=True,
+    eq=True,
+    order=False,
+    unsafe_hash=False,
+    frozen=True,
+    match_args=True,
+    kw_only=True,
+    slots=True,
+)
 class FileSection:
     @_typing.final
-    @_dataclasses.dataclass(init=True,
-                            repr=True,
-                            eq=True,
-                            order=False,
-                            unsafe_hash=False,
-                            frozen=True,
-                            match_args=True,
-                            kw_only=True,
-                            slots=True,)
+    @_dataclasses.dataclass(
+        init=True,
+        repr=True,
+        eq=True,
+        order=False,
+        unsafe_hash=False,
+        frozen=True,
+        match_args=True,
+        kw_only=True,
+        slots=True,
+    )
     class SectionFormat:
         start_regex: _re.Pattern[str]
         end_regex: _re.Pattern[str]
         start: str
         stop: str
-    section_formats: _typing.ClassVar[_typing.Mapping[str, SectionFormat]] = _types.MappingProxyType({
-        '': SectionFormat(
-            start_regex=_re.compile(
-                fr'\[{_globals.uuid},generate,([^,\]]*)\]',
-                flags=0,
+
+    section_formats: _typing.ClassVar[
+        _typing.Mapping[str, SectionFormat]
+    ] = _types.MappingProxyType(
+        {
+            "": SectionFormat(
+                start_regex=_re.compile(
+                    rf"\[{_globals.uuid},generate,([^,\]]*)\]", flags=0
+                ),
+                end_regex=_re.compile(rf"\[{_globals.uuid},end\]", flags=0),
+                start=f"[{_globals.uuid},generate,{{section}}]",
+                stop=f"[{_globals.uuid},end]",
             ),
-            end_regex=_re.compile(
-                fr'\[{_globals.uuid},end\]',
-                flags=0
+            ".md": SectionFormat(
+                start_regex=_re.compile(
+                    rf'<!--{_globals.uuid} generate section="([^"]*)"-->',
+                    flags=0,
+                ),
+                end_regex=_re.compile(rf"<!--/{_globals.uuid}-->", flags=0),
+                start=f'<!--{_globals.uuid} generate section="{{section}}"-->',
+                stop=f"<!--/{_globals.uuid}-->",
             ),
-            start=f'[{_globals.uuid},generate,{{section}}]',
-            stop=f'[{_globals.uuid},end]'
-        ),
-        '.md': SectionFormat(
-            start_regex=_re.compile(
-                fr'<!--{_globals.uuid} generate section="([^"]*)"-->',
-                flags=0,
-            ),
-            end_regex=_re.compile(
-                fr'<!--/{_globals.uuid}-->',
-                flags=0
-            ),
-            start=f'<!--{_globals.uuid} generate section="{{section}}"-->',
-            stop=f'<!--/{_globals.uuid}-->'
-        ),
-    })
+        }
+    )
 
     @_typing.final
-    @_dataclasses.dataclass(init=True,
-                            repr=True,
-                            eq=True,
-                            order=False,
-                            unsafe_hash=False,
-                            frozen=True,
-                            match_args=True,
-                            kw_only=True,
-                            slots=True,)
+    @_dataclasses.dataclass(
+        init=True,
+        repr=True,
+        eq=True,
+        order=False,
+        unsafe_hash=False,
+        frozen=True,
+        match_args=True,
+        kw_only=True,
+        slots=True,
+    )
     class __CacheData:
         empty: _typing.ClassVar[_typing.Self]
         mod_time: int
         sections: _typing.AbstractSet[str]
 
         def __post_init__(self: _typing.Self) -> None:
-            object.__setattr__(self, 'sections', frozenset(self.sections))
+            object.__setattr__(self, "sections", frozenset(self.sections))
+
     __CacheData.empty = __CacheData(mod_time=-1, sections=frozenset())
 
     class __ValidateCache(dict[_pathlib.Path, __CacheData]):
-        __slots__: _typing.ClassVar = ('__lock',)
-        __ValueType: _typing.ClassVar[type['FileSection.__CacheData']]
+        __slots__: _typing.ClassVar = ("__lock",)
+        __ValueType: _typing.ClassVar[type["FileSection.__CacheData"]]
 
-        def __init_subclass__(cls: type[_typing.Self],
-                              value_type: type['FileSection.__CacheData'],
-                              **kwargs: _typing.Any | None) -> None:
+        def __init_subclass__(
+            cls: type[_typing.Self],
+            value_type: type["FileSection.__CacheData"],
+            **kwargs: _typing.Any | None,
+        ) -> None:
             super().__init_subclass__(**kwargs)
             cls.__ValueType = value_type
 
@@ -138,13 +150,15 @@ class FileSection:
             super().__init__()
             self.__lock: _threading.Lock = _threading.Lock()
 
-        def __getitem__(self: _typing.Self, key: _pathlib.Path) -> 'FileSection.__CacheData':
+        def __getitem__(
+            self: _typing.Self, key: _pathlib.Path
+        ) -> "FileSection.__CacheData":
             ext: str
             _, ext = _os.path.splitext(key)
             try:
                 format: FileSection.SectionFormat = FileSection.section_formats[ext]
             except KeyError as ex:
-                raise ValueError(f'Unknown extension: {key}') from ex
+                raise ValueError(f"Unknown extension: {key}") from ex
             mod_time: int = _os.stat(key).st_mtime_ns
             with self.__lock:
                 try:
@@ -154,7 +168,7 @@ class FileSection:
                 if mod_time != cache.mod_time:
                     text: str
                     file: _typing.TextIO
-                    with open(key, mode='rt', **_globals.open_options) as file:
+                    with open(key, mode="rt", **_globals.open_options) as file:
                         text = file.read()
                     sections: _typing.MutableSet[str] = set()
                     read_to: int = 0
@@ -162,23 +176,27 @@ class FileSection:
                     for start in format.start_regex.finditer(text):
                         if start.start() < read_to:
                             raise ValueError(
-                                f'Overlapping section at char {start.start()}: {key}')
-                        section: str = text[start.start(1):start.end(1)]
+                                f"Overlapping section at char {start.start()}: {key}"
+                            )
+                        section: str = text[start.start(1) : start.end(1)]
                         if section in sections:
-                            raise ValueError(
-                                f'Duplicated section "{section}": {key}')
+                            raise ValueError(f'Duplicated section "{section}": {key}')
                         sections.add(section)
                         end_str: str = format.stop.format(section=section)
                         try:
                             end_idx: int = text.index(end_str, start.end())
                         except ValueError as ex:
                             raise ValueError(
-                                f'Unenclosure from char {start.start()}: {key}') from ex
+                                f"Unenclosure from char {start.start()}: {key}"
+                            ) from ex
                         read_to = end_idx + len(end_str)
                     end: _re.Match[str]
-                    for end in _itertools.islice(format.end_regex.finditer(text), len(sections), None):
+                    for end in _itertools.islice(
+                        format.end_regex.finditer(text), len(sections), None
+                    ):
                         raise ValueError(
-                            f'Too many closings at char {end.start()}: {key}')
+                            f"Too many closings at char {end.start()}: {key}"
+                        )
                     cache = self.__ValueType(
                         mod_time=mod_time,
                         sections=sections,
@@ -186,10 +204,14 @@ class FileSection:
                     super().__setitem__(key, cache)
             return cache
 
-        def __setitem__(self: _typing.Self, key: _pathlib.Path, value: 'FileSection.__CacheData') -> None:
-            raise TypeError(f'Unsupported')
+        def __setitem__(
+            self: _typing.Self, key: _pathlib.Path, value: "FileSection.__CacheData"
+        ) -> None:
+            raise TypeError(f"Unsupported")
+
     __ValidateCache = type(
-        '__ValidateCache', (__ValidateCache,), {}, value_type=__CacheData)
+        "__ValidateCache", (__ValidateCache,), {}, value_type=__CacheData
+    )
     __validate_cache: _typing.ClassVar[__ValidateCache] = __ValidateCache()
 
     path: _pathlib.Path
@@ -197,29 +219,34 @@ class FileSection:
 
     def open(self: _typing.Self) -> _typing.TextIO:
         if self.section:
+
             @_typing.final
             class IO(_io.StringIO):
-                __slots__: _typing.ClassVar = ('__file', '__slice',)
+                __slots__: _typing.ClassVar = ("__file", "__slice")
 
                 def __init__(self: _typing.Self, closure: FileSection, /) -> None:
                     ext: str
                     _, ext = _os.path.splitext(closure.path)
                     start_format: str = closure.section_formats[ext].start.format(
-                        section=closure.section)
+                        section=closure.section
+                    )
                     stop_format: str = closure.section_formats[ext].stop.format(
-                        section=closure.section)
-                    self.__file: _typing.TextIO = open(closure.path,
-                                                       mode='r+t', **_globals.open_options)
+                        section=closure.section
+                    )
+                    self.__file: _typing.TextIO = open(
+                        closure.path, mode="r+t", **_globals.open_options
+                    )
                     try:
                         text: str = self.__file.read()
                         start: int = text.find(start_format)
                         if start == -1:
-                            raise ValueError(f'Not found: {closure}')
+                            raise ValueError(f"Not found: {closure}")
                         start += len(start_format)
                         stop: int = text.find(stop_format, start)
                         if stop == -1:
                             raise ValueError(
-                                f'Unenclosure from char {start}: {closure}')
+                                f"Unenclosure from char {start}: {closure}"
+                            )
                         self.__slice: slice = slice(start, stop)
                         super().__init__(text[self.__slice])
                     except Exception as ex:
@@ -234,21 +261,29 @@ class FileSection:
                             self.__file.seek(0)
                             text: str = self.__file.read()
                             self.__file.seek(0)
-                            self.__file.write(''.join((
-                                text[:self.__slice.start],
-                                data,
-                                text[self.__slice.stop:]
-                            )))
+                            self.__file.write(
+                                "".join(
+                                    (
+                                        text[: self.__slice.start],
+                                        data,
+                                        text[self.__slice.stop :],
+                                    )
+                                )
+                            )
                             self.__file.truncate()
                     finally:
                         super().close()
+
             return IO(self)
-        return open(self.path, mode='r+t', **_globals.open_options)
+        return open(self.path, mode="r+t", **_globals.open_options)
 
     def __post_init__(self: _typing.Self) -> None:
-        object.__setattr__(self, 'path', self.path.resolve(strict=True))
-        if not self.section or self.section not in self.__validate_cache[self.path].sections:
-            raise ValueError(f'Section not found: {self}')
+        object.__setattr__(self, "path", self.path.resolve(strict=True))
+        if (
+            not self.section
+            or self.section not in self.__validate_cache[self.path].sections
+        ):
+            raise ValueError(f"Section not found: {self}")
 
 
 Location.register(FileSection)
@@ -263,41 +298,53 @@ class FlashcardGroup(_typing.Sequence[str], metaclass=_abc.ABCMeta):
         raise NotImplementedError(self)
 
     @classmethod
-    def __subclasshook__(cls: type[_typing.Self], subclass: type) -> bool | _types.NotImplementedType:
-        return abc_subclasshook_check(FlashcardGroup, cls, subclass,
-                                      names=(cls.__str__.__name__,))
+    def __subclasshook__(
+        cls: type[_typing.Self], subclass: type
+    ) -> bool | _types.NotImplementedType:
+        return abc_subclasshook_check(
+            FlashcardGroup, cls, subclass, names=(cls.__str__.__name__,)
+        )
 
 
 @_typing.final
-@_dataclasses.dataclass(init=True,
-                        repr=True,
-                        eq=True,
-                        order=False,
-                        unsafe_hash=False,
-                        frozen=True,
-                        match_args=True,
-                        kw_only=False,
-                        slots=True,)
+@_dataclasses.dataclass(
+    init=True,
+    repr=True,
+    eq=True,
+    order=False,
+    unsafe_hash=False,
+    frozen=True,
+    match_args=True,
+    kw_only=False,
+    slots=True,
+)
 class TwoSidedFlashcard:
     @_typing.final
-    @_dataclasses.dataclass(init=True,
-                            repr=True,
-                            eq=True,
-                            order=False,
-                            unsafe_hash=False,
-                            frozen=True,
-                            match_args=True,
-                            kw_only=True,
-                            slots=True,)
+    @_dataclasses.dataclass(
+        init=True,
+        repr=True,
+        eq=True,
+        order=False,
+        unsafe_hash=False,
+        frozen=True,
+        match_args=True,
+        kw_only=True,
+        slots=True,
+    )
     class SeparatorKey:
         reversible: bool
         multiline: bool
-    separators: _typing.ClassVar[_typing.Mapping[SeparatorKey, str]] = _types.MappingProxyType({
-        SeparatorKey(reversible=False, multiline=False): '::',
-        SeparatorKey(reversible=True, multiline=False): ':::',
-        SeparatorKey(reversible=False, multiline=True): '\n??\n',
-        SeparatorKey(reversible=True, multiline=True): '\n???\n',
-    })
+
+    separators: _typing.ClassVar[
+        _typing.Mapping[SeparatorKey, str]
+    ] = _types.MappingProxyType(
+        {
+            SeparatorKey(reversible=False, multiline=False): "::",
+            SeparatorKey(reversible=True, multiline=False): ":::",
+            SeparatorKey(reversible=False, multiline=True): "\n??\n",
+            SeparatorKey(reversible=True, multiline=True): "\n???\n",
+        }
+    )
 
     left: str
     right: str
@@ -305,10 +352,12 @@ class TwoSidedFlashcard:
     reversible: bool
 
     def __str__(self: _typing.Self) -> str:
-        return self.separators[self.SeparatorKey(
-            reversible=self.reversible,
-            multiline='\n' in self.left or '\n' in self.right
-        )].join((self.left, self.right))
+        return self.separators[
+            self.SeparatorKey(
+                reversible=self.reversible,
+                multiline="\n" in self.left or "\n" in self.right,
+            )
+        ].join((self.left, self.right))
 
     def __len__(self: _typing.Self) -> int:
         return 2 if self.reversible else 1
@@ -326,27 +375,27 @@ FlashcardGroup.register(TwoSidedFlashcard)
 assert issubclass(TwoSidedFlashcard, FlashcardGroup)
 
 
-@_dataclasses.dataclass(init=True,
-                        repr=True,
-                        eq=True,
-                        order=False,
-                        unsafe_hash=False,
-                        frozen=True,
-                        match_args=True,
-                        kw_only=False,
-                        slots=True,)
+@_dataclasses.dataclass(
+    init=True,
+    repr=True,
+    eq=True,
+    order=False,
+    unsafe_hash=False,
+    frozen=True,
+    match_args=True,
+    kw_only=False,
+    slots=True,
+)
 class ClozeFlashcardGroup:
-    __pattern_cache: _typing.ClassVar[_typing.MutableMapping[str, _re.Pattern[str]]] = {
-    }
+    __pattern_cache: _typing.ClassVar[
+        _typing.MutableMapping[str, _re.Pattern[str]]
+    ] = {}
 
     context: str
     _: _dataclasses.KW_ONLY
-    token: str = '=='
+    token: str = "=="
     _clozes: _typing.Sequence[str] = _dataclasses.field(
-        init=False,
-        repr=False,
-        hash=False,
-        compare=False,
+        init=False, repr=False, hash=False, compare=False
     )
 
     def __post_init__(self: _typing.Self) -> None:
@@ -355,9 +404,12 @@ class ClozeFlashcardGroup:
         except KeyError:
             etoken: str = _re.escape(self.token)
             self.__pattern_cache[self.token] = pattern = _re.compile(
-                rf'[{etoken}]+(?<={etoken})([^{etoken}]+)(?={etoken})[{etoken}]+', flags=0)
-        object.__setattr__(self, '_clozes',
-                           tuple(match[1] for match in pattern.finditer(self.context)))
+                rf"[{etoken}]+(?<={etoken})([^{etoken}]+)(?={etoken})[{etoken}]+",
+                flags=0,
+            )
+        object.__setattr__(
+            self, "_clozes", tuple(match[1] for match in pattern.finditer(self.context))
+        )
 
     def __str__(self: _typing.Self) -> str:
         return self.context
@@ -374,20 +426,21 @@ assert issubclass(ClozeFlashcardGroup, FlashcardGroup)
 
 
 @_typing.final
-@_dataclasses.dataclass(init=True,
-                        repr=True,
-                        eq=True,
-                        order=False,
-                        unsafe_hash=False,
-                        frozen=True,
-                        match_args=True,
-                        kw_only=True,
-                        slots=True,)
+@_dataclasses.dataclass(
+    init=True,
+    repr=True,
+    eq=True,
+    order=False,
+    unsafe_hash=False,
+    frozen=True,
+    match_args=True,
+    kw_only=True,
+    slots=True,
+)
 class FlashcardState:
-    format: _typing.ClassVar[str] = '!{date},{interval},{ease}'
+    format: _typing.ClassVar[str] = "!{date},{interval},{ease}"
     regex: _typing.ClassVar[_re.Pattern[str]] = _re.compile(
-        r'!(\d{4}-\d{2}-\d{2}),(\d+),(\d+)',
-        flags=0
+        r"!(\d{4}-\d{2}-\d{2}),(\d+),(\d+)", flags=0
     )
 
     date: _datetime.date
@@ -395,10 +448,14 @@ class FlashcardState:
     ease: int
 
     def __str__(self: _typing.Self) -> str:
-        return self.format.format(date=self.date, interval=self.interval, ease=self.ease)
+        return self.format.format(
+            date=self.date, interval=self.interval, ease=self.ease
+        )
 
     @classmethod
-    def compile_many(cls: type[_typing.Self], text: str) -> _typing.Iterator[_typing.Self]:
+    def compile_many(
+        cls: type[_typing.Self], text: str
+    ) -> _typing.Iterator[_typing.Self]:
         match: _re.Match[str]
         for match in cls.regex.finditer(text):
             yield cls(
@@ -413,10 +470,10 @@ class FlashcardState:
         try:
             ret: _typing.Self = next(rets)
         except StopIteration as ex:
-            raise ValueError(f'No matches: {text}') from ex
+            raise ValueError(f"No matches: {text}") from ex
         try:
             next(rets)
-            raise ValueError(f'Too many matches: {text}')
+            raise ValueError(f"Too many matches: {text}")
         except StopIteration:
             pass
         return ret
@@ -425,20 +482,21 @@ class FlashcardState:
 @_typing.final
 class FlashcardStateGroup(TypedTuple[FlashcardState], element_type=FlashcardState):
     __slots__: _typing.ClassVar = ()
-    format: _typing.ClassVar[str] = '<!--SR:{states}-->'
-    regex: _typing.ClassVar[_re.Pattern[str]] = _re.compile(
-        r'<!--SR:(.*?)-->', flags=0)
+    format: _typing.ClassVar[str] = "<!--SR:{states}-->"
+    regex: _typing.ClassVar[_re.Pattern[str]] = _re.compile(r"<!--SR:(.*?)-->", flags=0)
 
     def __str__(self: _typing.Self) -> str:
         if self:
-            return self.format.format(states=''.join(map(str, self)))
-        return ''
+            return self.format.format(states="".join(map(str, self)))
+        return ""
 
     @classmethod
-    def compile_many(cls: type[_typing.Self], text: str) -> _typing.Iterator[_typing.Self]:
+    def compile_many(
+        cls: type[_typing.Self], text: str
+    ) -> _typing.Iterator[_typing.Self]:
         match: _re.Match[str]
         for match in cls.regex.finditer(text):
-            yield cls(FlashcardState.compile_many(text[match.start():match.end()]))
+            yield cls(FlashcardState.compile_many(text[match.start() : match.end()]))
 
     @classmethod
     def compile(cls: type[_typing.Self], text: str) -> _typing.Self:
@@ -446,28 +504,30 @@ class FlashcardStateGroup(TypedTuple[FlashcardState], element_type=FlashcardStat
         try:
             ret: _typing.Self = next(rets)
         except StopIteration as ex:
-            raise ValueError(f'No matches: {text}') from ex
+            raise ValueError(f"No matches: {text}") from ex
         try:
             next(rets)
-            raise ValueError(f'Too many matches: {text}')
+            raise ValueError(f"Too many matches: {text}")
         except StopIteration:
             pass
         return ret
 
 
 @_typing.final
-@_dataclasses.dataclass(init=True,
-                        repr=True,
-                        eq=True,
-                        order=False,
-                        unsafe_hash=False,
-                        frozen=True,
-                        match_args=True,
-                        kw_only=True,
-                        slots=True,)
+@_dataclasses.dataclass(
+    init=True,
+    repr=True,
+    eq=True,
+    order=False,
+    unsafe_hash=False,
+    frozen=True,
+    match_args=True,
+    kw_only=True,
+    slots=True,
+)
 class StatefulFlashcardGroup:
     flashcard: FlashcardGroup
     state: FlashcardStateGroup
 
     def __str__(self: _typing.Self) -> str:
-        return ' '.join((str(self.flashcard), str(self.state)))
+        return " ".join((str(self.flashcard), str(self.state)))

@@ -10,179 +10,222 @@ from .. import gen as _gen
 from .. import util as _util
 from . import *
 
-_T = _typing.TypeVar('_T')
+_T = _typing.TypeVar("_T")
 
-_section_text_format: str = '\n\n{}\n\n'
-_table_aligns: _typing.Mapping[_typing.Literal['default', 'left', 'right', 'center'], str] = (
-    _types.MappingProxyType[_typing.Literal['default', 'left', 'right', 'center'], str]({
-        'default': '-',
-        'left': ':-',
-        'right': '-:',
-        'center': ':-:',
-    })
+_section_text_format: str = "\n\n{}\n\n"
+_table_aligns: _typing.Mapping[
+    _typing.Literal["default", "left", "right", "center"], str
+] = _types.MappingProxyType[_typing.Literal["default", "left", "right", "center"], str](
+    {"default": "-", "left": ":-", "right": "-:", "center": ":-:"}
 )
 
 
 @_typing.final
-@_dataclasses.dataclass(init=True,
-                        repr=True,
-                        eq=True,
-                        order=False,
-                        unsafe_hash=False,
-                        frozen=True,
-                        match_args=True,
-                        kw_only=True,
-                        slots=True,)
+@_dataclasses.dataclass(
+    init=True,
+    repr=True,
+    eq=True,
+    order=False,
+    unsafe_hash=False,
+    frozen=True,
+    match_args=True,
+    kw_only=True,
+    slots=True,
+)
 class _MarkdownRegex:
     regex: _re.Pattern[str]
     desugared: str
 
 
 _markdown_regexes: _typing.Sequence[_MarkdownRegex] = (
-    _MarkdownRegex(regex=_re.compile(r'(?:\b|^)__(?=\S)', flags=0),
-                   desugared='<b u>'),
-    _MarkdownRegex(regex=_re.compile(r'(?<=\S)__(?:\b|$)', flags=0),
-                   desugared='</b u>'),
-    _MarkdownRegex(regex=_re.compile(r'\*\*(?=\S)', flags=0),
-                   desugared='<b s>'),
-    _MarkdownRegex(regex=_re.compile(r'(?<=\S)\*\*', flags=0),
-                   desugared='</b s>'),
-    _MarkdownRegex(regex=_re.compile(r'(?:\b|^)_(?=\S)', flags=0),
-                   desugared='<i u>'),
-    _MarkdownRegex(regex=_re.compile(r'(?<=\S)_(?:\b|$)', flags=0),
-                   desugared='</i u>'),
-    _MarkdownRegex(regex=_re.compile(r'\*(?=\S)', flags=0),
-                   desugared='<i s>'),
-    _MarkdownRegex(regex=_re.compile(r'(?<=\S)\*', flags=0),
-                   desugared='</i s>'),
+    _MarkdownRegex(regex=_re.compile(r"(?:\b|^)__(?=\S)", flags=0), desugared="<b u>"),
+    _MarkdownRegex(
+        regex=_re.compile(r"(?<=\S)__(?:\b|$)", flags=0), desugared="</b u>"
+    ),
+    _MarkdownRegex(regex=_re.compile(r"\*\*(?=\S)", flags=0), desugared="<b s>"),
+    _MarkdownRegex(regex=_re.compile(r"(?<=\S)\*\*", flags=0), desugared="</b s>"),
+    _MarkdownRegex(regex=_re.compile(r"(?:\b|^)_(?=\S)", flags=0), desugared="<i u>"),
+    _MarkdownRegex(regex=_re.compile(r"(?<=\S)_(?:\b|$)", flags=0), desugared="</i u>"),
+    _MarkdownRegex(regex=_re.compile(r"\*(?=\S)", flags=0), desugared="<i s>"),
+    _MarkdownRegex(regex=_re.compile(r"(?<=\S)\*", flags=0), desugared="</i s>"),
 )
-_html_tag_regex: _re.Pattern[str] = _re.compile(r'<([^>]+)>', flags=0)
+_html_tag_regex: _re.Pattern[str] = _re.compile(r"<([^>]+)>", flags=0)
 
 
 def text(text: str) -> str:
-    return (_util.Unit(text)
-            .map(strip_lines)
-            .map(_section_text_format.format)
-            .counit())
+    return _util.Unit(text).map(strip_lines).map(_section_text_format.format).counit()
 
 
-def quote_text(code: TextCode, /, *,
-               tag: str = Tag.TEXT,
-               line_prefix: str = '> ',
-               ) -> str:
-    return (_util.Unit(code)
-            .map(_functools.partial(code_to_str, tag=tag))
-            .map(_functools.partial(affix_lines, prefix=line_prefix))
-            .map(text)
-            .counit())
+def quote_text(
+    code: TextCode,
+    /,
+    *,
+    tag: str = Tag.TEXT,
+    line_prefix: str = "> ",
+) -> str:
+    return (
+        _util.Unit(code)
+        .map(_functools.partial(code_to_str, tag=tag))
+        .map(_functools.partial(affix_lines, prefix=line_prefix))
+        .map(text)
+        .counit()
+    )
 
 
-def cloze_text(code: TextCode, /, *,
-               tag: str = Tag.TEXT,
-               sep_tag: str = Tag.CLOZE_SEPARATOR,
-               token: str = '==',
-               line_prefix: str = '> ',
-               separator: str = '\n\n',
-               states: _typing.Iterable[_util.FlashcardStateGroup],
-               ) -> str:
-    return (_util.Unit(code)
-            .map(_functools.partial(separate_code_by_tag, tag=sep_tag))
-            .map(lambda codes: map(_functools.partial(code_to_str, tag=tag), codes))
-            .map(_functools.partial(cloze_texts, token=token))
-            .map(_functools.partial(attach_flashcard_states, states=states))
-            .map(lambda groups: map(str, groups))
-            .map(lambda strs: map(_functools.partial(affix_lines, prefix=line_prefix), strs))
-            .map(separator.join)
-            .map(text)
-            .counit())
+def cloze_text(
+    code: TextCode,
+    /,
+    *,
+    tag: str = Tag.TEXT,
+    sep_tag: str = Tag.CLOZE_SEPARATOR,
+    token: str = "==",
+    line_prefix: str = "> ",
+    separator: str = "\n\n",
+    states: _typing.Iterable[_util.FlashcardStateGroup],
+) -> str:
+    return (
+        _util.Unit(code)
+        .map(_functools.partial(separate_code_by_tag, tag=sep_tag))
+        .map(lambda codes: map(_functools.partial(code_to_str, tag=tag), codes))
+        .map(_functools.partial(cloze_texts, token=token))
+        .map(_functools.partial(attach_flashcard_states, states=states))
+        .map(lambda groups: map(str, groups))
+        .map(
+            lambda strs: map(_functools.partial(affix_lines, prefix=line_prefix), strs)
+        )
+        .map(separator.join)
+        .map(text)
+        .counit()
+    )
 
 
-def memorize(code: TextCode, /, *,
-             func: _typing.Callable[[_typing.Iterable[str]], _typing.Iterable[_util.FlashcardGroup]],
-             states: _typing.Iterable[_util.FlashcardStateGroup],
-             tag: str = Tag.MEMORIZE,
-             ) -> str:
-    return (_util.Unit(code)
-            .map(_functools.partial(code_to_strs, tag=tag))
-            .map(func)
-            .map(_functools.partial(attach_flashcard_states, states=states))
-            .map(listify_flashcards)
-            .map(text)
-            .counit())
+def memorize(
+    code: TextCode,
+    /,
+    *,
+    func: _typing.Callable[
+        [_typing.Iterable[str]], _typing.Iterable[_util.FlashcardGroup]
+    ],
+    states: _typing.Iterable[_util.FlashcardStateGroup],
+    tag: str = Tag.MEMORIZE,
+) -> str:
+    return (
+        _util.Unit(code)
+        .map(_functools.partial(code_to_strs, tag=tag))
+        .map(func)
+        .map(_functools.partial(attach_flashcard_states, states=states))
+        .map(listify_flashcards)
+        .map(text)
+        .counit()
+    )
 
 
-def memorize_two_sided(code: TextCode, /, *,
-                       offsets: _typing.Callable[[
-                           int], int | None] | _typing.Sequence[int] | int = 1,
-                       hinter: _typing.Callable[[
-                           int, str], tuple[str, str]] = _util.constant(('', '')),
-                       reversible: bool = True,
-                       **kwargs: _typing.Any,
-                       ) -> str:
-    return memorize(code,
-                    func=_functools.partial(_gen.memorize_two_sided,
-                                            offsets=(_util.constant(offsets) if isinstance(offsets, int) else
-                                                     offsets.__getitem__ if isinstance(offsets, _typing.Sequence) else
-                                                     offsets),
-                                            reversible=reversible,
-                                            hinter=hinter),
-                    **kwargs
-                    )
+def memorize_two_sided(
+    code: TextCode,
+    /,
+    *,
+    offsets: _typing.Callable[[int], int | None] | _typing.Sequence[int] | int = 1,
+    hinter: _typing.Callable[[int, str], tuple[str, str]] = _util.constant(("", "")),
+    reversible: bool = True,
+    **kwargs: _typing.Any,
+) -> str:
+    return memorize(
+        code,
+        func=_functools.partial(
+            _gen.memorize_two_sided,
+            offsets=(
+                _util.constant(offsets)
+                if isinstance(offsets, int)
+                else offsets.__getitem__
+                if isinstance(offsets, _typing.Sequence)
+                else offsets
+            ),
+            reversible=reversible,
+            hinter=hinter,
+        ),
+        **kwargs,
+    )
 
 
-def memorize_linked_seq(code: TextCode, /, *,
-                        hinted: _typing.Callable[[
-                            int], bool] | _typing.Sequence[bool] | bool = True,
-                        sanitizer: _typing.Callable[[
-                            str], str] = _util.identity,
-                        reversible: bool = True,
-                        **kwargs: _typing.Any,
-                        ) -> str:
-    return memorize(code,
-                    func=_functools.partial(_gen.memorize_linked_seq,
-                                            reversible=reversible,
-                                            hinter=punctuation_hinter(
-                                                (_util.constant(hinted) if isinstance(hinted, bool) else
-                                                 hinted.__getitem__ if isinstance(hinted, _typing.Sequence) else
-                                                 hinted),
-                                                sanitizer=sanitizer,
-                                            )),
-                    **kwargs
-                    )
+def memorize_linked_seq(
+    code: TextCode,
+    /,
+    *,
+    hinted: _typing.Callable[[int], bool] | _typing.Sequence[bool] | bool = True,
+    sanitizer: _typing.Callable[[str], str] = _util.identity,
+    reversible: bool = True,
+    **kwargs: _typing.Any,
+) -> str:
+    return memorize(
+        code,
+        func=_functools.partial(
+            _gen.memorize_linked_seq,
+            reversible=reversible,
+            hinter=punctuation_hinter(
+                (
+                    _util.constant(hinted)
+                    if isinstance(hinted, bool)
+                    else hinted.__getitem__
+                    if isinstance(hinted, _typing.Sequence)
+                    else hinted
+                ),
+                sanitizer=sanitizer,
+            ),
+        ),
+        **kwargs,
+    )
 
 
-def memorize_indexed_seq(code: TextCode, /, *,
-                         indices: _typing.Callable[[
-                             int], int | None] | _typing.Sequence[int | None] | int = 1,
-                         reversible: bool = True,
-                         **kwargs: _typing.Any,
-                         ) -> str:
-    return memorize(code,
-                    func=_functools.partial(_gen.memorize_indexed_seq,
-                                            indices=(indices.__add__ if isinstance(indices, int) else
-                                                     indices.__getitem__ if isinstance(indices, _typing.Sequence) else
-                                                     indices),
-                                            reversible=reversible,),
-                    **kwargs
-                    )
+def memorize_indexed_seq(
+    code: TextCode,
+    /,
+    *,
+    indices: _typing.Callable[[int], int | None]
+    | _typing.Sequence[int | None]
+    | int = 1,
+    reversible: bool = True,
+    **kwargs: _typing.Any,
+) -> str:
+    return memorize(
+        code,
+        func=_functools.partial(
+            _gen.memorize_indexed_seq,
+            indices=(
+                indices.__add__
+                if isinstance(indices, int)
+                else indices.__getitem__
+                if isinstance(indices, _typing.Sequence)
+                else indices
+            ),
+            reversible=reversible,
+        ),
+        **kwargs,
+    )
 
 
-def semantics_seq_map(code: TextCode, sem: TextCode, *,
-                      states: _typing.Iterable[_util.FlashcardStateGroup],
-                      tag: str = Tag.SEMANTICS,
-                      reversible: bool = False,
-                      ) -> str:
-    return (_util.Unit((code, sem))
-            .map(lambda codes: (
+def semantics_seq_map(
+    code: TextCode,
+    sem: TextCode,
+    *,
+    states: _typing.Iterable[_util.FlashcardStateGroup],
+    tag: str = Tag.SEMANTICS,
+    reversible: bool = False,
+) -> str:
+    return (
+        _util.Unit((code, sem))
+        .map(
+            lambda codes: (
                 code_to_strs(codes[0], tag=tag),
-                code_to_strs(codes[1], tag=tag)
-            ))
-            .map(lambda strss: zip(*strss, strict=True))
-            .map(_functools.partial(_gen.semantics_seq_map, reversible=reversible))
-            .map(_functools.partial(attach_flashcard_states, states=states))
-            .map(listify_flashcards)
-            .map(text)
-            .counit())
+                code_to_strs(codes[1], tag=tag),
+            )
+        )
+        .map(lambda strss: zip(*strss, strict=True))
+        .map(_functools.partial(_gen.semantics_seq_map, reversible=reversible))
+        .map(_functools.partial(attach_flashcard_states, states=states))
+        .map(listify_flashcards)
+        .map(text)
+        .counit()
+    )
 
 
 def markdown_sanitizer(text: str) -> str:
@@ -196,12 +239,12 @@ def markdown_sanitizer(text: str) -> str:
         match: _re.Match[str]
         for match in _html_tag_regex.finditer(text):
             tag: str = match[1]
-            if tag.startswith('/'):
+            if tag.startswith("/"):
                 tag0: str = tag[1:]
                 tags.add(tag0)
                 if stack and stack[-1][1] == tag0:
                     matches.extend((stack.pop(), match))
-            elif tag.endswith('/'):
+            elif tag.endswith("/"):
                 tag0: str = tag[:-1]
                 tags.add(tag0)
                 matches.append(match)
@@ -214,102 +257,135 @@ def markdown_sanitizer(text: str) -> str:
             prev: int = 0
             match: _re.Match[str]
             for match in matches:
-                yield text[prev:match.start()]
+                yield text[prev : match.start()]
                 prev = match.end()
             yield text[prev:]
-        return (''.join(ret_gen()), frozenset(tags))
+
+        return ("".join(ret_gen()), frozenset(tags))
 
     tags: _typing.AbstractSet[str]
     text, tags = get_and_remove_html_tags(text)
-    distingusher: str = (
-        '\0' * (len(max(tags, key=len, default='')) + 1))
+    distingusher: str = "\0" * (len(max(tags, key=len, default="")) + 1)
     md_regex: _MarkdownRegex
     for md_regex in _markdown_regexes:
-        suffix: str = ('/>' if md_regex.desugared.endswith('/>') else
-                       '>' if md_regex.desugared.endswith('>') else '')
-        text = md_regex.regex.sub(f'{md_regex.desugared[:-len(suffix)]}{distingusher}{suffix}',
-                                  text)
+        suffix: str = (
+            "/>"
+            if md_regex.desugared.endswith("/>")
+            else ">"
+            if md_regex.desugared.endswith(">")
+            else ""
+        )
+        text = md_regex.regex.sub(
+            f"{md_regex.desugared[:-len(suffix)]}{distingusher}{suffix}", text
+        )
     text, _ = get_and_remove_html_tags(text)
     return text
 
 
-def seq_to_code(seq: _typing.Sequence[str], /, *,
-                index: int = 1,
-                prefix: str = '',
-                suffix: str = '',
-                escape: bool = False,) -> TextCode:
+def seq_to_code(
+    seq: _typing.Sequence[str],
+    /,
+    *,
+    index: int = 1,
+    prefix: str = "",
+    suffix: str = "",
+    escape: bool = False,
+) -> TextCode:
     def gen_code() -> _typing.Iterator[str]:
         yield prefix
-        newline: str = ''
+        newline: str = ""
         idx: int
         str_: str
         for idx, str_ in enumerate(seq):
-            yield '{text:'
+            yield "{text:"
             yield newline
             yield str(index + idx)
-            yield '. }'
+            yield ". }"
             yield TextCode.escape(str_) if escape else str_
-            newline = '\n'
+            newline = "\n"
         yield suffix
-    return TextCode.compile(''.join(gen_code()))
+
+    return TextCode.compile("".join(gen_code()))
 
 
-def map_to_code(map: _typing.Mapping[str, str], /, *,
-                name: str = '',
-                token: str = '==',
-                name_cloze: bool = False,
-                key_cloze: bool = False,
-                value_cloze: bool = True,
-                ) -> TextCode:
-    name_token: str = token if name_cloze else ''
-    key_token: str = token if key_cloze else ''
-    value_token: str = token if value_cloze else ''
+def map_to_code(
+    map: _typing.Mapping[str, str],
+    /,
+    *,
+    name: str = "",
+    token: str = "==",
+    name_cloze: bool = False,
+    key_cloze: bool = False,
+    value_cloze: bool = True,
+) -> TextCode:
+    name_token: str = token if name_cloze else ""
+    key_token: str = token if key_cloze else ""
+    value_token: str = token if value_cloze else ""
 
     def gen_code() -> _typing.Iterator[str]:
-        newline: str = ''
+        newline: str = ""
         if name:
             yield name_token
             yield name
             yield name_token
-            newline = '\n'
+            newline = "\n"
         key: str
         value: str
         for key, value in map.items():
             yield newline
-            yield '- '
+            yield "- "
             yield key_token
             yield key
             yield key_token
-            yield ': '
+            yield ": "
             yield value_token
             yield value
             yield value_token
-            newline = '\n'
-    return TextCode.compile(''.join(gen_code()))
+            newline = "\n"
+
+    return TextCode.compile("".join(gen_code()))
 
 
-def maps_to_code(maps: _typing.Mapping[str, _typing.Mapping[str, str]], /, *,
-                 sep_tag: str = Tag.CLOZE_SEPARATOR,
-                 **kwargs: _typing.Any) -> TextCode:
+def maps_to_code(
+    maps: _typing.Mapping[str, _typing.Mapping[str, str]],
+    /,
+    *,
+    sep_tag: str = Tag.CLOZE_SEPARATOR,
+    **kwargs: _typing.Any,
+) -> TextCode:
     def codegen() -> _typing.Iterator[str]:
         key: str
         value: _typing.Mapping[str, str]
         for key, value in maps.items():
             yield str(map_to_code(value, name=key, **kwargs))
-    return TextCode.compile(f'{{{TextCode.escape(sep_tag)}:}}'.join(codegen()))
+
+    return TextCode.compile(f"{{{TextCode.escape(sep_tag)}:}}".join(codegen()))
 
 
-def rows_to_table(rows: _typing.Iterable[_T], /, *,
-                  names: _typing.Iterable[str | tuple[str, _typing.Literal['default', 'left', 'right', 'center']]],
-                  values: _typing.Callable[[_T], _typing.Iterable[_typing.Any]]) -> str:
-    lf: str = '\n'
-    return f'''{' | '.join(name if isinstance(name, str) else name[0] for name in names)}
+def rows_to_table(
+    rows: _typing.Iterable[_T],
+    /,
+    *,
+    names: _typing.Iterable[
+        str | tuple[str, _typing.Literal["default", "left", "right", "center"]]
+    ],
+    values: _typing.Callable[[_T], _typing.Iterable[_typing.Any]],
+) -> str:
+    lf: str = "\n"
+    return f"""{' | '.join(name if isinstance(name, str) else name[0] for name in names)}
 {'|'.join(_table_aligns['default' if isinstance(name, str) else name[1]] for name in names)}
-{lf.join(' | '.join(map(str, values(row))) for row in rows)}'''
+{lf.join(' | '.join(map(str, values(row))) for row in rows)}"""
 
 
-def two_columns_to_code(rows: _typing.Iterable[_T], /, *,
-                        left: _typing.Callable[[_T], str],
-                        right: _typing.Callable[[_T], str],
-                        ) -> TextCode:
-    return TextCode.compile('{}'.join(_itertools.chain.from_iterable((left(row), right(row),) for row in rows)))
+def two_columns_to_code(
+    rows: _typing.Iterable[_T],
+    /,
+    *,
+    left: _typing.Callable[[_T], str],
+    right: _typing.Callable[[_T], str],
+) -> TextCode:
+    return TextCode.compile(
+        "{}".join(
+            _itertools.chain.from_iterable((left(row), right(row)) for row in rows)
+        )
+    )
