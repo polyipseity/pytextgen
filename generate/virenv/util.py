@@ -102,8 +102,7 @@ class FileSection:
             ),
             ".md": SectionFormat(
                 start_regex=_re.compile(
-                    rf'<!--{_globals.uuid} generate section="([^"]*)"-->',
-                    flags=0,
+                    rf'<!--{_globals.uuid} generate section="([^"]*)"-->', flags=0
                 ),
                 end_regex=_re.compile(rf"<!--/{_globals.uuid}-->", flags=0),
                 start=f'<!--{_globals.uuid} generate section="{{section}}"-->',
