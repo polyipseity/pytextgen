@@ -1,3 +1,4 @@
+# -*- coding: UTF-8 -*-
 import sys as _sys
 from . import main
 

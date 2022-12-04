@@ -1,3 +1,4 @@
+# -*- coding: UTF-8 -*-
 import dataclasses as _dataclasses
 import typing as _typing
 

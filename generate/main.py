@@ -1,3 +1,4 @@
+# -*- coding: UTF-8 -*-
 import argparse as _argparse
 import atexit as _atexit
 import contextlib as _contextlib

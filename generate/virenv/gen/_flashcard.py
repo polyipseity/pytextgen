@@ -1,3 +1,4 @@
+# -*- coding: UTF-8 -*-
 import itertools as _itertools
 import typing as _typing
 

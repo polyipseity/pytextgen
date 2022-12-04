@@ -1,3 +1,4 @@
+# -*- coding: UTF-8 -*-
 import dataclasses as _dataclasses
 import functools as _functools
 import html as _html

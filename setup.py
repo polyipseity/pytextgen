@@ -1,3 +1,4 @@
+# -*- coding: UTF-8 -*-
 import setuptools as _setuptools
 import version as _version
 

@@ -1,3 +1,4 @@
+# -*- coding: UTF-8 -*-
 import collections as _collections
 import dataclasses as _dataclasses
 import enum as _enum

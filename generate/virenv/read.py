@@ -1,3 +1,4 @@
+# -*- coding: UTF-8 -*-
 import typing as _typing
 from . import util as _util
 

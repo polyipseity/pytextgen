@@ -1,3 +1,4 @@
+# -*- coding: UTF-8 -*-
 import datetime as _datetime
 import re as _re
 import typing as _typing

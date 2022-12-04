@@ -1,3 +1,4 @@
+# -*- coding: UTF-8 -*-
 from __future__ import annotations
 import abc as _abc
 import ast as _ast

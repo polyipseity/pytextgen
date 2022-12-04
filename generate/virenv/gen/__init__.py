@@ -1,3 +1,4 @@
+# -*- coding: UTF-8 -*-
 from ._misc import *
 from ._flashcard import *
 from ._result import *

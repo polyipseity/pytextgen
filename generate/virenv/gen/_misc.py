@@ -1,3 +1,4 @@
+# -*- coding: UTF-8 -*-
 import enum as _enum
 import re as _re
 import regex as _regex
