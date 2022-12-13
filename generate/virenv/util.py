@@ -482,8 +482,8 @@ class FlashcardState:
 @_typing.final
 class FlashcardStateGroup(TypedTuple[FlashcardState], element_type=FlashcardState):
     __slots__: _typing.ClassVar = ()
-    format: _typing.ClassVar[str] = "<!--SR:{states}-->"
-    regex: _typing.ClassVar[_re.Pattern[str]] = _re.compile(r"<!--SR:(.*?)-->", flags=0)
+    format: _typing.ClassVar[str] = _globals.flashcard_states_format
+    regex: _typing.ClassVar[_re.Pattern[str]] = _globals.flashcard_states_regex
 
     def __str__(self: _typing.Self) -> str:
         if self:

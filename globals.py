@@ -22,16 +22,20 @@ class _OpenOptions(_typing.TypedDict):
 
 
 flashcard_ease_default: int = 250
-open_options: _OpenOptions = _OpenOptions(
-    encoding="UTF-8",
-    errors="strict",
-    newline=None,
-)
-generate_comment: str = "<!-- The following content is generated at {now}. Any edits will be overridden! -->"
+flashcard_states_format: str = "<!--SR:{states}-->"
+flashcard_states_regex: _re.Pattern[str] = _re.compile(r"<!--SR:(.*?)-->", flags=0)
+generate_comment_format: str = "<!-- The following content is generated at {now}. Any edits will be overridden! -->"
 generate_comment_regex: _re.Pattern[str] = _re.compile(
     r"^<!-- The following content is generated at (\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}\+\d{2}:\d{2}). Any edits will be overridden! -->",
     flags=0,
 )
 assert generate_comment_regex.search(
-    generate_comment.format(now=_datetime.datetime.now().astimezone().isoformat())
+    generate_comment_format.format(
+        now=_datetime.datetime.now().astimezone().isoformat()
+    )
+)
+open_options: _OpenOptions = _OpenOptions(
+    encoding="UTF-8",
+    errors="strict",
+    newline=None,
 )

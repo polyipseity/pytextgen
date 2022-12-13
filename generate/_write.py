@@ -74,7 +74,7 @@ class PythonWriter:
                         io.seek(0)
                         if self.__options.timestamp:
                             io.write(
-                                _globals.generate_comment.format(
+                                _globals.generate_comment_format.format(
                                     now=_datetime.datetime.now()
                                     .astimezone()
                                     .isoformat()
