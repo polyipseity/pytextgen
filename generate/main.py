@@ -120,7 +120,8 @@ def parse_argv(argv: _typing.Sequence[str]) -> Arguments | _typing.NoReturn:
         version=f"{prog} v{_version.version}",
         help="print version and exit",
     )
-    parser.add_argument(
+    t_group = parser.add_mutually_exclusive_group()
+    t_group.add_argument(
         "-t",
         "--timestamp",
         action="store_true",
@@ -128,7 +129,7 @@ def parse_argv(argv: _typing.Sequence[str]) -> Arguments | _typing.NoReturn:
         help="update or write timestamp (default)",
         dest="timestamp",
     )
-    parser.add_argument(
+    t_group.add_argument(
         "-T",
         "--no-timestamp",
         action="store_false",
@@ -136,21 +137,23 @@ def parse_argv(argv: _typing.Sequence[str]) -> Arguments | _typing.NoReturn:
         help="do not update or write timestamp",
         dest="timestamp",
     )
-    parser.add_argument(
+    init_flashcards_group = parser.add_mutually_exclusive_group()
+    init_flashcards_group.add_argument(
         "--init-flashcards",
         action="store_true",
         default=False,
         help="initialize flashcards",
         dest="init_flashcards",
     )
-    parser.add_argument(
+    init_flashcards_group.add_argument(
         "--no-init-flashcards",
         action="store_false",
         default=True,
         help="do not initialize flashcards (default)",
         dest="init_flashcards",
     )
-    parser.add_argument(
+    code_cache_group = parser.add_mutually_exclusive_group()
+    code_cache_group.add_argument(
         "--code-cache",
         action="store",
         default=_pathlib.Path("./__pycache__/"),
@@ -158,7 +161,7 @@ def parse_argv(argv: _typing.Sequence[str]) -> Arguments | _typing.NoReturn:
         help="specify code cache (default: ./__pycache__/)",
         dest="code_cache",
     )
-    parser.add_argument(
+    code_cache_group.add_argument(
         "--no-code-cache",
         action="store_const",
         const=None,
