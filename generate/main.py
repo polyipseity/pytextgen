@@ -4,6 +4,7 @@ import atexit as _atexit
 import contextlib as _contextlib
 import dataclasses as _dataclasses
 import enum as _enum
+import functools as _functools
 import itertools as _itertools
 import logging as _logging
 import os as _os
@@ -47,8 +48,7 @@ class Arguments:
         )
 
 
-def main(argv: _typing.Sequence[str]) -> _typing.NoReturn:
-    args: Arguments = parse_argv(argv)
+def main(args: Arguments) -> _typing.NoReturn:
     exit_code: ExitCode = ExitCode(0)
 
     def read(input: _pathlib.Path) -> _typing.Iterable[Writer]:
@@ -101,12 +101,16 @@ def main(argv: _typing.Sequence[str]) -> _typing.NoReturn:
     _sys.exit(exit_code)
 
 
-def parse_argv(argv: _typing.Sequence[str]) -> Arguments | _typing.NoReturn:
+def parser(
+    parent: _typing.Callable[..., _argparse.ArgumentParser] | None = None,
+) -> _argparse.ArgumentParser:
     prog0: str | None = _sys.modules[__name__].__package__
     prog: str = prog0 if prog0 else __name__
     del prog0
 
-    parser: _argparse.ArgumentParser = _argparse.ArgumentParser(
+    parser: _argparse.ArgumentParser = (
+        _argparse.ArgumentParser if parent is None else parent
+    )(
         prog=f"python -m {prog}",
         description="generate text from input",
         add_help=True,
@@ -176,18 +180,25 @@ def parse_argv(argv: _typing.Sequence[str]) -> Arguments | _typing.NoReturn:
         type=lambda path: _pathlib.Path(path).resolve(strict=True),
         help="sequence of input(s) to read",
     )
-    input: _argparse.Namespace = parser.parse_args(argv[1:])
-    if input.code_cache is None:
-        compiler: _util.Compiler = compile
-    else:
-        code_cache: _util.CompileCache = _util.CompileCache(folder=input.code_cache)
-        _atexit.register(code_cache.save)
-        compiler = code_cache.compile
-    return Arguments(
-        inputs=input.inputs,
-        options=Options(
-            timestamp=input.timestamp,
-            init_flashcards=input.init_flashcards,
-            compiler=compiler,
-        ),
-    )
+
+    @_functools.wraps(main)
+    def invoke(args: _argparse.Namespace) -> _typing.NoReturn:
+        if args.code_cache is None:
+            compiler: _util.Compiler = compile
+        else:
+            code_cache: _util.CompileCache = _util.CompileCache(folder=args.code_cache)
+            _atexit.register(code_cache.save)
+            compiler = code_cache.compile
+        main(
+            Arguments(
+                inputs=args.inputs,
+                options=Options(
+                    timestamp=args.timestamp,
+                    init_flashcards=args.init_flashcards,
+                    compiler=compiler,
+                ),
+            )
+        )
+
+    parser.set_defaults(invoke=invoke)
+    return parser
