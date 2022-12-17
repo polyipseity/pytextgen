@@ -5,12 +5,18 @@ import enum as _enum
 import functools as _functools
 import logging as _logging
 import pathlib as _pathlib
+import re as _re
 import sys as _sys
 import typing as _typing
 
 from .. import globals as _globals
 from .. import version as _version
 from . import *
+
+_flashcard_states_regex: _re.Pattern[str] = _re.compile(
+    r" ?" + _globals.flashcard_states_regex.pattern,
+    _globals.flashcard_states_regex.flags,
+)
 
 
 @_typing.final
@@ -65,12 +71,7 @@ def main(args: Arguments) -> _typing.NoReturn:
                 continue
             try:
                 file.seek(0)
-                file.write(
-                    _globals.flashcard_states_regex.sub(
-                        "",
-                        text,
-                    )
-                )
+                file.write(_flashcard_states_regex.sub("", text))
                 file.truncate()
             except Exception:
                 exit_code |= ExitCode.WRITE_ERROR
