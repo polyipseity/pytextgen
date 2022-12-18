@@ -124,7 +124,9 @@ class TextCode:
         stack: _typing.MutableSequence[_io.StringIO | State] = []
         stack.append(_io.StringIO())
         for index, char in enumerate(
-            code + "{}" if not code.endswith("}") or code.endswith("{}") else code
+            (code + "{}")
+            if not code.endswith("}") or code.endswith(R"\}") or code.endswith("{}")
+            else code
         ):
             if state == State.NORMAL:
                 if char == "\\":
