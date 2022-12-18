@@ -79,7 +79,7 @@ def cloze_text(
     *,
     tag: str = Tag.TEXT,
     sep_tag: str = Tag.CLOZE_SEPARATOR,
-    token: str = "==",
+    token: tuple[str, str] = ("{{", "}}"),
     line_prefix: str = "> ",
     separator: str = "\n\n",
     states: _typing.Iterable[_util.FlashcardStateGroup],
@@ -314,34 +314,35 @@ def map_to_code(
     /,
     *,
     name: str = "",
-    token: str = "==",
+    token: tuple[str, str] = ("{{", "}}"),
     name_cloze: bool = False,
     key_cloze: bool = False,
     value_cloze: bool = True,
 ) -> TextCode:
-    name_token: str = token if name_cloze else ""
-    key_token: str = token if key_cloze else ""
-    value_token: str = token if value_cloze else ""
+    token = (TextCode.escape(token[0]), TextCode.escape(token[1]))
+    name_token: tuple[str, str] = token if name_cloze else ("", "")
+    key_token: tuple[str, str] = token if key_cloze else ("", "")
+    value_token: tuple[str, str] = token if value_cloze else ("", "")
 
     def gen_code() -> _typing.Iterator[str]:
         newline: str = ""
         if name:
-            yield name_token
+            yield name_token[0]
             yield name
-            yield name_token
+            yield name_token[1]
             newline = "\n"
         key: str
         value: str
         for key, value in map.items():
             yield newline
             yield "- "
-            yield key_token
+            yield key_token[0]
             yield key
-            yield key_token
+            yield key_token[1]
             yield ": "
-            yield value_token
+            yield value_token[0]
             yield value
-            yield value_token
+            yield value_token[1]
             newline = "\n"
 
     return TextCode.compile("".join(gen_code()))

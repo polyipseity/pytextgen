@@ -388,12 +388,12 @@ assert issubclass(TwoSidedFlashcard, FlashcardGroup)
 )
 class ClozeFlashcardGroup:
     __pattern_cache: _typing.ClassVar[
-        _typing.MutableMapping[str, _re.Pattern[str]]
+        _typing.MutableMapping[tuple[str, str], _re.Pattern[str]]
     ] = {}
 
     context: str
     _: _dataclasses.KW_ONLY
-    token: str = "=="
+    token: tuple[str, str] = ("{{", "}}")
     _clozes: _typing.Sequence[str] = _dataclasses.field(
         init=False, repr=False, hash=False, compare=False
     )
@@ -402,9 +402,12 @@ class ClozeFlashcardGroup:
         try:
             pattern: _re.Pattern[str] = self.__pattern_cache[self.token]
         except KeyError:
-            etoken: str = _re.escape(self.token)
+            e_token: tuple[str, str] = (
+                _re.escape(self.token[0]),
+                _re.escape(self.token[1]),
+            )
             self.__pattern_cache[self.token] = pattern = _re.compile(
-                rf"[{etoken}]+(?<={etoken})([^{etoken}]+)(?={etoken})[{etoken}]+",
+                rf"{e_token[0]}((?:(?!{e_token[1]}).)+){e_token[1]}",
                 flags=0,
             )
         object.__setattr__(

@@ -144,7 +144,7 @@ def punctuation_hinter(
 
 
 def cloze_texts(
-    texts: _typing.Iterable[str], /, *, token: str = "=="
+    texts: _typing.Iterable[str], /, *, token: tuple[str, str] = ("{{", "}}")
 ) -> _typing.Iterator[_util.FlashcardGroup]:
     text: str
     for text in texts:
