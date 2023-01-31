@@ -100,13 +100,14 @@ class TextCode:
         return self.__by_tag
 
     @classmethod
-    def escape(cls: type[_typing.Self], text: str) -> str:
+    def escape(cls: type[_typing.Self], text: str, /, *, block: bool = False) -> str:
         def translate(char: str) -> str:
             if char in cls.escapes:
                 return f"\\{char}"
             return char
 
-        return "".join(map(translate, text))
+        ret = "".join(map(translate, text))
+        return f"{{:{ret}}}" if block else ret
 
     @staticmethod
     def compiler(code: str) -> _typing.Iterator[Block]:

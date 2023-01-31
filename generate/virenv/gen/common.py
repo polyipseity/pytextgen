@@ -302,7 +302,7 @@ def seq_to_code(
             yield newline
             yield str(index + idx)
             yield ". }"
-            yield TextCode.escape(str_) if escape else str_
+            yield TextCode.escape(str_, block=True) if escape else str_
             newline = "\n"
         yield suffix
 
