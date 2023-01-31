@@ -48,6 +48,9 @@ class PythonWriter:
     def __repr__(self: _typing.Self) -> str:
         return f"{type(self).__qualname__}({self.__code!r}, env={self.__env!r}, options={self.__options!r})"
 
+    def __str__(self: _typing.Self) -> str:
+        return f"{type(self).__qualname__}({self.__code}, env={self.__env}, options={self.__options})"
+
     @_contextlib.contextmanager
     def write(self: _typing.Self) -> _typing.Iterator[None]:
         results0: _typing.Any | None = self.__env.exec(self.__code)

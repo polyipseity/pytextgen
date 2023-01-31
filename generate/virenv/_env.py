@@ -28,6 +28,22 @@ class Environment:
     def __repr__(self: _typing.Self) -> str:
         return f"{type(self).__qualname__}(env={self.__env!r}, globals={self.__globals!r}, locals={self.__locals!r})"
 
+    def __str__(self: _typing.Self) -> str:
+        def filter(map: _typing.Mapping[str, _typing.Any | None]):
+            return {
+                key: val
+                for key, val in map.items()
+                if not (key.startswith("__") and key.endswith("__"))
+            }
+
+        return repr(
+            Environment(
+                env=filter(self.env),
+                globals=filter(self.globals),
+                locals=filter(self.locals),
+            )
+        )
+
     @property
     def env(self: _typing.Self) -> _typing.Mapping[str, _typing.Any | None]:
         return self.__env
