@@ -57,6 +57,22 @@ def text(text: str) -> str:
     return _util.Unit(text).map(strip_lines).map(_section_text_format.format).counit()
 
 
+_text = text
+
+
+def quote(text: str, prefix: str = "> ") -> str:
+    return _util.Unit(text).map(_functools.partial(affix_lines, prefix=prefix)).counit()
+
+
+def quotette(text: str, prefix: str = "> ") -> str:
+    return (
+        _util.Unit(text)
+        .map(_functools.partial(quote, prefix=prefix))
+        .map(_text)
+        .counit()
+    )
+
+
 def quote_text(
     code: TextCode,
     /,
@@ -67,8 +83,7 @@ def quote_text(
     return (
         _util.Unit(code)
         .map(_functools.partial(code_to_str, tag=tag))
-        .map(_functools.partial(affix_lines, prefix=line_prefix))
-        .map(text)
+        .map(_functools.partial(quotette, prefix=line_prefix))
         .counit()
     )
 
@@ -91,9 +106,7 @@ def cloze_text(
         .map(_functools.partial(cloze_texts, token=token))
         .map(_functools.partial(attach_flashcard_states, states=states))
         .map(lambda groups: map(str, groups))
-        .map(
-            lambda strs: map(_functools.partial(affix_lines, prefix=line_prefix), strs)
-        )
+        .map(lambda strs: map(_functools.partial(quote, prefix=line_prefix), strs))
         .map(separator.join)
         .map(text)
         .counit()
