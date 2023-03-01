@@ -13,6 +13,7 @@ import typing as _typing
 
 from ... import globals as _globals
 from ...util import *
+from .config import *
 
 
 class Location(metaclass=_abc.ABCMeta):
@@ -313,41 +314,14 @@ class FlashcardGroup(_typing.Sequence[str], metaclass=_abc.ABCMeta):
     slots=True,
 )
 class TwoSidedFlashcard:
-    @_typing.final
-    @_dataclasses.dataclass(
-        init=True,
-        repr=True,
-        eq=True,
-        order=False,
-        unsafe_hash=False,
-        frozen=True,
-        match_args=True,
-        kw_only=True,
-        slots=True,
-    )
-    class SeparatorKey:
-        reversible: bool
-        multiline: bool
-
-    separators: _typing.ClassVar[
-        _typing.Mapping[SeparatorKey, str]
-    ] = _types.MappingProxyType(
-        {
-            SeparatorKey(reversible=False, multiline=False): "::",
-            SeparatorKey(reversible=True, multiline=False): ":::",
-            SeparatorKey(reversible=False, multiline=True): "\n??\n",
-            SeparatorKey(reversible=True, multiline=True): "\n???\n",
-        }
-    )
-
     left: str
     right: str
     _: _dataclasses.KW_ONLY
     reversible: bool
 
     def __str__(self) -> str:
-        return self.separators[
-            self.SeparatorKey(
+        return CONFIG.flashcard_separators[
+            FlashcardSeparatorType(
                 reversible=self.reversible,
                 multiline="\n" in self.left or "\n" in self.right,
             )
@@ -387,7 +361,7 @@ class ClozeFlashcardGroup:
 
     context: str
     _: _dataclasses.KW_ONLY
-    token: tuple[str, str] = ("{{", "}}")
+    token: tuple[str, str] = CONFIG.cloze_token
     _clozes: _typing.Sequence[str] = _dataclasses.field(
         init=False, repr=False, hash=False, compare=False
     )

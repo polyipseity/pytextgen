@@ -7,6 +7,7 @@ import re as _re
 import types as _types
 import typing as _typing
 
+from ..config import *
 from ..util import *
 from ._flashcard import *
 from ._misc import *
@@ -103,7 +104,7 @@ def cloze_text(
     *,
     tag: str = Tag.TEXT,
     sep_tag: str = Tag.CLOZE_SEPARATOR,
-    token: tuple[str, str] = ("{{", "}}"),
+    token: tuple[str, str] = CONFIG.cloze_token,
     line_prefix: str = "> ",
     separator: str = "\n\n",
     states: _typing.Iterable[FlashcardStateGroup],
@@ -342,7 +343,7 @@ def map_to_code(
     /,
     *,
     name: str = "",
-    token: tuple[str, str] = ("{{", "}}"),
+    token: tuple[str, str] = CONFIG.cloze_token,
     name_cloze: bool = False,
     key_cloze: bool = False,
     value_cloze: bool = True,

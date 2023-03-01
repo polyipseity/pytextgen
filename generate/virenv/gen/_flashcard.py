@@ -2,6 +2,7 @@
 import itertools as _itertools
 import typing as _typing
 
+from ..config import *
 from ..util import *
 from ._misc import *
 
@@ -142,7 +143,7 @@ def punctuation_hinter(
 
 
 def cloze_texts(
-    texts: _typing.Iterable[str], /, *, token: tuple[str, str] = ("{{", "}}")
+    texts: _typing.Iterable[str], /, *, token: tuple[str, str] = CONFIG.cloze_token
 ) -> _typing.Iterator[FlashcardGroup]:
     text: str
     for text in texts:
