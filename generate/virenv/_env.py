@@ -58,10 +58,9 @@ class Environment:
 
     def exec(self, code: _types.CodeType) -> _typing.Any | None:
         env: _types.SimpleNamespace = _types.SimpleNamespace(result=None, **self.__env)
-        vars: dict[str, _typing.Any] = {
-            **self.__globals,
-            **self.__locals,
-            "__env__": env,
-        }
-        exec(code, vars, vars)
+        exec(
+            code,
+            {**self.__globals, "__env__": env},
+            {**self.__locals, "__env__": env},
+        )
         return env.result
