@@ -1,7 +1,8 @@
 # -*- coding: UTF-8 -*-
 import dataclasses as _dataclasses
 import typing as _typing
-from .. import util as _util
+
+from ..util import *
 
 
 @_typing.final
@@ -17,10 +18,10 @@ from .. import util as _util
     slots=True,
 )
 class Result:
-    location: _util.Location
+    location: Location
     text: str
 
 
 @_typing.final
-class Results(_util.TypedTuple[Result], element_type=Result):
+class Results(TypedTuple[Result], element_type=Result):
     __slots__: _typing.ClassVar = ()

@@ -15,7 +15,8 @@ import typing as _typing
 from .. import globals as _globals
 from .. import util as _util
 from .. import version as _version
-from . import *
+from ._read import *
+from ._write import *
 
 
 @_typing.final

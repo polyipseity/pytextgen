@@ -7,9 +7,11 @@ import re as _re
 import types as _types
 import typing as _typing
 
-from .. import gen as _gen
-from .. import util as _util
-from . import *
+from ..util import *
+from ._flashcard import *
+from ._misc import *
+from ._text_code import *
+
 
 _T = _typing.TypeVar("_T")
 
@@ -66,23 +68,18 @@ _html_tag_regex: _re.Pattern[str] = _re.compile(r"<([^>]+)>", flags=_re.NOFLAG)
 
 
 def text(text: str) -> str:
-    return _util.Unit(text).map(strip_lines).map(_section_text_format.format).counit()
+    return Unit(text).map(strip_lines).map(_section_text_format.format).counit()
 
 
 _text = text
 
 
 def quote(text: str, prefix: str = "> ") -> str:
-    return _util.Unit(text).map(_functools.partial(affix_lines, prefix=prefix)).counit()
+    return Unit(text).map(_functools.partial(affix_lines, prefix=prefix)).counit()
 
 
 def quotette(text: str, prefix: str = "> ") -> str:
-    return (
-        _util.Unit(text)
-        .map(_functools.partial(quote, prefix=prefix))
-        .map(_text)
-        .counit()
-    )
+    return Unit(text).map(_functools.partial(quote, prefix=prefix)).map(_text).counit()
 
 
 def quote_text(
@@ -93,7 +90,7 @@ def quote_text(
     line_prefix: str = "> ",
 ) -> str:
     return (
-        _util.Unit(code)
+        Unit(code)
         .map(_functools.partial(code_to_str, tag=tag))
         .map(_functools.partial(quotette, prefix=line_prefix))
         .counit()
@@ -109,10 +106,10 @@ def cloze_text(
     token: tuple[str, str] = ("{{", "}}"),
     line_prefix: str = "> ",
     separator: str = "\n\n",
-    states: _typing.Iterable[_util.FlashcardStateGroup],
+    states: _typing.Iterable[FlashcardStateGroup],
 ) -> str:
     return (
-        _util.Unit(code)
+        Unit(code)
         .map(_functools.partial(separate_code_by_tag, tag=sep_tag))
         .map(lambda codes: map(_functools.partial(code_to_str, tag=tag), codes))
         .map(_functools.partial(cloze_texts, token=token))
@@ -129,14 +126,12 @@ def memorize(
     code: TextCode,
     /,
     *,
-    func: _typing.Callable[
-        [_typing.Iterable[str]], _typing.Iterable[_util.FlashcardGroup]
-    ],
-    states: _typing.Iterable[_util.FlashcardStateGroup],
+    func: _typing.Callable[[_typing.Iterable[str]], _typing.Iterable[FlashcardGroup]],
+    states: _typing.Iterable[FlashcardStateGroup],
     tag: str = Tag.MEMORIZE,
 ) -> str:
     return (
-        _util.Unit(code)
+        Unit(code)
         .map(_functools.partial(code_to_strs, tag=tag))
         .map(func)
         .map(_functools.partial(attach_flashcard_states, states=states))
@@ -151,16 +146,16 @@ def memorize_two_sided(
     /,
     *,
     offsets: _typing.Callable[[int], int | None] | _typing.Sequence[int] | int = 1,
-    hinter: _typing.Callable[[int, str], tuple[str, str]] = _util.constant(("", "")),
+    hinter: _typing.Callable[[int, str], tuple[str, str]] = constant(("", "")),
     reversible: bool = True,
     **kwargs: _typing.Any,
 ) -> str:
     return memorize(
         code,
         func=_functools.partial(
-            _gen.memorize_two_sided,
+            memorize_two_sided0,
             offsets=(
-                _util.constant(offsets)
+                constant(offsets)
                 if isinstance(offsets, int)
                 else offsets.__getitem__
                 if isinstance(offsets, _typing.Sequence)
@@ -178,18 +173,18 @@ def memorize_linked_seq(
     /,
     *,
     hinted: _typing.Callable[[int], bool] | _typing.Sequence[bool] | bool = True,
-    sanitizer: _typing.Callable[[str], str] = _util.identity,
+    sanitizer: _typing.Callable[[str], str] = identity,
     reversible: bool = True,
     **kwargs: _typing.Any,
 ) -> str:
     return memorize(
         code,
         func=_functools.partial(
-            _gen.memorize_linked_seq,
+            memorize_linked_seq0,
             reversible=reversible,
             hinter=punctuation_hinter(
                 (
-                    _util.constant(hinted)
+                    constant(hinted)
                     if isinstance(hinted, bool)
                     else hinted.__getitem__
                     if isinstance(hinted, _typing.Sequence)
@@ -215,7 +210,7 @@ def memorize_indexed_seq(
     return memorize(
         code,
         func=_functools.partial(
-            _gen.memorize_indexed_seq,
+            memorize_indexed_seq0,
             indices=(
                 indices.__add__
                 if isinstance(indices, int)
@@ -233,12 +228,12 @@ def semantics_seq_map(
     code: TextCode,
     sem: TextCode,
     *,
-    states: _typing.Iterable[_util.FlashcardStateGroup],
+    states: _typing.Iterable[FlashcardStateGroup],
     tag: str = Tag.SEMANTICS,
     reversible: bool = False,
 ) -> str:
     return (
-        _util.Unit((code, sem))
+        Unit((code, sem))
         .map(
             lambda codes: (
                 code_to_strs(codes[0], tag=tag),
@@ -246,7 +241,7 @@ def semantics_seq_map(
             )
         )
         .map(lambda strss: zip(*strss, strict=True))
-        .map(_functools.partial(_gen.semantics_seq_map, reversible=reversible))
+        .map(_functools.partial(semantics_seq_map0, reversible=reversible))
         .map(_functools.partial(attach_flashcard_states, states=states))
         .map(listify_flashcards)
         .map(text)

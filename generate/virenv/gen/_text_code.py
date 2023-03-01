@@ -6,8 +6,8 @@ import io as _io
 import types as _types
 import typing as _typing
 
-from .. import util as _util
-from . import *
+from ..util import *
+from ._misc import *
 
 
 @_typing.final
@@ -79,7 +79,7 @@ class TextCode:
             str, _typing.Sequence[TextCode.ByTagValue]
         ] = _types.MappingProxyType(
             _collections.defaultdict(
-                _util.constant(()), {k: tuple(v) for k, v in by_tag.items()}
+                constant(()), {k: tuple(v) for k, v in by_tag.items()}
             )
         )
 

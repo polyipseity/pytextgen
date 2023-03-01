@@ -8,9 +8,9 @@ import typing as _typing
 
 from .. import globals as _globals
 from .. import util as _util
-from . import virenv as _virenv
 from .virenv import gen as _virenv_gen
-from . import *
+from ._options import *
+import virenv as _virenv
 
 
 class Writer(metaclass=_abc.ABCMeta):

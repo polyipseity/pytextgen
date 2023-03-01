@@ -11,7 +11,7 @@ import typing as _typing
 
 from .. import globals as _globals
 from .. import version as _version
-from . import *
+
 
 _flashcard_states_regex: _re.Pattern[str] = _re.compile(
     r" ?" + _globals.flashcard_states_regex.pattern,

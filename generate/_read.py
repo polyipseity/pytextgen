@@ -14,9 +14,10 @@ import typing as _typing
 
 from .. import globals as _globals
 from .. import util as _util
-from . import virenv as _virenv
 from .virenv import util as _virenv_util
-from . import *
+from ._options import *
+from ._write import *
+import virenv as _virenv
 
 
 class Reader(metaclass=_abc.ABCMeta):
