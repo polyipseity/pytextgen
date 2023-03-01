@@ -41,7 +41,7 @@ class ExitCode(_enum.IntFlag):
 class Arguments:
     inputs: _typing.Sequence[_pathlib.Path]
 
-    def __post_init__(self: _typing.Self) -> None:
+    def __post_init__(self) -> None:
         object.__setattr__(
             self, "inputs", tuple(input.resolve(strict=True) for input in self.inputs)
         )

@@ -18,13 +18,11 @@ class Writer(metaclass=_abc.ABCMeta):
 
     @_contextlib.contextmanager
     @_abc.abstractmethod
-    def write(self: _typing.Self) -> _typing.Iterator[None]:
+    def write(self) -> _typing.Iterator[None]:
         raise NotImplementedError(self)
 
     @classmethod
-    def __subclasshook__(
-        cls: type[_typing.Self], subclass: type
-    ) -> bool | _types.NotImplementedType:
+    def __subclasshook__(cls, subclass: type) -> bool | _types.NotImplementedType:
         return _util.abc_subclasshook_check(
             Writer, cls, subclass, names=(cls.write.__name__,)
         )
@@ -34,7 +32,7 @@ class PythonWriter:
     __slots__: _typing.ClassVar = ("__code", "__env", "__options")
 
     def __init__(
-        self: _typing.Self,
+        self,
         code: _types.CodeType,
         /,
         *,
@@ -45,14 +43,14 @@ class PythonWriter:
         self.__env: _virenv.Environment = env
         self.__options: Options = options
 
-    def __repr__(self: _typing.Self) -> str:
+    def __repr__(self) -> str:
         return f"{type(self).__qualname__}({self.__code!r}, env={self.__env!r}, options={self.__options!r})"
 
-    def __str__(self: _typing.Self) -> str:
+    def __str__(self) -> str:
         return f"{type(self).__qualname__}({self.__code}, env={self.__env}, options={self.__options})"
 
     @_contextlib.contextmanager
-    def write(self: _typing.Self) -> _typing.Iterator[None]:
+    def write(self) -> _typing.Iterator[None]:
         results0: _typing.Any | None = self.__env.exec(self.__code)
         if not isinstance(results0, _virenv_gen.Results):
             raise TypeError(results0)

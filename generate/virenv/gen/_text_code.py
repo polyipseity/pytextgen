@@ -36,14 +36,14 @@ class TextCode:
         tag: str = ""
 
         @property
-        def special(self: _typing.Self) -> bool:
+        def special(self) -> bool:
             return bool(self.tag)
 
         @property
-        def common(self: _typing.Self) -> bool:
+        def common(self) -> bool:
             return not self.special
 
-        def __str__(self: _typing.Self) -> str:
+        def __str__(self) -> str:
             if self.special:
                 return f"{{{self.tag}:{TextCode.escape(self.text)}}}"
             if self.text:
@@ -66,7 +66,7 @@ class TextCode:
         idx: int
         block: "TextCode.Block"
 
-    def __init__(self: _typing.Self, blocks: _typing.Iterable[Block]) -> None:
+    def __init__(self, blocks: _typing.Iterable[Block]) -> None:
         self.__blocks: _typing.Sequence[TextCode.Block] = tuple(blocks)
         by_tag: _typing.MutableMapping[
             str, _typing.MutableSequence[TextCode.ByTagValue]
@@ -83,24 +83,24 @@ class TextCode:
             )
         )
 
-    def __repr__(self: _typing.Self) -> str:
+    def __repr__(self) -> str:
         return f"{type(self).__qualname__}(blocks={self.__blocks!r})"
 
-    def __str__(self: _typing.Self) -> str:
+    def __str__(self) -> str:
         return "".join(map(str, self.__blocks))
 
     @property
-    def blocks(self: _typing.Self) -> _typing.Sequence[Block]:
+    def blocks(self) -> _typing.Sequence[Block]:
         return self.__blocks
 
     @property
     def by_tag(
-        self: _typing.Self,
+        self,
     ) -> _typing.Mapping[str, _typing.Sequence[ByTagValue]]:
         return self.__by_tag
 
     @classmethod
-    def escape(cls: type[_typing.Self], text: str, /, *, block: bool = False) -> str:
+    def escape(cls, text: str, /, *, block: bool = False) -> str:
         def translate(char: str) -> str:
             if char in cls.escapes:
                 return f"\\{char}"
@@ -189,7 +189,7 @@ class TextCode:
                 raise ValueError(f'Unexpected state "{state}": {code}')
 
     @classmethod
-    def compile(cls: type[_typing.Self], text: str) -> _typing.Self:
+    def compile(cls, text: str) -> _typing.Self:
         return cls(cls.compiler(text))
 
 

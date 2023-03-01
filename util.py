@@ -95,31 +95,25 @@ def abc_subclasshook_check(
 class Unit(_typing.Generic[_T_co]):
     __slots__: _typing.ClassVar = ("__value",)
 
-    def __init__(self: _typing.Self, value: _T_co) -> None:
+    def __init__(self, value: _T_co) -> None:
         self.__value: _T_co = value
 
-    def counit(self: _typing.Self) -> _T_co:
+    def counit(self) -> _T_co:
         return self.__value
 
-    def bind(
-        self: _typing.Self, func: _typing.Callable[[_T_co], _ExtendsUnit]
-    ) -> _ExtendsUnit:
+    def bind(self, func: _typing.Callable[[_T_co], _ExtendsUnit]) -> _ExtendsUnit:
         return func(self.counit())
 
-    def extend(
-        self: _typing.Self, func: _typing.Callable[[_typing.Self], _T1_co]
-    ) -> "Unit[_T1_co]":
+    def extend(self, func: _typing.Callable[[_typing.Self], _T1_co]) -> "Unit[_T1_co]":
         return Unit(func(self))
 
-    def map(
-        self: _typing.Self, func: _typing.Callable[[_T_co], _T1_co]
-    ) -> "Unit[_T1_co]":
+    def map(self, func: _typing.Callable[[_T_co], _T1_co]) -> "Unit[_T1_co]":
         return Unit(func(self.counit()))
 
     def join(self: "Unit[_ExtendsUnit]") -> _ExtendsUnit:
         return self.counit()
 
-    def duplicate(self: _typing.Self) -> "Unit[_typing.Self]":
+    def duplicate(self) -> "Unit[_typing.Self]":
         return Unit(self)
 
 
@@ -128,29 +122,25 @@ class TypedTuple(_typing.Generic[_T], tuple[_T, ...]):
     element_type: type[_T]
 
     def __init_subclass__(
-        cls: type[_typing.Self], element_type: type[_T], **kwargs: _typing.Any | None
+        cls, element_type: type[_T], **kwargs: _typing.Any | None
     ) -> None:
         super().__init_subclass__(**kwargs)
         cls.element_type = element_type
 
     @_typing.overload
-    def __new__(
-        cls: type[_typing.Self], iterable: _typing.Iterable[_T], /
-    ) -> _typing.Self:
+    def __new__(cls, iterable: _typing.Iterable[_T], /) -> _typing.Self:
         ...
 
     @_typing.overload
-    def __new__(cls: type[_typing.Self], *items: _T) -> _typing.Self:
+    def __new__(cls, *items: _T) -> _typing.Self:
         ...
 
-    def __new__(
-        cls: type[_typing.Self], *items: _typing.Iterable[_T] | _T
-    ) -> _typing.Self:
+    def __new__(cls, *items: _typing.Iterable[_T] | _T) -> _typing.Self:
         if len(items) == 1 and not isinstance(items[0], cls.element_type):
             return super().__new__(cls, _typing.cast(_typing.Iterable[_T], items[0]))
         return super().__new__(cls, _typing.cast(_typing.Iterable[_T], items))
 
-    def __repr__(self: _typing.Self) -> str:
+    def __repr__(self) -> str:
         return type(self).__qualname__ + super().__repr__()
 
 
@@ -158,13 +148,13 @@ class TypedTuple(_typing.Generic[_T], tuple[_T, ...]):
 class LazyIterableSequence(_typing.Generic[_T_co], _typing.Sequence[_T_co]):
     __slots__: _typing.ClassVar = ("__cache", "__done", "__iterable", "__lock")
 
-    def __init__(self: _typing.Self, iterable: _typing.Iterable[_T_co]) -> None:
+    def __init__(self, iterable: _typing.Iterable[_T_co]) -> None:
         self.__lock: _threading.Lock = _threading.Lock()
         self.__iterable: _typing.Iterable[_T_co] = iterable
         self.__cache: _typing.MutableSequence[_T_co] = []
         self.__done: bool = False
 
-    def __cache_to(self: _typing.Self, length: int | None) -> int:
+    def __cache_to(self, length: int | None) -> int:
         cur_len: int = len(self.__cache)
         if self.__done or (length is not None and cur_len >= length):
             return cur_len
@@ -182,13 +172,13 @@ class LazyIterableSequence(_typing.Generic[_T_co], _typing.Sequence[_T_co]):
             self.__done = True
         return new_len
 
-    def __getitem__(self: _typing.Self, index: int) -> _T_co:
+    def __getitem__(self, index: int) -> _T_co:
         available: int = self.__cache_to(index + 1)
         if index >= available:
             raise IndexError(index)
         return self.__cache[index]
 
-    def __len__(self: _typing.Self) -> int:
+    def __len__(self) -> int:
         return self.__cache_to(None)
 
 
@@ -198,7 +188,7 @@ assert issubclass(LazyIterableSequence, _typing.Sequence)
 @_typing.final
 class Compiler(_typing.Protocol):
     def __call__(
-        self: _typing.Self,
+        self,
         source: str | _typeshed.ReadableBuffer | _ast.AST,
         filename: str | _typeshed.ReadableBuffer | _os.PathLike[_typing.Any],
         mode: str,
@@ -256,12 +246,10 @@ class CompileCache:
         optimize: int
 
         @classmethod
-        def from_metadata(
-            cls: type[_typing.Self], data: CompileCache.MetadataKey
-        ) -> _typing.Self:
+        def from_metadata(cls, data: CompileCache.MetadataKey) -> _typing.Self:
             return cls(**data)
 
-        def to_metadata(self: _typing.Self) -> CompileCache.MetadataKey:
+        def to_metadata(self) -> CompileCache.MetadataKey:
             return CompileCache.MetadataKey(**_dataclasses.asdict(self))
 
     @_typing.final
@@ -281,16 +269,16 @@ class CompileCache:
         code: _types.CodeType
 
     @classmethod
-    def __time(cls: type[_typing.Self]) -> int:
+    def __time(cls) -> int:
         return int(_time.time())
 
-    def __gen_cache_name(self: _typing.Self) -> str:
+    def __gen_cache_name(self) -> str:
         ret: str = self.__cache_name_format.format(str(_uuid.uuid4()))
         while ret in self.__cache_names:
             ret = self.__cache_name_format.format(str(_uuid.uuid4()))
         return ret
 
-    def __init__(self: _typing.Self, *, folder: _pathlib.Path) -> None:
+    def __init__(self, *, folder: _pathlib.Path) -> None:
         folder.mkdir(parents=True, exist_ok=True)
         self.__folder: _pathlib.Path = folder.resolve(strict=True)
         metadata_path: _pathlib.Path = self.__folder / self.__metadata_filename
@@ -333,7 +321,7 @@ class CompileCache:
             ] = CompileCache.CacheEntry(value=value, code=code)
 
     def compile(
-        self: _typing.Self,
+        self,
         source: str | _typeshed.ReadableBuffer | _ast.AST,
         filename: str | _typeshed.ReadableBuffer | _os.PathLike[_typing.Any],
         mode: str,
@@ -370,7 +358,7 @@ class CompileCache:
             )
         return entry.code
 
-    def save(self: _typing.Self) -> None:
+    def save(self) -> None:
         cur_time: int = self.__time()
 
         def save_cache() -> _typing.Iterator[CompileCache.MetadataEntry]:
@@ -414,5 +402,5 @@ class CompileCache:
                 indent=2,
             )
 
-    def __repr__(self: _typing.Self) -> str:
+    def __repr__(self) -> str:
         return f"{type(self).__qualname__}(folder={self.__folder!r})"

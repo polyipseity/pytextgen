@@ -19,13 +19,11 @@ class Location(metaclass=_abc.ABCMeta):
     __slots__: _typing.ClassVar = ()
 
     @_abc.abstractmethod
-    def open(self: _typing.Self) -> _typing.TextIO:
+    def open(self) -> _typing.TextIO:
         raise NotImplementedError(self)
 
     @classmethod
-    def __subclasshook__(
-        cls: type[_typing.Self], subclass: type
-    ) -> bool | _types.NotImplementedType:
+    def __subclasshook__(cls, subclass: type) -> bool | _types.NotImplementedType:
         return abc_subclasshook_check(
             Location, cls, subclass, names=(cls.open.__name__,)
         )
@@ -46,10 +44,10 @@ class Location(metaclass=_abc.ABCMeta):
 class PathLocation:
     path: _pathlib.Path
 
-    def open(self: _typing.Self) -> _typing.TextIO:
+    def open(self) -> _typing.TextIO:
         return open(self.path, mode="r+t", **_globals.open_options)
 
-    def __post_init__(self: _typing.Self) -> None:
+    def __post_init__(self) -> None:
         object.__setattr__(self, "path", self.path.resolve(strict=True))
 
 
@@ -129,7 +127,7 @@ class FileSection:
         mod_time: int
         sections: _typing.AbstractSet[str]
 
-        def __post_init__(self: _typing.Self) -> None:
+        def __post_init__(self) -> None:
             object.__setattr__(self, "sections", frozenset(self.sections))
 
     __CacheData.empty = __CacheData(mod_time=-1, sections=frozenset())
@@ -139,20 +137,18 @@ class FileSection:
         __ValueType: _typing.ClassVar[type["FileSection.__CacheData"]]
 
         def __init_subclass__(
-            cls: type[_typing.Self],
+            cls,
             value_type: type["FileSection.__CacheData"],
             **kwargs: _typing.Any | None,
         ) -> None:
             super().__init_subclass__(**kwargs)
             cls.__ValueType = value_type
 
-        def __init__(self: _typing.Self) -> None:
+        def __init__(self) -> None:
             super().__init__()
             self.__lock: _threading.Lock = _threading.Lock()
 
-        def __getitem__(
-            self: _typing.Self, key: _pathlib.Path
-        ) -> "FileSection.__CacheData":
+        def __getitem__(self, key: _pathlib.Path) -> "FileSection.__CacheData":
             ext: str
             _, ext = _os.path.splitext(key)
             try:
@@ -205,7 +201,7 @@ class FileSection:
             return cache
 
         def __setitem__(
-            self: _typing.Self, key: _pathlib.Path, value: "FileSection.__CacheData"
+            self, key: _pathlib.Path, value: "FileSection.__CacheData"
         ) -> None:
             raise TypeError(f"Unsupported")
 
@@ -217,14 +213,14 @@ class FileSection:
     path: _pathlib.Path
     section: str
 
-    def open(self: _typing.Self) -> _typing.TextIO:
+    def open(self) -> _typing.TextIO:
         if self.section:
 
             @_typing.final
             class IO(_io.StringIO):
                 __slots__: _typing.ClassVar = ("__file", "__slice")
 
-                def __init__(self: _typing.Self, closure: FileSection, /) -> None:
+                def __init__(self, closure: FileSection, /) -> None:
                     ext: str
                     _, ext = _os.path.splitext(closure.path)
                     start_format: str = closure.section_formats[ext].start.format(
@@ -253,7 +249,7 @@ class FileSection:
                         self.__file.close()
                         raise ex
 
-                def close(self: _typing.Self) -> None:
+                def close(self) -> None:
                     try:
                         self.seek(0)
                         data: str = self.read()
@@ -277,7 +273,7 @@ class FileSection:
             return IO(self)
         return open(self.path, mode="r+t", **_globals.open_options)
 
-    def __post_init__(self: _typing.Self) -> None:
+    def __post_init__(self) -> None:
         object.__setattr__(self, "path", self.path.resolve(strict=True))
         if (
             not self.section
@@ -294,13 +290,11 @@ class FlashcardGroup(_typing.Sequence[str], metaclass=_abc.ABCMeta):
     __slots__: _typing.ClassVar = ()
 
     @_abc.abstractmethod
-    def __str__(self: _typing.Self) -> str:
+    def __str__(self) -> str:
         raise NotImplementedError(self)
 
     @classmethod
-    def __subclasshook__(
-        cls: type[_typing.Self], subclass: type
-    ) -> bool | _types.NotImplementedType:
+    def __subclasshook__(cls, subclass: type) -> bool | _types.NotImplementedType:
         return abc_subclasshook_check(
             FlashcardGroup, cls, subclass, names=(cls.__str__.__name__,)
         )
@@ -351,7 +345,7 @@ class TwoSidedFlashcard:
     _: _dataclasses.KW_ONLY
     reversible: bool
 
-    def __str__(self: _typing.Self) -> str:
+    def __str__(self) -> str:
         return self.separators[
             self.SeparatorKey(
                 reversible=self.reversible,
@@ -359,10 +353,10 @@ class TwoSidedFlashcard:
             )
         ].join((self.left, self.right))
 
-    def __len__(self: _typing.Self) -> int:
+    def __len__(self) -> int:
         return 2 if self.reversible else 1
 
-    def __getitem__(self: _typing.Self, index: int) -> str:
+    def __getitem__(self, index: int) -> str:
         if self.reversible:
             if -2 > index or index >= 2:
                 raise IndexError(index)
@@ -398,7 +392,7 @@ class ClozeFlashcardGroup:
         init=False, repr=False, hash=False, compare=False
     )
 
-    def __post_init__(self: _typing.Self) -> None:
+    def __post_init__(self) -> None:
         try:
             pattern: _re.Pattern[str] = self.__pattern_cache[self.token]
         except KeyError:
@@ -414,13 +408,13 @@ class ClozeFlashcardGroup:
             self, "_clozes", tuple(match[1] for match in pattern.finditer(self.context))
         )
 
-    def __str__(self: _typing.Self) -> str:
+    def __str__(self) -> str:
         return self.context
 
-    def __len__(self: _typing.Self) -> int:
+    def __len__(self) -> int:
         return len(self._clozes)
 
-    def __getitem__(self: _typing.Self, index: int) -> str:
+    def __getitem__(self, index: int) -> str:
         return self._clozes[index]
 
 
@@ -450,15 +444,13 @@ class FlashcardState:
     interval: int
     ease: int
 
-    def __str__(self: _typing.Self) -> str:
+    def __str__(self) -> str:
         return self.format.format(
             date=self.date, interval=self.interval, ease=self.ease
         )
 
     @classmethod
-    def compile_many(
-        cls: type[_typing.Self], text: str
-    ) -> _typing.Iterator[_typing.Self]:
+    def compile_many(cls, text: str) -> _typing.Iterator[_typing.Self]:
         match: _re.Match[str]
         for match in cls.regex.finditer(text):
             yield cls(
@@ -468,7 +460,7 @@ class FlashcardState:
             )
 
     @classmethod
-    def compile(cls: type[_typing.Self], text: str) -> _typing.Self:
+    def compile(cls, text: str) -> _typing.Self:
         rets: _typing.Iterator[_typing.Self] = cls.compile_many(text)
         try:
             ret: _typing.Self = next(rets)
@@ -488,21 +480,19 @@ class FlashcardStateGroup(TypedTuple[FlashcardState], element_type=FlashcardStat
     format: _typing.ClassVar[str] = _globals.flashcard_states_format
     regex: _typing.ClassVar[_re.Pattern[str]] = _globals.flashcard_states_regex
 
-    def __str__(self: _typing.Self) -> str:
+    def __str__(self) -> str:
         if self:
             return self.format.format(states="".join(map(str, self)))
         return ""
 
     @classmethod
-    def compile_many(
-        cls: type[_typing.Self], text: str
-    ) -> _typing.Iterator[_typing.Self]:
+    def compile_many(cls, text: str) -> _typing.Iterator[_typing.Self]:
         match: _re.Match[str]
         for match in cls.regex.finditer(text):
             yield cls(FlashcardState.compile_many(text[match.start() : match.end()]))
 
     @classmethod
-    def compile(cls: type[_typing.Self], text: str) -> _typing.Self:
+    def compile(cls, text: str) -> _typing.Self:
         rets: _typing.Iterator[_typing.Self] = cls.compile_many(text)
         try:
             ret: _typing.Self = next(rets)
@@ -532,5 +522,5 @@ class StatefulFlashcardGroup:
     flashcard: FlashcardGroup
     state: FlashcardStateGroup
 
-    def __str__(self: _typing.Self) -> str:
+    def __str__(self) -> str:
         return " ".join((str(self.flashcard), str(self.state)))

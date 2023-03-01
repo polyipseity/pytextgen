@@ -25,31 +25,29 @@ class Reader(metaclass=_abc.ABCMeta):
     registry: _typing.ClassVar[_typing.MutableMapping[str, type]] = {}
 
     @_abc.abstractmethod
-    def __init__(self: _typing.Self, *, path: _pathlib.Path, options: Options) -> None:
+    def __init__(self, *, path: _pathlib.Path, options: Options) -> None:
         raise NotImplementedError(self)
 
     @property
     @_abc.abstractmethod
-    def path(self: _typing.Self) -> _pathlib.Path:
+    def path(self) -> _pathlib.Path:
         raise NotImplementedError(self)
 
     @property
     @_abc.abstractmethod
-    def options(self: _typing.Self) -> Options:
+    def options(self) -> Options:
         raise NotImplementedError(self)
 
     @_abc.abstractmethod
-    def read(self: _typing.Self, text: str, /) -> None:
+    def read(self, text: str, /) -> None:
         raise NotImplementedError(self)
 
     @_abc.abstractmethod
-    def pipe(self: _typing.Self) -> _typing.Collection[Writer]:
+    def pipe(self) -> _typing.Collection[Writer]:
         raise NotImplementedError(self)
 
     @classmethod
-    def __subclasshook__(
-        cls: type[_typing.Self], subclass: type
-    ) -> bool | _types.NotImplementedType:
+    def __subclasshook__(cls, subclass: type) -> bool | _types.NotImplementedType:
         return _util.abc_subclasshook_check(
             Reader,
             cls,
@@ -90,19 +88,19 @@ class MarkdownReader:
     stop: _typing.ClassVar[str] = "```"
 
     @property
-    def path(self: _typing.Self) -> _pathlib.Path:
+    def path(self) -> _pathlib.Path:
         return self.__path
 
     @property
-    def options(self: _typing.Self) -> Options:
+    def options(self) -> Options:
         return self.__options
 
-    def __init__(self: _typing.Self, *, path: _pathlib.Path, options: Options) -> None:
+    def __init__(self, *, path: _pathlib.Path, options: Options) -> None:
         self.__path: _pathlib.Path = path.resolve(strict=True)
         self.__options: Options = options
         self.__codes: _typing.MutableSequence[_types.CodeType] = []
 
-    def read(self: _typing.Self, text: str, /) -> None:
+    def read(self, text: str, /) -> None:
         start: int = text.find(self.start)
         while start != -1:
             stop: int = text.find(self.stop, start + len(self.stop))
@@ -121,7 +119,7 @@ class MarkdownReader:
             )
             start = text.find(self.start, stop + len(self.stop))
 
-    def pipe(self: _typing.Self) -> _typing.Collection[Writer]:
+    def pipe(self) -> _typing.Collection[Writer]:
         assert isinstance(self, Reader)
 
         def gen_env() -> _virenv.Environment:

@@ -8,7 +8,7 @@ class Environment:
     __slots__: _typing.ClassVar = ("__env", "__globals", "__locals")
 
     def __init__(
-        self: _typing.Self,
+        self,
         *,
         env: _typing.Mapping[str, _typing.Any | None] = {},
         globals: _typing.Mapping[str, _typing.Any | None] = globals(),
@@ -25,10 +25,10 @@ class Environment:
         ] = _types.MappingProxyType(dict(locals))
         assert "__env__" not in self.__locals
 
-    def __repr__(self: _typing.Self) -> str:
+    def __repr__(self) -> str:
         return f"{type(self).__qualname__}(env={self.__env!r}, globals={self.__globals!r}, locals={self.__locals!r})"
 
-    def __str__(self: _typing.Self) -> str:
+    def __str__(self) -> str:
         def filter(map: _typing.Mapping[str, _typing.Any | None]):
             return {
                 key: val
@@ -45,18 +45,18 @@ class Environment:
         )
 
     @property
-    def env(self: _typing.Self) -> _typing.Mapping[str, _typing.Any | None]:
+    def env(self) -> _typing.Mapping[str, _typing.Any | None]:
         return self.__env
 
     @property
-    def globals(self: _typing.Self) -> _typing.Mapping[str, _typing.Any | None]:
+    def globals(self) -> _typing.Mapping[str, _typing.Any | None]:
         return self.__globals
 
     @property
-    def locals(self: _typing.Self) -> _typing.Mapping[str, _typing.Any | None]:
+    def locals(self) -> _typing.Mapping[str, _typing.Any | None]:
         return self.__locals
 
-    def exec(self: _typing.Self, code: _types.CodeType) -> _typing.Any | None:
+    def exec(self, code: _types.CodeType) -> _typing.Any | None:
         env: _types.SimpleNamespace = _types.SimpleNamespace(result=None, **self.__env)
         vars: dict[str, _typing.Any] = {
             **self.__globals,
