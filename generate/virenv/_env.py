@@ -1,11 +1,18 @@
 # -*- coding: UTF-8 -*-
+import contextlib as _contextlib
 import types as _types
 import typing as _typing
 
 
 @_typing.final
 class Environment:
-    __slots__: _typing.ClassVar = ("__env", "__globals", "__locals", "__closure")
+    __slots__: _typing.ClassVar = (
+        "__closure",
+        "__context",
+        "__env",
+        "__globals",
+        "__locals",
+    )
 
     def __init__(
         self,
@@ -14,6 +21,8 @@ class Environment:
         globals: _typing.Mapping[str, _typing.Any | None] = globals(),
         locals: _typing.Mapping[str, _typing.Any | None] = locals(),
         closure: tuple[_types.CellType, ...] | None = None,
+        context: _typing.Callable[[], _contextlib.AbstractContextManager[_typing.Any]]
+        | None = None,
     ) -> None:
         self.__env: _typing.Mapping[str, _typing.Any | None] = _types.MappingProxyType(
             dict(env)
@@ -25,6 +34,15 @@ class Environment:
             str, _typing.Any | None
         ] = _types.MappingProxyType(dict(locals))
         self.__closure = closure
+        if context is None:
+
+            @_contextlib.contextmanager
+            def dummy_context():
+                yield
+
+            self.__context = dummy_context
+        else:
+            self.__context = context
         assert "__env__" not in self.__globals
         assert "__env__" not in self.__locals
 
@@ -67,5 +85,6 @@ class Environment:
             if self.__locals == self.__globals
             else {**self.__locals, "__env__": env}
         )
-        exec(code, globals, locals, closure=self.__closure)
+        with self.__context():
+            exec(code, globals, locals, closure=self.__closure)
         return env.result
