@@ -1,9 +1,17 @@
 # -*- coding: UTF-8 -*-
 import info as _info
-import setuptools as _setuptools
+from setuptools import setup
 
-_setuptools.setup(
+setup(
+    author="polyipseity",
+    author_email="polyipseity@gmail.com",
+    include_package_data=True,
+    install_requires=[
+        "regex",
+    ],
+    license="AGPL-3.0-or-later",
     name=_info.name,
+    packages=[_info.name],
+    python_requires=">=3.11.0",
     version=str(_info.version),
-    install_requires=("regex",),
 )
