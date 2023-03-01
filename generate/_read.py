@@ -19,6 +19,12 @@ from ._options import *
 from ._write import *
 
 
+_Python_env_builtins_exclude: _typing.AbstractSet[str] = frozenset(
+    # constants: https://docs.python.org/library/constants.html
+    # functions: https://docs.python.org/library/functions.html
+)
+
+
 class Reader(metaclass=_abc.ABCMeta):
     __slots__: _typing.ClassVar = ()
     registry: _typing.ClassVar[_typing.MutableMapping[str, type]] = {}
@@ -60,29 +66,50 @@ class Reader(metaclass=_abc.ABCMeta):
         )
 
 
-def _Python_env(reader: Reader) -> _typing.Mapping[str, _typing.Any | None]:
+def _Python_env(
+    reader: Reader,
+    modifier: _typing.Callable[[_types.ModuleType], None] = lambda _: None,
+) -> Environment:
+    mod_template = _importlib.import_module(__package__, "virenv")
+    spec = mod_template.__spec__
+    if spec is None:
+        raise ValueError(mod_template)
+    if spec.loader is None:
+        raise ValueError(spec)
+    mod = _importlib_util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    modifier(mod)
+
     def cwf_section(section: str) -> _virenv_util.Location:
-        ret: _virenv_util.FileSection = _virenv_util.FileSection(
+        ret: _virenv_util.FileSection = mod.util.FileSection(
             path=reader.path, section=section
         )
-        assert isinstance(ret, _virenv_util.Location)
+        assert isinstance(
+            ret,
+            _typing.cast(type[_virenv_util.Location], mod.util.Location),
+        )
         return ret
 
-    return _types.MappingProxyType(
-        {
+    vars: _typing.MutableMapping[str, _typing.Any | None] = mod.__dict__
+    vars["__builtins__"] = {
+        k: v
+        for k, v in _builtins.__dict__.items()
+        if k not in _Python_env_builtins_exclude
+    }
+    return Environment(
+        env={
             "cwf": reader.path,
             "cwd": reader.path.parent,
             "cwf_section": cwf_section,
-        }
+        },
+        globals=vars,
+        locals=vars,
     )
 
 
 class MarkdownReader:
     __slots__: _typing.ClassVar = ("__codes", "__options", "__path")
-    builtins_exclude: _typing.ClassVar[_typing.AbstractSet[str]] = frozenset(
-        # constants: https://docs.python.org/library/constants.html
-        # functions: https://docs.python.org/library/functions.html
-    )
+
     start: _typing.ClassVar[str] = f"```Python\n# {_globals.uuid} generate data"
     stop: _typing.ClassVar[str] = "```"
 
@@ -121,15 +148,7 @@ class MarkdownReader:
     def pipe(self) -> _typing.Collection[Writer]:
         assert isinstance(self, Reader)
 
-        def gen_env() -> Environment:
-            mod_template = _importlib.import_module(__package__, "virenv")
-            spec = mod_template.__spec__
-            if spec is None:
-                raise ValueError(mod_template)
-            mod = _importlib_util.module_from_spec(spec)
-            if spec.loader is None:
-                raise ValueError(spec)
-            spec.loader.exec_module(mod)
+        def modifier(mod: _types.ModuleType) -> None:
             if self.__options.init_flashcards:
                 cls: type[
                     _virenv_util.StatefulFlashcardGroup
@@ -161,19 +180,14 @@ class MarkdownReader:
                     return old(self)
 
                 cls.__str__ = new
-            vars: _typing.MutableMapping[str, _typing.Any | None] = mod.__dict__
-            vars["__builtins__"] = {
-                k: v
-                for k, v in _builtins.__dict__.items()
-                if k not in self.builtins_exclude
-            }
-            return Environment(env=_Python_env(self), globals=vars, locals=vars)
 
         def ret_gen() -> _typing.Iterator[Writer]:
             code: _types.CodeType
             for code in self.__codes:
                 ret: PythonWriter = PythonWriter(
-                    code, env=gen_env(), options=self.__options
+                    code,
+                    env=_Python_env(self, modifier),
+                    options=self.__options,
                 )
                 assert isinstance(ret, Writer)
                 yield ret
