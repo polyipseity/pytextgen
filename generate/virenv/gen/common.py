@@ -129,11 +129,19 @@ def memorize(
     func: _typing.Callable[[_typing.Iterable[str]], _typing.Iterable[FlashcardGroup]],
     states: _typing.Iterable[FlashcardStateGroup],
     tag: str = Tag.MEMORIZE,
+    sep_tag: str | None = None,
 ) -> str:
+    unit = Unit(code)
+    if sep_tag is None:
+        unit = Unit(code).map(_functools.partial(code_to_strs, tag=tag))
+    else:
+        unit = (
+            Unit(code)
+            .map(_functools.partial(separate_code_by_tag, tag=sep_tag))
+            .map(lambda codes: map(_functools.partial(code_to_str, tag=tag), codes))
+        )
     return (
-        Unit(code)
-        .map(_functools.partial(code_to_strs, tag=tag))
-        .map(func)
+        unit.map(func)
         .map(_functools.partial(attach_flashcard_states, states=states))
         .map(listify_flashcards)
         .map(text)
