@@ -4,6 +4,7 @@ import abc as _abc
 import ast as _ast
 import dataclasses as _dataclasses
 import functools as _functools
+import importlib.util as _importlib_util
 import itertools as _itertools
 import json as _json
 import logging as _logging
@@ -25,6 +26,7 @@ _T = _typing.TypeVar("_T")
 _T_co = _typing.TypeVar("_T_co", covariant=True)
 _T1_co = _typing.TypeVar("_T1_co", covariant=True)
 _ExtendsUnit = _typing.TypeVar("_ExtendsUnit", bound="Unit[_typing.Any]")
+_ExtendsModuleType = _typing.TypeVar("_ExtendsModuleType", bound=_types.ModuleType)
 
 StrPath: _typing.TypeAlias = str | _os.PathLike[str]
 
@@ -50,6 +52,17 @@ def ignore_args(func: _typing.Callable[[], _T]) -> _typing.Callable[..., _T]:
 
 def tuple1(var: _T) -> tuple[_T]:
     return (var,)
+
+
+def copy_module(module: _ExtendsModuleType) -> _ExtendsModuleType:
+    spec = module.__spec__
+    if spec is None:
+        raise ValueError(module)
+    if spec.loader is None:
+        raise ValueError(spec)
+    copy = _importlib_util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return copy
 
 
 def abc_subclasshook_check(

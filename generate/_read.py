@@ -6,7 +6,6 @@ import dataclasses as _dataclasses
 import datetime as _datetime
 import functools as _functools
 import importlib as _importlib
-import importlib.util as _importlib_util
 import itertools as _itertools
 import pathlib as _pathlib
 import types as _types
@@ -70,14 +69,7 @@ def _Python_env(
     reader: Reader,
     modifier: _typing.Callable[[_types.ModuleType], None] = lambda _: None,
 ) -> Environment:
-    mod_template = _importlib.import_module(__package__, "virenv")
-    spec = mod_template.__spec__
-    if spec is None:
-        raise ValueError(mod_template)
-    if spec.loader is None:
-        raise ValueError(spec)
-    mod = _importlib_util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
+    mod = _util.copy_module(_importlib.import_module(__package__, "virenv"))
     modifier(mod)
 
     def cwf_section(section: str) -> _virenv_util.Location:
