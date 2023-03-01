@@ -16,9 +16,8 @@ import virenv as _virenv
 class Writer(metaclass=_abc.ABCMeta):
     __slots__: _typing.ClassVar = ()
 
-    @_contextlib.contextmanager
     @_abc.abstractmethod
-    def write(self) -> _typing.Iterator[None]:
+    def write(self) -> _contextlib.AbstractContextManager[None]:
         raise NotImplementedError(self)
 
     @classmethod
