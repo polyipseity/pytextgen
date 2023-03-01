@@ -93,7 +93,7 @@ def _Python_env(
         return ret
 
     def context():
-        return _unittest_mock.patch.dict(_sys.modules, **{_info.name: module})
+        return _unittest_mock.patch.dict(_sys.modules, {_info.name: module})
 
     return Environment(
         env={
