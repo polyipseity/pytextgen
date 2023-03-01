@@ -95,17 +95,18 @@ class FileSection:
         {
             "": SectionFormat(
                 start_regex=_re.compile(
-                    rf"\[{_globals.uuid},generate,([^,\]]*)\]", flags=0
+                    rf"\[{_globals.uuid},generate,([^,\]]*)\]", flags=_re.NOFLAG
                 ),
-                end_regex=_re.compile(rf"\[{_globals.uuid},end\]", flags=0),
+                end_regex=_re.compile(rf"\[{_globals.uuid},end\]", flags=_re.NOFLAG),
                 start=f"[{_globals.uuid},generate,{{section}}]",
                 stop=f"[{_globals.uuid},end]",
             ),
             ".md": SectionFormat(
                 start_regex=_re.compile(
-                    rf'<!--{_globals.uuid} generate section="([^"]*)"-->', flags=0
+                    rf'<!--{_globals.uuid} generate section="([^"]*)"-->',
+                    flags=_re.NOFLAG,
                 ),
-                end_regex=_re.compile(rf"<!--/{_globals.uuid}-->", flags=0),
+                end_regex=_re.compile(rf"<!--/{_globals.uuid}-->", flags=_re.NOFLAG),
                 start=f'<!--{_globals.uuid} generate section="{{section}}"-->',
                 stop=f"<!--/{_globals.uuid}-->",
             ),
@@ -408,7 +409,7 @@ class ClozeFlashcardGroup:
             )
             self.__pattern_cache[self.token] = pattern = _re.compile(
                 rf"{e_token[0]}((?:(?!{e_token[1]}).)+){e_token[1]}",
-                flags=0,
+                flags=_re.NOFLAG,
             )
         object.__setattr__(
             self, "_clozes", tuple(match[1] for match in pattern.finditer(self.context))
@@ -443,7 +444,7 @@ assert issubclass(ClozeFlashcardGroup, FlashcardGroup)
 class FlashcardState:
     format: _typing.ClassVar[str] = "!{date},{interval},{ease}"
     regex: _typing.ClassVar[_re.Pattern[str]] = _re.compile(
-        r"!(\d{4}-\d{2}-\d{2}),(\d+),(\d+)", flags=0
+        r"!(\d{4}-\d{2}-\d{2}),(\d+),(\d+)", flags=_re.NOFLAG
     )
 
     date: _datetime.date

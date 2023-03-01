@@ -39,18 +39,30 @@ class _MarkdownRegex:
 
 
 _markdown_regexes: _typing.Sequence[_MarkdownRegex] = (
-    _MarkdownRegex(regex=_re.compile(r"(?:\b|^)__(?=\S)", flags=0), desugared="<b u>"),
     _MarkdownRegex(
-        regex=_re.compile(r"(?<=\S)__(?:\b|$)", flags=0), desugared="</b u>"
+        regex=_re.compile(r"(?:\b|^)__(?=\S)", flags=_re.NOFLAG), desugared="<b u>"
     ),
-    _MarkdownRegex(regex=_re.compile(r"\*\*(?=\S)", flags=0), desugared="<b s>"),
-    _MarkdownRegex(regex=_re.compile(r"(?<=\S)\*\*", flags=0), desugared="</b s>"),
-    _MarkdownRegex(regex=_re.compile(r"(?:\b|^)_(?=\S)", flags=0), desugared="<i u>"),
-    _MarkdownRegex(regex=_re.compile(r"(?<=\S)_(?:\b|$)", flags=0), desugared="</i u>"),
-    _MarkdownRegex(regex=_re.compile(r"\*(?=\S)", flags=0), desugared="<i s>"),
-    _MarkdownRegex(regex=_re.compile(r"(?<=\S)\*", flags=0), desugared="</i s>"),
+    _MarkdownRegex(
+        regex=_re.compile(r"(?<=\S)__(?:\b|$)", flags=_re.NOFLAG), desugared="</b u>"
+    ),
+    _MarkdownRegex(
+        regex=_re.compile(r"\*\*(?=\S)", flags=_re.NOFLAG), desugared="<b s>"
+    ),
+    _MarkdownRegex(
+        regex=_re.compile(r"(?<=\S)\*\*", flags=_re.NOFLAG), desugared="</b s>"
+    ),
+    _MarkdownRegex(
+        regex=_re.compile(r"(?:\b|^)_(?=\S)", flags=_re.NOFLAG), desugared="<i u>"
+    ),
+    _MarkdownRegex(
+        regex=_re.compile(r"(?<=\S)_(?:\b|$)", flags=_re.NOFLAG), desugared="</i u>"
+    ),
+    _MarkdownRegex(regex=_re.compile(r"\*(?=\S)", flags=_re.NOFLAG), desugared="<i s>"),
+    _MarkdownRegex(
+        regex=_re.compile(r"(?<=\S)\*", flags=_re.NOFLAG), desugared="</i s>"
+    ),
 )
-_html_tag_regex: _re.Pattern[str] = _re.compile(r"<([^>]+)>", flags=0)
+_html_tag_regex: _re.Pattern[str] = _re.compile(r"<([^>]+)>", flags=_re.NOFLAG)
 
 
 def text(text: str) -> str:
