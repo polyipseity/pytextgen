@@ -61,7 +61,7 @@ def copy_module(module: _ExtendsModuleType) -> _ExtendsModuleType:
     if spec.loader is None:
         raise ValueError(spec)
     copy = _importlib_util.module_from_spec(spec)
-    spec.loader.exec_module(module)
+    spec.loader.exec_module(copy)
     return copy
 
 
