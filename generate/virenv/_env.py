@@ -5,7 +5,7 @@ import typing as _typing
 
 @_typing.final
 class Environment:
-    __slots__: _typing.ClassVar = ("__env", "__globals", "__locals")
+    __slots__: _typing.ClassVar = ("__env", "__globals", "__locals", "__closure")
 
     def __init__(
         self,
@@ -13,6 +13,7 @@ class Environment:
         env: _typing.Mapping[str, _typing.Any | None] = {},
         globals: _typing.Mapping[str, _typing.Any | None] = globals(),
         locals: _typing.Mapping[str, _typing.Any | None] = locals(),
+        closure: tuple[_types.CellType, ...] | None = None,
     ) -> None:
         self.__env: _typing.Mapping[str, _typing.Any | None] = _types.MappingProxyType(
             dict(env)
@@ -23,6 +24,8 @@ class Environment:
         self.__locals: _typing.Mapping[
             str, _typing.Any | None
         ] = _types.MappingProxyType(dict(locals))
+        self.__closure = closure
+        assert "__env__" not in self.__globals
         assert "__env__" not in self.__locals
 
     def __repr__(self) -> str:
@@ -57,12 +60,12 @@ class Environment:
         return self.__locals
 
     def exec(self, code: _types.CodeType) -> _typing.Any | None:
-        env: _types.SimpleNamespace = _types.SimpleNamespace(result=None, **self.__env)
+        env = _types.SimpleNamespace(result=None, **self.__env)
         globals = {**self.__globals, "__env__": env}
         locals = (
             globals
             if self.__locals == self.__globals
             else {**self.__locals, "__env__": env}
         )
-        exec(code, globals, locals)
+        exec(code, globals, locals, closure=self.__closure)
         return env.result
