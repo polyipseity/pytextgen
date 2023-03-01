@@ -2,6 +2,7 @@
 import abc as _abc
 import ast as _ast
 import builtins as _builtins
+import contextlib as _contextlib
 import dataclasses as _dataclasses
 import datetime as _datetime
 import functools as _functools
@@ -68,19 +69,26 @@ class Reader(metaclass=_abc.ABCMeta):
         )
 
 
+_Python_env_module_cache = _util.copy_module(
+    _importlib.import_module(__package__, "virenv")
+)
+
+
 def _Python_env(
     reader: Reader,
-    modifier: _typing.Callable[[_types.ModuleType], None] = lambda _: None,
+    modifier: _typing.Callable[
+        [_types.ModuleType], _contextlib.AbstractContextManager[_typing.Any]
+    ]
+    | None = None,
 ) -> tuple[Environment, _types.ModuleType]:
-    module = _util.copy_module(_importlib.import_module(__package__, "virenv"))
-    modifier(module)
-    vars: _typing.MutableMapping[str, _typing.Any | None] = {
-        "__builtins__": {
-            k: v
-            for k, v in _builtins.__dict__.items()
-            if k not in _Python_env_builtins_exclude
-        }
-    }
+    if modifier is None:
+
+        @_contextlib.contextmanager
+        def dummy_modifier(_: _types.ModuleType):
+            yield
+
+        modifier = dummy_modifier
+    module = _Python_env_module_cache
 
     def cwf_section(section: str) -> _virenv_util.Location:
         ret: _virenv_util.FileSection = module.util.FileSection(
@@ -92,8 +100,25 @@ def _Python_env(
         )
         return ret
 
+    vars: _typing.MutableMapping[str, _typing.Any | None] = {
+        "__builtins__": {
+            k: v
+            for k, v in _builtins.__dict__.items()
+            if k not in _Python_env_builtins_exclude
+        }
+    }
+
+    @_contextlib.contextmanager
     def context():
-        return _unittest_mock.patch.dict(_sys.modules, {_info.name: module})
+        global _Python_env_module_cache
+        try:
+            with modifier(module), _unittest_mock.patch.dict(
+                _sys.modules, {_info.name: module}
+            ):
+                yield
+        finally:
+            if _Python_env_module_cache.dirty():
+                _Python_env_module_cache = _util.copy_module(_Python_env_module_cache)
 
     return (
         Environment(
@@ -151,38 +176,49 @@ class MarkdownReader:
     def pipe(self) -> _typing.Collection[Writer]:
         assert isinstance(self, Reader)
 
-        def modifier(mod: _types.ModuleType) -> None:
-            if self.__options.init_flashcards:
-                cls: type[
-                    _virenv_util.StatefulFlashcardGroup
-                ] = mod.util.StatefulFlashcardGroup
-                old: _typing.Callable[
-                    [_virenv_util.StatefulFlashcardGroup], str
-                ] = cls.__str__
+        @_contextlib.contextmanager
+        def modifier(mod: _types.ModuleType):
+            finals: _typing.MutableSequence[_typing.Callable[[], None]] = []
+            try:
+                if self.__options.init_flashcards:
+                    cls: type[
+                        _virenv_util.StatefulFlashcardGroup
+                    ] = mod.util.StatefulFlashcardGroup
+                    old: _typing.Callable[
+                        [_virenv_util.StatefulFlashcardGroup], str
+                    ] = cls.__str__
 
-                @_functools.wraps(old)
-                def new(self: _virenv_util.StatefulFlashcardGroup) -> str:
-                    diff: int = len(self.flashcard) - len(self.state)
-                    if diff > 0:
-                        self = _dataclasses.replace(
-                            self,
-                            state=type(self.state)(
-                                _itertools.chain(
-                                    self.state,
-                                    _itertools.repeat(
-                                        type(self.state).element_type(
-                                            date=_datetime.date.today(),
-                                            interval=1,
-                                            ease=_globals.flashcard_ease_default,
+                    @_functools.wraps(old)
+                    def new(self: _virenv_util.StatefulFlashcardGroup) -> str:
+                        diff: int = len(self.flashcard) - len(self.state)
+                        if diff > 0:
+                            self = _dataclasses.replace(
+                                self,
+                                state=type(self.state)(
+                                    _itertools.chain(
+                                        self.state,
+                                        _itertools.repeat(
+                                            type(self.state).element_type(
+                                                date=_datetime.date.today(),
+                                                interval=1,
+                                                ease=_globals.flashcard_ease_default,
+                                            ),
+                                            diff,
                                         ),
-                                        diff,
-                                    ),
-                                )
-                            ),
-                        )
-                    return old(self)
+                                    )
+                                ),
+                            )
+                        return old(self)
 
-                cls.__str__ = new
+                    def final():
+                        cls.__str__ = old
+
+                    finals.append(final)
+                    cls.__str__ = new
+                yield
+            finally:
+                for final in finals:
+                    final()
 
         def ret_gen() -> _typing.Iterator[Writer]:
             code: _types.CodeType

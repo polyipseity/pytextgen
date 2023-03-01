@@ -72,11 +72,7 @@ def copy_module(module: _ExtendsModuleType) -> _ExtendsModuleType:
     discover_names(module)
     with _unittest_mock.patch.dict(
         _sys.modules,
-        {
-            key: val
-            for key, val in _sys.modules.items()
-            if not any(name.startswith(key) for name in names)
-        },
+        {key: val for key, val in _sys.modules.items() if key not in names},
         clear=True,
     ):
         copy = _importlib.import_module(module.__name__)
