@@ -28,7 +28,7 @@ class Writer(metaclass=_abc.ABCMeta):
 
 
 class PythonWriter:
-    __slots__: _typing.ClassVar = ("__code", "__env", "__options")
+    __slots__: _typing.ClassVar = ("__code", "__env", "__module", "__options")
 
     def __init__(
         self,
@@ -36,10 +36,12 @@ class PythonWriter:
         /,
         *,
         env: Environment,
+        module: _types.ModuleType,
         options: Options,
     ) -> None:
         self.__code: _types.CodeType = code
         self.__env: Environment = env
+        self.__module = module
         self.__options: Options = options
 
     def __repr__(self) -> str:
@@ -51,7 +53,13 @@ class PythonWriter:
     @_contextlib.contextmanager
     def write(self) -> _typing.Iterator[None]:
         results0: _typing.Any | None = self.__env.exec(self.__code)
-        if not isinstance(results0, _virenv_gen.Results):
+        if not isinstance(
+            results0,
+            _typing.cast(
+                type[_virenv_gen.Results],
+                self.__module.gen.Results,
+            ),
+        ):
             raise TypeError(results0)
         results: _virenv_gen.Results = results0
         del results0

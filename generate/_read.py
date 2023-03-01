@@ -71,7 +71,7 @@ class Reader(metaclass=_abc.ABCMeta):
 def _Python_env(
     reader: Reader,
     modifier: _typing.Callable[[_types.ModuleType], None] = lambda _: None,
-) -> Environment:
+) -> tuple[Environment, _types.ModuleType]:
     module = _util.copy_module(_importlib.import_module(__package__, "virenv"))
     modifier(module)
     vars: _typing.MutableMapping[str, _typing.Any | None] = {
@@ -95,15 +95,18 @@ def _Python_env(
     def context():
         return _unittest_mock.patch.dict(_sys.modules, {_info.name: module})
 
-    return Environment(
-        env={
-            "cwf": reader.path,
-            "cwd": reader.path.parent,
-            "cwf_section": cwf_section,
-        },
-        globals=vars,
-        locals=vars,
-        context=context,
+    return (
+        Environment(
+            env={
+                "cwf": reader.path,
+                "cwd": reader.path.parent,
+                "cwf_section": cwf_section,
+            },
+            globals=vars,
+            locals=vars,
+            context=context,
+        ),
+        module,
     )
 
 
@@ -184,9 +187,11 @@ class MarkdownReader:
         def ret_gen() -> _typing.Iterator[Writer]:
             code: _types.CodeType
             for code in self.__codes:
+                env, module = _Python_env(self, modifier)
                 ret: PythonWriter = PythonWriter(
                     code,
-                    env=_Python_env(self, modifier),
+                    env=env,
+                    module=module,
                     options=self.__options,
                 )
                 assert isinstance(ret, Writer)

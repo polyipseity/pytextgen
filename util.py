@@ -4,9 +4,7 @@ import abc as _abc
 import ast as _ast
 import dataclasses as _dataclasses
 import functools as _functools
-import importlib.abc as _importlib_abc
-import importlib.machinery as _importlib_machinery
-import importlib.util as _importlib_util
+import importlib as _importlib
 import itertools as _itertools
 import json as _json
 import logging as _logging
@@ -58,60 +56,7 @@ def tuple1(var: _T) -> tuple[_T]:
     return (var,)
 
 
-class _CopyLoader(_importlib_abc.Loader):
-    __slots__: _typing.ClassVar = "__loader"
-
-    def __init__(self) -> None:
-        self.__loaders: _typing.MutableMapping[
-            _types.ModuleType, _importlib_abc.Loader | None
-        ] = {}
-        self.__executing: _typing.MutableMapping[str, _types.ModuleType] = {}
-
-    def create_module(self, spec: _importlib_machinery.ModuleSpec) -> _types.ModuleType:
-        mod = _importlib_util.module_from_spec(spec)
-        self.__loaders[mod] = spec.loader
-        mod.__loader__ = self
-        return mod
-
-    def exec_module(self, module: _types.ModuleType) -> None:
-        name = module.__name__
-        if name in self.__executing:
-            raise RecursionError
-        self.__executing[name] = module
-        try:
-            try:
-                loader = self.__loaders[module]
-            except KeyError as exc:
-                raise ImportError from exc
-            if loader is not None:
-                loader.exec_module(module)
-            for prop in dir(module):
-                submod = getattr(module, prop)
-                if isinstance(submod, _types.ModuleType) and submod.__name__.startswith(
-                    name
-                ):
-                    subspec = submod.__spec__
-                    if subspec is None:
-                        continue
-                    try:
-                        new_submod = self.create_module(subspec)
-                        self.exec_module(new_submod)
-                    except RecursionError:
-                        new_submod = self.__executing[submod.__name__]
-                    setattr(module, prop, new_submod)
-        finally:
-            self.__executing.pop(name)
-
-
 def copy_module(module: _ExtendsModuleType) -> _ExtendsModuleType:
-    spec = module.__spec__
-    if spec is None:
-        raise ValueError(module)
-    if spec.loader is None:
-        raise ValueError(spec)
-    loader = spec.loader
-    copy = _importlib_util.module_from_spec(spec)
-    loader.exec_module(copy)
     names = set[str]()
 
     def discover_names(mod: _types.ModuleType):
@@ -124,7 +69,7 @@ def copy_module(module: _ExtendsModuleType) -> _ExtendsModuleType:
             if isinstance(attr, _types.ModuleType) and attr.__name__.startswith(name):
                 discover_names(attr)
 
-    discover_names(copy)
+    discover_names(module)
     with _unittest_mock.patch.dict(
         _sys.modules,
         {
@@ -134,8 +79,7 @@ def copy_module(module: _ExtendsModuleType) -> _ExtendsModuleType:
         },
         clear=True,
     ):
-        copy = _importlib_util.module_from_spec(spec)
-        loader.exec_module(copy)
+        copy = _importlib.import_module(module.__name__)
     return copy
 
 
