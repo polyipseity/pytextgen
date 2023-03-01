@@ -8,10 +8,13 @@ import functools as _functools
 import importlib as _importlib
 import itertools as _itertools
 import pathlib as _pathlib
+import sys as _sys
 import types as _types
 import typing as _typing
+import unittest.mock as _unittest_mock
 
 from .. import globals as _globals
+from .. import info as _info
 from .. import util as _util
 from .virenv import util as _virenv_util
 from ._options import *
@@ -69,25 +72,29 @@ def _Python_env(
     reader: Reader,
     modifier: _typing.Callable[[_types.ModuleType], None] = lambda _: None,
 ) -> Environment:
-    mod = _util.copy_module(_importlib.import_module(__package__, "virenv"))
-    modifier(mod)
+    module = _util.copy_module(_importlib.import_module(__package__, "virenv"))
+    modifier(module)
+    vars: _typing.MutableMapping[str, _typing.Any | None] = {
+        "__builtins__": {
+            k: v
+            for k, v in _builtins.__dict__.items()
+            if k not in _Python_env_builtins_exclude
+        }
+    }
 
     def cwf_section(section: str) -> _virenv_util.Location:
-        ret: _virenv_util.FileSection = mod.util.FileSection(
+        ret: _virenv_util.FileSection = module.util.FileSection(
             path=reader.path, section=section
         )
         assert isinstance(
             ret,
-            _typing.cast(type[_virenv_util.Location], mod.util.Location),
+            _typing.cast(type[_virenv_util.Location], module.util.Location),
         )
         return ret
 
-    vars: _typing.MutableMapping[str, _typing.Any | None] = mod.__dict__
-    vars["__builtins__"] = {
-        k: v
-        for k, v in _builtins.__dict__.items()
-        if k not in _Python_env_builtins_exclude
-    }
+    def context():
+        return _unittest_mock.patch.dict(_sys.modules, **{_info.name: module})
+
     return Environment(
         env={
             "cwf": reader.path,
@@ -96,6 +103,7 @@ def _Python_env(
         },
         globals=vars,
         locals=vars,
+        context=context,
     )
 
 
