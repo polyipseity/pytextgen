@@ -189,10 +189,14 @@ assert issubclass(LazyIterableSequence, _typing.Sequence)
 class Compiler(_typing.Protocol):
     def __call__(
         self,
-        source: str | _typeshed.ReadableBuffer | _ast.AST,
+        source: str
+        | _typeshed.ReadableBuffer
+        | _ast.Module
+        | _ast.Expression
+        | _ast.Interactive,
         filename: str | _typeshed.ReadableBuffer | _os.PathLike[_typing.Any],
         mode: str,
-        flags: int = ...,
+        flags: int,
         dont_inherit: bool = ...,
         optimize: int = ...,
     ) -> _types.CodeType:
@@ -322,7 +326,11 @@ class CompileCache:
 
     def compile(
         self,
-        source: str | _typeshed.ReadableBuffer | _ast.AST,
+        source: str
+        | _typeshed.ReadableBuffer
+        | _ast.Module
+        | _ast.Expression
+        | _ast.Interactive,
         filename: str | _typeshed.ReadableBuffer | _os.PathLike[_typing.Any],
         mode: str,
         flags: int = 0,
