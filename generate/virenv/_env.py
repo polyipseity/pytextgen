@@ -58,9 +58,11 @@ class Environment:
 
     def exec(self, code: _types.CodeType) -> _typing.Any | None:
         env: _types.SimpleNamespace = _types.SimpleNamespace(result=None, **self.__env)
-        exec(
-            code,
-            {**self.__globals, "__env__": env},
-            {**self.__locals, "__env__": env},
+        globals = {**self.__globals, "__env__": env}
+        locals = (
+            globals
+            if self.__locals == self.__globals
+            else {**self.__locals, "__env__": env}
         )
+        exec(code, globals, locals)
         return env.result
