@@ -8,9 +8,9 @@ import typing as _typing
 
 from .. import globals as _globals
 from .. import util as _util
+from .virenv import *
 from .virenv import gen as _virenv_gen
 from ._options import *
-import virenv as _virenv
 
 
 class Writer(metaclass=_abc.ABCMeta):
@@ -35,11 +35,11 @@ class PythonWriter:
         code: _types.CodeType,
         /,
         *,
-        env: _virenv.Environment,
+        env: Environment,
         options: Options,
     ) -> None:
         self.__code: _types.CodeType = code
-        self.__env: _virenv.Environment = env
+        self.__env: Environment = env
         self.__options: Options = options
 
     def __repr__(self) -> str:

@@ -5,7 +5,7 @@ import builtins as _builtins
 import dataclasses as _dataclasses
 import datetime as _datetime
 import functools as _functools
-import importlib.machinery as _importlib_machinery
+import importlib as _importlib
 import importlib.util as _importlib_util
 import itertools as _itertools
 import pathlib as _pathlib
@@ -17,7 +17,6 @@ from .. import util as _util
 from .virenv import util as _virenv_util
 from ._options import *
 from ._write import *
-import virenv as _virenv
 
 
 class Reader(metaclass=_abc.ABCMeta):
@@ -122,8 +121,11 @@ class MarkdownReader:
     def pipe(self) -> _typing.Collection[Writer]:
         assert isinstance(self, Reader)
 
-        def gen_env() -> _virenv.Environment:
-            spec: _importlib_machinery.ModuleSpec = _virenv.__spec__
+        def gen_env() -> Environment:
+            mod_template = _importlib.import_module(__package__, "virenv")
+            spec = mod_template.__spec__
+            if spec is None:
+                raise ValueError(mod_template)
             mod = _importlib_util.module_from_spec(spec)
             if spec.loader is None:
                 raise ValueError(spec)
@@ -165,7 +167,7 @@ class MarkdownReader:
                 for k, v in _builtins.__dict__.items()
                 if k not in self.builtins_exclude
             }
-            return _virenv.Environment(env=_Python_env(self), globals=vars, locals=vars)
+            return Environment(env=_Python_env(self), globals=vars, locals=vars)
 
         def ret_gen() -> _typing.Iterator[Writer]:
             code: _types.CodeType
