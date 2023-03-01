@@ -13,8 +13,8 @@ import sys as _sys
 import typing as _typing
 
 from .. import globals as _globals
+from .. import info as _info
 from .. import util as _util
-from .. import version as _version
 from ._read import *
 from ._write import *
 
@@ -122,7 +122,7 @@ def parser(
         "-v",
         "--version",
         action="version",
-        version=f"{prog} v{_version.version}",
+        version=f"{prog} v{_info.version}",
         help="print version and exit",
     )
     t_group = parser.add_mutually_exclusive_group()

@@ -10,7 +10,7 @@ import sys as _sys
 import typing as _typing
 
 from .. import globals as _globals
-from .. import version as _version
+from .. import info as _info
 
 
 _flashcard_states_regex: _re.Pattern[str] = _re.compile(
@@ -101,7 +101,7 @@ def parser(
         "-v",
         "--version",
         action="version",
-        version=f"{prog} v{_version.version}",
+        version=f"{prog} v{_info.version}",
         help="print version and exit",
     )
     parser.add_argument(

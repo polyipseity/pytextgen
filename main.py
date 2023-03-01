@@ -4,7 +4,7 @@ import functools as _functools
 import sys as _sys
 import typing as _typing
 
-from . import version as _version
+from . import info as _info
 
 
 def parser(
@@ -27,7 +27,7 @@ def parser(
         "-v",
         "--version",
         action="version",
-        version=f"{prog} v{_version.version}",
+        version=f"{prog} v{_info.version}",
         help="print version and exit",
     )
     subparsers = parser.add_subparsers()
