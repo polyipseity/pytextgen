@@ -3,6 +3,7 @@ import abc as _abc
 import ast as _ast
 import asyncio as _asyncio
 import builtins as _builtins
+import collections as _collections
 import contextlib as _contextlib
 import dataclasses as _dataclasses
 import datetime as _datetime
@@ -26,8 +27,11 @@ _PYTHON_ENV_BUILTINS_EXCLUDE: _typing.AbstractSet[str] = frozenset(
     # constants: https://docs.python.org/library/constants.html
     # functions: https://docs.python.org/library/functions.html
 )
+_Python_env_module_locks = _collections.defaultdict[
+    _asyncio.AbstractEventLoop, _asyncio.Lock
+](_asyncio.Lock)
 _Python_env_module_cache: _typing.MutableMapping[
-    _asyncio.AbstractEventLoop, _types.ModuleType | None
+    _asyncio.AbstractEventLoop, _types.ModuleType
 ] = {}
 
 
@@ -87,31 +91,16 @@ def _Python_env(
 
         modifier = dummy_modifier
 
-    async def new_module():
-        loop = _asyncio.get_running_loop()
-        try:
-            module = _Python_env_module_cache[loop]
-            while module is None:
-                await _asyncio.sleep(0)
-                module = _Python_env_module_cache[loop]
-            _Python_env_module_cache[loop] = None
-            return module
-        except KeyError:
-            _Python_env_module_cache[loop] = None
-            module = _util.copy_module(_importlib.import_module(".virenv", __package__))
-            module.__name__ = _info.NAME
-            return module
-
-    def get_module():
+    def module():
         return _sys.modules[_info.NAME]
 
     def cwf_section(section: str) -> _virenv_util.Location:
-        ret: _virenv_util.FileSection = get_module().util.FileSection(
+        ret: _virenv_util.FileSection = module().util.FileSection(
             path=reader.path, section=section
         )
         assert isinstance(
             ret,
-            _typing.cast(type[_virenv_util.Location], get_module().util.Location),
+            _typing.cast(type[_virenv_util.Location], module().util.Location),
         )
         return ret
 
@@ -125,18 +114,23 @@ def _Python_env(
 
     @_contextlib.asynccontextmanager
     async def context():
-        module = await new_module()
-        try:
-            with modifier(module), _unittest_mock.patch.dict(
-                _sys.modules, {_info.NAME: module}
-            ):
-                yield
-        finally:
-            loop = _asyncio.get_running_loop()
-            if module.dirty():
-                del _Python_env_module_cache[loop]
-            else:
-                _Python_env_module_cache[loop] = module
+        loop = _asyncio.get_running_loop()
+        async with _Python_env_module_locks[loop]:
+            try:
+                module = _Python_env_module_cache[loop]
+            except KeyError:
+                module = _util.copy_module(
+                    _importlib.import_module(".virenv", __package__)
+                )
+                module.__name__ = _info.NAME
+            try:
+                with modifier(module), _unittest_mock.patch.dict(
+                    _sys.modules, {_info.NAME: module}
+                ):
+                    yield
+            finally:
+                if not module.dirty():
+                    _Python_env_module_cache[loop] = module
 
     return _Env(
         env={
