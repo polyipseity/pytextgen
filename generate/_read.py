@@ -87,6 +87,7 @@ def _Python_env(
         module = _Python_env_module_cache.pop()
     except IndexError:
         module = _util.copy_module(_importlib.import_module("virenv", __package__))
+        module.__name__ = _info.NAME
 
     def cwf_section(section: str) -> _virenv_util.Location:
         ret: _virenv_util.FileSection = module.util.FileSection(
