@@ -156,7 +156,7 @@ class TypedTuple(_typing.Generic[_T], tuple[_T, ...]):
     element_type: type[_T]
 
     def __init_subclass__(
-        cls, element_type: type[_T], **kwargs: _typing.Any | None
+        cls, element_type: type[_T], **kwargs: _typing.Any
     ) -> None:
         super().__init_subclass__(**kwargs)
         cls.element_type = element_type

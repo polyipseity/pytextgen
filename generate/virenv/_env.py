@@ -32,24 +32,18 @@ __env__.{ENTRY} = {ENTRY}"""
     def __init__(
         self,
         *,
-        env: _typing.Mapping[str, _typing.Any | None] = {},
-        globals: _typing.Mapping[str, _typing.Any | None] = globals(),
-        locals: _typing.Mapping[str, _typing.Any | None] = locals(),
+        env: _typing.Mapping[str, _typing.Any] = {},
+        globals: _typing.Mapping[str, _typing.Any] = globals(),
+        locals: _typing.Mapping[str, _typing.Any] = locals(),
         closure: tuple[_types.CellType, ...] | None = None,
         context: _typing.Callable[
             [], _contextlib.AbstractAsyncContextManager[_typing.Any]
         ]
         | None = None,
     ) -> None:
-        self.__env: _typing.Mapping[str, _typing.Any | None] = _types.MappingProxyType(
-            dict(env)
-        )
-        self.__globals: _typing.Mapping[
-            str, _typing.Any | None
-        ] = _types.MappingProxyType(dict(globals))
-        self.__locals: _typing.Mapping[
-            str, _typing.Any | None
-        ] = _types.MappingProxyType(dict(locals))
+        self.__env = _types.MappingProxyType(dict(env))
+        self.__globals = _types.MappingProxyType(dict(globals))
+        self.__locals = _types.MappingProxyType(dict(locals))
         self.__closure = closure
         if context is None:
 
@@ -67,7 +61,7 @@ __env__.{ENTRY} = {ENTRY}"""
         return f"{type(self).__qualname__}(env={self.__env!r}, globals={self.__globals!r}, locals={self.__locals!r})"
 
     def __str__(self) -> str:
-        def filter(map: _typing.Mapping[str, _typing.Any | None]):
+        def filter(map: _typing.Mapping[str, _typing.Any]):
             return {
                 key: val
                 for key, val in map.items()
@@ -83,15 +77,15 @@ __env__.{ENTRY} = {ENTRY}"""
         )
 
     @property
-    def env(self) -> _typing.Mapping[str, _typing.Any | None]:
+    def env(self) -> _typing.Mapping[str, _typing.Any]:
         return self.__env
 
     @property
-    def globals(self) -> _typing.Mapping[str, _typing.Any | None]:
+    def globals(self) -> _typing.Mapping[str, _typing.Any]:
         return self.__globals
 
     @property
-    def locals(self) -> _typing.Mapping[str, _typing.Any | None]:
+    def locals(self) -> _typing.Mapping[str, _typing.Any]:
         return self.__locals
 
     async def exec(self, code: _types.CodeType) -> _typing.Any:

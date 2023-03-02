@@ -115,7 +115,7 @@ def _Python_env(
         )
         return ret
 
-    vars: _typing.MutableMapping[str, _typing.Any | None] = {
+    vars: _typing.MutableMapping[str, _typing.Any] = {
         "__builtins__": {
             k: v
             for k, v in _builtins.__dict__.items()
