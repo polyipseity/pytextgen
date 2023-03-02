@@ -36,10 +36,10 @@ from ._text_code import (
 
 _T = _typing.TypeVar("_T")
 
-_section_text_format: str = "\n\n{}\n\n"
-_table_aligns: _typing.Mapping[
+_SECTION_TEXT_FORMAT = "\n\n{}\n\n"
+_TABLE_ALIGNS: _typing.Mapping[
     _typing.Literal["default", "left", "right", "center"], str
-] = _types.MappingProxyType[_typing.Literal["default", "left", "right", "center"], str](
+] = _types.MappingProxyType(
     {"default": "-", "left": ":-", "right": "-:", "center": ":-:"}
 )
 
@@ -61,7 +61,7 @@ class _MarkdownRegex:
     desugared: str
 
 
-_markdown_regexes: _typing.Sequence[_MarkdownRegex] = (
+_MARKDOWN_REGEXES: _typing.Sequence[_MarkdownRegex] = (
     _MarkdownRegex(
         regex=_re.compile(r"(?:\b|^)__(?=\S)", flags=_re.NOFLAG), desugared="<b u>"
     ),
@@ -85,14 +85,14 @@ _markdown_regexes: _typing.Sequence[_MarkdownRegex] = (
         regex=_re.compile(r"(?<=\S)\*", flags=_re.NOFLAG), desugared="</i s>"
     ),
 )
-_html_tag_regex: _re.Pattern[str] = _re.compile(r"<([^>]+)>", flags=_re.NOFLAG)
+_HTML_TAG_REGEX = _re.compile(r"<([^>]+)>", flags=_re.NOFLAG)
 
 
 def text(text: str) -> str:
-    return _Unit(text).map(_strp_ls).map(_section_text_format.format).counit()
+    return _Unit(text).map(_strp_ls).map(_SECTION_TEXT_FORMAT.format).counit()
 
 
-_text = text
+_TEXT = text
 
 
 def quote(text: str, prefix: str = "> ") -> str:
@@ -100,7 +100,7 @@ def quote(text: str, prefix: str = "> ") -> str:
 
 
 def quotette(text: str, prefix: str = "> ") -> str:
-    return _Unit(text).map(_functools.partial(quote, prefix=prefix)).map(_text).counit()
+    return _Unit(text).map(_functools.partial(quote, prefix=prefix)).map(_TEXT).counit()
 
 
 def quote_text(
@@ -287,7 +287,7 @@ def markdown_sanitizer(text: str) -> str:
 
         stack: _typing.MutableSequence[_re.Match[str]] = []
         match: _re.Match[str]
-        for match in _html_tag_regex.finditer(text):
+        for match in _HTML_TAG_REGEX.finditer(text):
             tag: str = match[1]
             if tag.startswith("/"):
                 tag0: str = tag[1:]
@@ -317,7 +317,7 @@ def markdown_sanitizer(text: str) -> str:
     text, tags = get_and_remove_html_tags(text)
     distingusher: str = "\0" * (len(max(tags, key=len, default="")) + 1)
     md_regex: _MarkdownRegex
-    for md_regex in _markdown_regexes:
+    for md_regex in _MARKDOWN_REGEXES:
         suffix: str = (
             "/>"
             if md_regex.desugared.endswith("/>")
@@ -424,7 +424,7 @@ def rows_to_table(
 ) -> str:
     lf: str = "\n"
     return f"""{' | '.join(name if isinstance(name, str) else name[0] for name in names)}
-{'|'.join(_table_aligns['default' if isinstance(name, str) else name[1]] for name in names)}
+{'|'.join(_TABLE_ALIGNS['default' if isinstance(name, str) else name[1]] for name in names)}
 {lf.join(' | '.join(map(str, values(row))) for row in rows)}"""
 
 

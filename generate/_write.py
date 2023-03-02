@@ -71,7 +71,7 @@ class PythonWriter:
                     text = await _util.maybe_async(io.read())
                     timestamp: _re.Match[
                         str
-                    ] | None = _globals.generate_comment_regex.search(text)
+                    ] | None = _globals.GENERATE_COMMENT_REGEX.search(text)
                     if result.text != (
                         text[: timestamp.start()] + text[timestamp.end() :]
                         if timestamp
@@ -80,7 +80,7 @@ class PythonWriter:
                         seek = _util.maybe_async(io.seek(0))
                         data = "".join(
                             (
-                                _globals.generate_comment_format.format(
+                                _globals.GENERATE_COMMENT_FORMAT.format(
                                     now=_datetime.datetime.now()
                                     .astimezone()
                                     .isoformat()

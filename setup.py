@@ -11,8 +11,8 @@ setup(
         "regex",
     ],
     license="AGPL-3.0-or-later",
-    name=_info.name,
-    packages=[_info.name],
+    name=_info.NAME,
+    packages=[_info.NAME],
     python_requires=">=3.11.0",
-    version=str(_info.version),
+    version=str(_info.VERSION),
 )

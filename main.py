@@ -27,7 +27,7 @@ def parser(
         "-v",
         "--version",
         action="version",
-        version=f"{prog} v{_info.version}",
+        version=f"{prog} v{_info.VERSION}",
         help="print version and exit",
     )
     subparsers = parser.add_subparsers()

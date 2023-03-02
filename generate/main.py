@@ -56,7 +56,7 @@ async def main(args: Arguments):
     async def read(input: _pathlib.Path):
         nonlocal exit_code
         try:
-            file = await _aiofiles.open(input, mode="rt", **_globals.open_options)
+            file = await _aiofiles.open(input, mode="rt", **_globals.OPEN_OPTIONS)
         except OSError:
             _logging.exception(f"Cannot open file: {input}")
             return ExitCode.READ_ERROR
@@ -139,7 +139,7 @@ def parser(
         "-v",
         "--version",
         action="version",
-        version=f"{prog} v{_info.version}",
+        version=f"{prog} v{_info.VERSION}",
         help="print version and exit",
     )
     t_group = parser.add_mutually_exclusive_group()

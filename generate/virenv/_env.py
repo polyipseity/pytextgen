@@ -10,7 +10,7 @@ from .util import maybe_async as _masync
 
 @_typing.final
 class Environment:
-    ENTRY: _typing.ClassVar = f"_{_globals.uuid.replace('-', '_')}"
+    ENTRY: _typing.ClassVar = f"_{_globals.UUID.replace('-', '_')}"
     ENTRY_TEMPLATE: _typing.ClassVar = f"""async def {ENTRY}(): pass
 __env__.{ENTRY} = {ENTRY}"""
     __slots__: _typing.ClassVar = (

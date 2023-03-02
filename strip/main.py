@@ -15,9 +15,9 @@ from .. import globals as _globals
 from .. import info as _info
 
 
-_flashcard_states_regex: _re.Pattern[str] = _re.compile(
-    r" ?" + _globals.flashcard_states_regex.pattern,
-    _globals.flashcard_states_regex.flags,
+_FLASHCARD_STATES_REGEX = _re.compile(
+    r" ?" + _globals.FLASHCARD_STATES_REGEX.pattern,
+    _globals.FLASHCARD_STATES_REGEX.flags,
 )
 
 
@@ -54,7 +54,7 @@ async def main(args: Arguments) -> _typing.NoReturn:
 
     async def process(input: _pathlib.Path):
         try:
-            file = await _aiofiles.open(input, mode="r+t", **_globals.open_options)
+            file = await _aiofiles.open(input, mode="r+t", **_globals.OPEN_OPTIONS)
         except OSError:
             _logging.exception(f"Cannot open file: {input}")
             return ExitCode.READ_ERROR
@@ -69,7 +69,7 @@ async def main(args: Arguments) -> _typing.NoReturn:
                 return ExitCode.READ_ERROR
             try:
                 seek = file.seek(0)
-                data = _flashcard_states_regex.sub("", text)
+                data = _FLASHCARD_STATES_REGEX.sub("", text)
                 await seek
                 await file.write(data)
                 await file.truncate()
@@ -108,7 +108,7 @@ def parser(
         "-v",
         "--version",
         action="version",
-        version=f"{prog} v{_info.version}",
+        version=f"{prog} v{_info.VERSION}",
         help="print version and exit",
     )
     parser.add_argument(

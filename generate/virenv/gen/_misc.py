@@ -6,14 +6,14 @@ import sys as _sys
 import typing as _typing
 import unicodedata as _unicodedata
 
-_punctuations: _typing.Collection[str] = tuple(
+_PUNCTUATIONS: _typing.Collection[str] = tuple(
     chr(char)
     for char in range(_sys.maxunicode)
     if _unicodedata.category(chr(char)).startswith("P")
 )
-_punctuation_regex: _regex.Pattern[str] = _regex.compile(
+_PUNCTUATION_REGEX: _regex.Pattern[str] = _regex.compile(
     r"(?<={delims})(?<!^(?:{delims})+)(?!$|{delims})".format(
-        delims=r"|".join(map(_re.escape, _punctuations))
+        delims=r"|".join(map(_re.escape, _PUNCTUATIONS))
     ),
     flags=_regex.VERSION0,
 )
@@ -50,4 +50,4 @@ def strip_lines(text: str, /, *, chars: str | None = None) -> str:
 
 
 def split_by_punctuations(text: str) -> _typing.Iterator[str]:
-    return _punctuation_regex.splititer(text)
+    return _PUNCTUATION_REGEX.splititer(text)

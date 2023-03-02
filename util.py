@@ -21,18 +21,17 @@ import typing as _typing
 import uuid as _uuid
 import unittest.mock as _unittest_mock
 
+from . import globals as _globals
+
 if _typing.TYPE_CHECKING:
     import _typeshed as _typeshed
-
-from . import globals as _globals
 
 _T = _typing.TypeVar("_T")
 _T_co = _typing.TypeVar("_T_co", covariant=True)
 _T1_co = _typing.TypeVar("_T1_co", covariant=True)
 _ExtendsUnit = _typing.TypeVar("_ExtendsUnit", bound="Unit[_typing.Any]")
 _ExtendsModuleType = _typing.TypeVar("_ExtendsModuleType", bound=_types.ModuleType)
-
-StrPath: _typing.TypeAlias = str | _os.PathLike[str]
+StrPath = str | _os.PathLike[str]
 
 
 def identity(var: _T) -> _T:
@@ -242,9 +241,9 @@ class Compiler(_typing.Protocol):
 @_typing.final
 class CompileCache:
     __slots__: _typing.ClassVar = ("__cache", "__cache_names", "__folder")
-    __metadata_filename: str = "metadata.json"
-    __cache_name_format: str = "{}.pyc"
-    __timeout: int = 86400
+    __METADATA_FILENAME: _typing.ClassVar = "metadata.json"
+    __CACHE_NAME_FORMAT: _typing.ClassVar = "{}.pyc"
+    __TIMEOUT: _typing.ClassVar = 86400
 
     @_typing.final
     class MetadataKey(_typing.TypedDict):
@@ -313,9 +312,9 @@ class CompileCache:
         return int(_time.time())
 
     def __gen_cache_name(self) -> str:
-        ret: str = self.__cache_name_format.format(str(_uuid.uuid4()))
+        ret: str = self.__CACHE_NAME_FORMAT.format(str(_uuid.uuid4()))
         while ret in self.__cache_names:
-            ret = self.__cache_name_format.format(str(_uuid.uuid4()))
+            ret = self.__CACHE_NAME_FORMAT.format(str(_uuid.uuid4()))
         return ret
 
     def __init__(self, *, folder: _pathlib.Path | None):
@@ -335,11 +334,11 @@ class CompileCache:
             return self
 
         async def read_metadata():
-            metadata_path: _pathlib.Path = folder / self.__metadata_filename
+            metadata_path: _pathlib.Path = folder / self.__METADATA_FILENAME
             if not metadata_path.exists():
-                metadata_path.write_text("[]", **_globals.open_options)
+                metadata_path.write_text("[]", **_globals.OPEN_OPTIONS)
             async with _aiofiles.open(
-                metadata_path, mode="rt", **_globals.open_options
+                metadata_path, mode="rt", **_globals.OPEN_OPTIONS
             ) as metadata_file:
                 metadata: _typing.Collection[CompileCache.MetadataEntry] = _json.loads(
                     await metadata_file.read()
@@ -395,7 +394,7 @@ class CompileCache:
             cache: CompileCache.CacheEntry,
         ):
             cache_path: _pathlib.Path = folder / cache.value["cache_name"]
-            if cur_time - cache.value["access_time"] >= self.__timeout:
+            if cur_time - cache.value["access_time"] >= self.__TIMEOUT:
                 try:
                     _os.remove(cache_path)
                 except FileNotFoundError:
@@ -417,7 +416,7 @@ class CompileCache:
             return CompileCache.MetadataEntry(key=key.to_metadata(), value=cache.value)
 
         async with _aiofiles.open(
-            folder / self.__metadata_filename, mode="wt", **_globals.open_options
+            folder / self.__METADATA_FILENAME, mode="wt", **_globals.OPEN_OPTIONS
         ) as metadata_file:
             await metadata_file.write(
                 _json.dumps(

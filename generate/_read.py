@@ -21,10 +21,12 @@ from .virenv import Environment as _Env, util as _virenv_util
 from ._options import Options as _Opts
 from ._write import PythonWriter as _PyWriter, Writer as _Writer
 
-
-_Python_env_builtins_exclude: _typing.AbstractSet[str] = frozenset(
+_PYTHON_ENV_BUILTINS_EXCLUDE: _typing.AbstractSet[str] = frozenset(
     # constants: https://docs.python.org/library/constants.html
     # functions: https://docs.python.org/library/functions.html
+)
+_Python_env_module_cache = _util.copy_module(
+    _importlib.import_module(__package__, "virenv")
 )
 
 
@@ -69,11 +71,6 @@ class Reader(metaclass=_abc.ABCMeta):
         )
 
 
-_Python_env_module_cache = _util.copy_module(
-    _importlib.import_module(__package__, "virenv")
-)
-
-
 def _Python_env(
     reader: Reader,
     modifier: _typing.Callable[
@@ -104,7 +101,7 @@ def _Python_env(
         "__builtins__": {
             k: v
             for k, v in _builtins.__dict__.items()
-            if k not in _Python_env_builtins_exclude
+            if k not in _PYTHON_ENV_BUILTINS_EXCLUDE
         }
     }
 
@@ -113,7 +110,7 @@ def _Python_env(
         global _Python_env_module_cache
         try:
             with modifier(module), _unittest_mock.patch.dict(
-                _sys.modules, {_info.name: module}
+                _sys.modules, {_info.NAME: module}
             ):
                 yield
         finally:
@@ -138,8 +135,8 @@ def _Python_env(
 class MarkdownReader:
     __slots__: _typing.ClassVar = ("__codes", "__options", "__path")
 
-    start: _typing.ClassVar[str] = f"```Python\n# {_globals.uuid} generate data"
-    stop: _typing.ClassVar[str] = "```"
+    START: _typing.ClassVar = f"```Python\n# {_globals.UUID} generate data"
+    stop: _typing.ClassVar = "```"
 
     @property
     def path(self) -> _pathlib.Path:
@@ -155,7 +152,7 @@ class MarkdownReader:
         self.__codes: _typing.MutableSequence[_types.CodeType] = []
 
     def read(self, text: str, /) -> None:
-        start: int = text.find(self.start)
+        start: int = text.find(self.START)
         while start != -1:
             stop: int = text.find(self.stop, start + len(self.stop))
             if stop == -1:
@@ -164,8 +161,8 @@ class MarkdownReader:
                 self.__options.compiler(
                     _Env.transform_code(
                         _ast.parse(
-                            ("\n" * text.count("\n", 0, start + len(self.start)))
-                            + text[start + len(self.start) : stop],
+                            ("\n" * text.count("\n", 0, start + len(self.START)))
+                            + text[start + len(self.START) : stop],
                             self.__path,
                             "exec",
                             type_comments=True,
@@ -178,7 +175,7 @@ class MarkdownReader:
                     optimize=0,
                 )
             )
-            start = text.find(self.start, stop + len(self.stop))
+            start = text.find(self.START, stop + len(self.stop))
 
     def pipe(self) -> _typing.Collection[_Writer]:
         assert isinstance(self, Reader)
@@ -208,7 +205,7 @@ class MarkdownReader:
                                             type(self.state).element_type(
                                                 date=_datetime.date.today(),
                                                 interval=1,
-                                                ease=_globals.flashcard_ease_default,
+                                                ease=_globals.FLASHCARD_EASE_DEFAULT,
                                             ),
                                             diff,
                                         ),

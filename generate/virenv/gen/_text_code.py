@@ -13,7 +13,7 @@ from ._misc import Tag as _Tag
 @_typing.final
 class TextCode:
     __slots__: _typing.ClassVar = ("__blocks", "__by_tag")
-    escapes: _typing.ClassVar[_typing.Collection[str]] = frozenset(
+    ESCAPES: _typing.ClassVar[_typing.Collection[str]] = frozenset(
         {"\\", "{", "}", ":"}
     )
 
@@ -102,7 +102,7 @@ class TextCode:
     @classmethod
     def escape(cls, text: str, /, *, block: bool = False) -> str:
         def translate(char: str) -> str:
-            if char in cls.escapes:
+            if char in cls.ESCAPES:
                 return f"\\{char}"
             return char
 

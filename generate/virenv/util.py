@@ -55,7 +55,7 @@ class PathLocation:
     @_contextlib.asynccontextmanager
     async def open(self):
         async with _aiofiles.open(
-            self.path, mode="r+t", **_globals.open_options
+            self.path, mode="r+t", **_globals.OPEN_OPTIONS
         ) as file:
             yield file
 
@@ -98,26 +98,26 @@ class FileSection:
         start: str
         stop: str
 
-    section_formats: _typing.ClassVar[
+    SECTION_FORMATS: _typing.ClassVar[
         _typing.Mapping[str, SectionFormat]
     ] = _types.MappingProxyType(
         {
             "": SectionFormat(
                 start_regex=_re.compile(
-                    rf"\[{_globals.uuid},generate,([^,\]]*)\]", flags=_re.NOFLAG
+                    rf"\[{_globals.UUID},generate,([^,\]]*)\]", flags=_re.NOFLAG
                 ),
-                end_regex=_re.compile(rf"\[{_globals.uuid},end\]", flags=_re.NOFLAG),
-                start=f"[{_globals.uuid},generate,{{section}}]",
-                stop=f"[{_globals.uuid},end]",
+                end_regex=_re.compile(rf"\[{_globals.UUID},end\]", flags=_re.NOFLAG),
+                start=f"[{_globals.UUID},generate,{{section}}]",
+                stop=f"[{_globals.UUID},end]",
             ),
             ".md": SectionFormat(
                 start_regex=_re.compile(
-                    rf'<!--{_globals.uuid} generate section="([^"]*)"-->',
+                    rf'<!--{_globals.UUID} generate section="([^"]*)"-->',
                     flags=_re.NOFLAG,
                 ),
-                end_regex=_re.compile(rf"<!--/{_globals.uuid}-->", flags=_re.NOFLAG),
-                start=f'<!--{_globals.uuid} generate section="{{section}}"-->',
-                stop=f"<!--/{_globals.uuid}-->",
+                end_regex=_re.compile(rf"<!--/{_globals.UUID}-->", flags=_re.NOFLAG),
+                start=f'<!--{_globals.UUID} generate section="{{section}}"-->',
+                stop=f"<!--/{_globals.UUID}-->",
             ),
         }
     )
@@ -135,18 +135,18 @@ class FileSection:
         slots=True,
     )
     class __CacheData:
-        empty: _typing.ClassVar[_typing.Self]
+        EMPTY: _typing.ClassVar
         mod_time: int
         sections: _typing.AbstractSet[str]
 
         def __post_init__(self) -> None:
             object.__setattr__(self, "sections", frozenset(self.sections))
 
-    __CacheData.empty = __CacheData(mod_time=-1, sections=frozenset())
+    __CacheData.EMPTY = __CacheData(mod_time=-1, sections=frozenset())
 
     class __ValidateCache(dict[_pathlib.Path, __CacheData]):
         __slots__: _typing.ClassVar = ("__lock",)
-        __ValueType: _typing.ClassVar[type["FileSection.__CacheData"]]
+        __VALUE_TYPE: _typing.ClassVar
 
         def __init_subclass__(
             cls,
@@ -154,7 +154,7 @@ class FileSection:
             **kwargs: _typing.Any | None,
         ) -> None:
             super().__init_subclass__(**kwargs)
-            cls.__ValueType = value_type
+            cls.__VALUE_TYPE = value_type
 
         def __init__(self) -> None:
             super().__init__()
@@ -164,7 +164,7 @@ class FileSection:
             ext: str
             _, ext = _os.path.splitext(key)
             try:
-                format: FileSection.SectionFormat = FileSection.section_formats[ext]
+                format: FileSection.SectionFormat = FileSection.SECTION_FORMATS[ext]
             except KeyError as ex:
                 raise ValueError(f"Unknown extension: {key}") from ex
             mod_time: int = _os.stat(key).st_mtime_ns
@@ -172,11 +172,11 @@ class FileSection:
                 try:
                     cache: FileSection.__CacheData = super().__getitem__(key)
                 except KeyError:
-                    cache = self.__ValueType.empty
+                    cache = self.__VALUE_TYPE.EMPTY
                 if mod_time != cache.mod_time:
                     text: str
                     file: _typing.TextIO
-                    with open(key, mode="rt", **_globals.open_options) as file:
+                    with open(key, mode="rt", **_globals.OPEN_OPTIONS) as file:
                         text = file.read()
                     sections: _typing.MutableSet[str] = set()
                     read_to: int = 0
@@ -205,7 +205,7 @@ class FileSection:
                         raise ValueError(
                             f"Too many closings at char {end.start()}: {key}"
                         )
-                    cache = self.__ValueType(
+                    cache = self.__VALUE_TYPE(
                         mod_time=mod_time,
                         sections=sections,
                     )
@@ -220,7 +220,7 @@ class FileSection:
     __ValidateCache = type(
         "__ValidateCache", (__ValidateCache,), {}, value_type=__CacheData
     )
-    __validate_cache: _typing.ClassVar[__ValidateCache] = __ValidateCache()
+    __VALIDATE_CACHE: _typing.ClassVar = __ValidateCache()
 
     path: _pathlib.Path
     section: str
@@ -230,7 +230,7 @@ class FileSection:
         async with (
             _FileSectionIO(self)
             if self.section
-            else _aiofiles.open(self.path, mode="r+t", **_globals.open_options)
+            else _aiofiles.open(self.path, mode="r+t", **_globals.OPEN_OPTIONS)
         ) as file:
             yield file
 
@@ -238,7 +238,7 @@ class FileSection:
         object.__setattr__(self, "path", self.path.resolve(strict=True))
         if (
             not self.section
-            or self.section not in self.__validate_cache[self.path].sections
+            or self.section not in self.__VALIDATE_CACHE[self.path].sections
         ):
             raise ValueError(f"Section not found: {self}")
 
@@ -266,14 +266,14 @@ class _FileSectionIO(_io.StringIO):
 
     async def __aenter__(self):
         _, ext = _os.path.splitext(self.__closure.path)
-        start_format: str = self.__closure.section_formats[ext].start.format(
+        start_format: str = self.__closure.SECTION_FORMATS[ext].start.format(
             section=self.__closure.section
         )
-        stop_format: str = self.__closure.section_formats[ext].stop.format(
+        stop_format: str = self.__closure.SECTION_FORMATS[ext].stop.format(
             section=self.__closure.section
         )
         self.__file = await _aiofiles.open(
-            self.__closure.path, mode="r+t", **_globals.open_options
+            self.__closure.path, mode="r+t", **_globals.OPEN_OPTIONS
         ).__aenter__()
         try:
             text = await self.__file.read()
@@ -448,8 +448,8 @@ assert issubclass(ClozeFlashcardGroup, FlashcardGroup)
     slots=True,
 )
 class FlashcardState:
-    format: _typing.ClassVar[str] = "!{date},{interval},{ease}"
-    regex: _typing.ClassVar[_re.Pattern[str]] = _re.compile(
+    FORMAT: _typing.ClassVar = "!{date},{interval},{ease}"
+    REGEX: _typing.ClassVar = _re.compile(
         r"!(\d{4}-\d{2}-\d{2}),(\d+),(\d+)", flags=_re.NOFLAG
     )
 
@@ -458,14 +458,14 @@ class FlashcardState:
     ease: int
 
     def __str__(self) -> str:
-        return self.format.format(
+        return self.FORMAT.format(
             date=self.date, interval=self.interval, ease=self.ease
         )
 
     @classmethod
     def compile_many(cls, text: str) -> _typing.Iterator[_typing.Self]:
         match: _re.Match[str]
-        for match in cls.regex.finditer(text):
+        for match in cls.REGEX.finditer(text):
             yield cls(
                 date=_datetime.date.fromisoformat(match[1]),
                 interval=int(match[2]),
@@ -490,18 +490,18 @@ class FlashcardState:
 @_typing.final
 class FlashcardStateGroup(TypedTuple[FlashcardState], element_type=FlashcardState):
     __slots__: _typing.ClassVar = ()
-    format: _typing.ClassVar[str] = _globals.flashcard_states_format
-    regex: _typing.ClassVar[_re.Pattern[str]] = _globals.flashcard_states_regex
+    FORMAT: _typing.ClassVar = _globals.FLASHCARD_STATES_FORMAT
+    REGEX: _typing.ClassVar = _globals.FLASHCARD_STATES_REGEX
 
     def __str__(self) -> str:
         if self:
-            return self.format.format(states="".join(map(str, self)))
+            return self.FORMAT.format(states="".join(map(str, self)))
         return ""
 
     @classmethod
     def compile_many(cls, text: str) -> _typing.Iterator[_typing.Self]:
         match: _re.Match[str]
-        for match in cls.regex.finditer(text):
+        for match in cls.REGEX.finditer(text):
             yield cls(FlashcardState.compile_many(text[match.start() : match.end()]))
 
     @classmethod
