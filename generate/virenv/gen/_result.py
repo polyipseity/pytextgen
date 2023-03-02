@@ -2,7 +2,7 @@
 import dataclasses as _dataclasses
 import typing as _typing
 
-from ..util import *
+from ..util import Location, TypedTuple
 
 
 @_typing.final

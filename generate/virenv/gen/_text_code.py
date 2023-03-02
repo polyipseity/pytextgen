@@ -6,8 +6,8 @@ import io as _io
 import types as _types
 import typing as _typing
 
-from ..util import *
-from ._misc import *
+from ..util import constant
+from ._misc import Tag
 
 
 @_typing.final

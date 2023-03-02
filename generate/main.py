@@ -15,8 +15,9 @@ import typing as _typing
 from .. import globals as _globals
 from .. import info as _info
 from .. import util as _util
-from ._read import *
-from ._write import *
+from ._options import Options
+from ._read import Reader
+from ._write import Writer
 
 
 @_typing.final

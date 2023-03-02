@@ -1,5 +1,5 @@
 # -*- coding: UTF-8 -*-
-from .util import *
+from .util import FlashcardStateGroup, Location, maybe_async
 
 
 async def read_flashcard_states(source: str | Location):

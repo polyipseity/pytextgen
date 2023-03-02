@@ -18,8 +18,8 @@ from .. import globals as _globals
 from .. import info as _info
 from .. import util as _util
 from .virenv import Environment, util as _virenv_util
-from ._options import *
-from ._write import *
+from ._options import Options
+from ._write import PythonWriter, Writer
 
 
 _Python_env_builtins_exclude: _typing.AbstractSet[str] = frozenset(

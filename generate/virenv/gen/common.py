@@ -7,11 +7,22 @@ import re as _re
 import types as _types
 import typing as _typing
 
-from ..config import *
-from ..util import *
-from ._flashcard import *
-from ._misc import *
-from ._text_code import *
+from . import CONFIG
+from ..util import Unit, constant, identity
+from ._flashcard import (
+    FlashcardGroup,
+    FlashcardStateGroup,
+    attach_flashcard_states,
+    cloze_texts,
+    listify_flashcards,
+    memorize_indexed_seq0,
+    memorize_linked_seq0,
+    memorize_two_sided0,
+    punctuation_hinter,
+    semantics_seq_map0,
+)
+from ._misc import Tag, affix_lines, strip_lines
+from ._text_code import TextCode, code_to_str, code_to_strs, separate_code_by_tag
 
 
 _T = _typing.TypeVar("_T")

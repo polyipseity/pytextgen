@@ -2,9 +2,19 @@
 import itertools as _itertools
 import typing as _typing
 
-from ..config import *
-from ..util import *
-from ._misc import *
+from ..config import CONFIG
+from ..util import (
+    ClozeFlashcardGroup,
+    FlashcardGroup,
+    FlashcardStateGroup,
+    LazyIterableSequence,
+    StatefulFlashcardGroup,
+    TwoSidedFlashcard,
+    constant,
+    identity,
+    ignore_args,
+)
+from ._misc import split_by_punctuations
 
 
 def attach_flashcard_states(

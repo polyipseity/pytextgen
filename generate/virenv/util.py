@@ -15,8 +15,8 @@ import types as _types
 import typing as _typing
 
 from ... import globals as _globals
-from ...util import *
-from .config import *
+from ...util import *  # Intentional wildcard import
+from .config import CONFIG, FlashcardSeparatorType
 
 
 class Location(metaclass=_abc.ABCMeta):
