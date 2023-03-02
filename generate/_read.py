@@ -25,9 +25,7 @@ _PYTHON_ENV_BUILTINS_EXCLUDE: _typing.AbstractSet[str] = frozenset(
     # constants: https://docs.python.org/library/constants.html
     # functions: https://docs.python.org/library/functions.html
 )
-_Python_env_module_cache = _util.copy_module(
-    _importlib.import_module(__package__, "virenv")
-)
+_Python_env_module_cache = list[_types.ModuleType]()
 
 
 class Reader(metaclass=_abc.ABCMeta):
@@ -85,7 +83,10 @@ def _Python_env(
             yield
 
         modifier = dummy_modifier
-    module = _Python_env_module_cache
+    try:
+        module = _Python_env_module_cache.pop()
+    except IndexError:
+        module = _util.copy_module(_importlib.import_module(__package__, "virenv"))
 
     def cwf_section(section: str) -> _virenv_util.Location:
         ret: _virenv_util.FileSection = module.util.FileSection(
@@ -107,15 +108,14 @@ def _Python_env(
 
     @_contextlib.contextmanager
     def context():
-        global _Python_env_module_cache
         try:
             with modifier(module), _unittest_mock.patch.dict(
                 _sys.modules, {_info.NAME: module}
             ):
                 yield
         finally:
-            if _Python_env_module_cache.dirty():
-                _Python_env_module_cache = _util.copy_module(_Python_env_module_cache)
+            if not module.dirty():
+                _Python_env_module_cache.append(module)
 
     return (
         _Env(
