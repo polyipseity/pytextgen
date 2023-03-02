@@ -299,12 +299,13 @@ class _FileSectionIO(_io.StringIO):
         traceback: _types.TracebackType | None,
     ):
         try:
-            self.seek(0)
-            data: str = self.read()
             try:
-                await self.__file.seek(0)
-                text = await self.__file.read()
                 seek = self.__file.seek(0)
+                self.seek(0)
+                data: str = self.read()
+                await seek
+                text = await self.__file.read()
+                seek1 = self.__file.seek(0)
                 write = "".join(
                     (
                         text[: self.__slice.start],
@@ -312,7 +313,7 @@ class _FileSectionIO(_io.StringIO):
                         text[self.__slice.stop :],
                     )
                 )
-                await seek
+                await seek1
                 await self.__file.write(write)
                 await self.__file.truncate()
             finally:

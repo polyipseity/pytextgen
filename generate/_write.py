@@ -77,19 +77,23 @@ class PythonWriter:
                         if timestamp
                         else text
                     ):
-                        await _util.maybe_async(io.seek(0))
-                        timestamp_text = (
-                            _globals.generate_comment_format.format(
-                                now=_datetime.datetime.now().astimezone().isoformat()
+                        seek = _util.maybe_async(io.seek(0))
+                        data = "".join(
+                            (
+                                _globals.generate_comment_format.format(
+                                    now=_datetime.datetime.now()
+                                    .astimezone()
+                                    .isoformat()
+                                )
+                                if self.__options.timestamp
+                                else text[timestamp.start() : timestamp.end()]
+                                if timestamp
+                                else "",
+                                result.text,
                             )
-                            if self.__options.timestamp
-                            else text[timestamp.start() : timestamp.end()]
-                            if timestamp
-                            else ""
                         )
-                        await _util.maybe_async(
-                            io.write(f"{timestamp_text}{result.text}")
-                        )
+                        await seek
+                        await _util.maybe_async(io.write(data))
                         await _util.maybe_async(io.truncate())
 
 
