@@ -133,10 +133,10 @@ def _Python_env(
                 yield
         finally:
             loop = _asyncio.get_running_loop()
-            if not module.dirty():
-                _Python_env_module_cache[loop] = module
-            else:
+            if module.dirty():
                 del _Python_env_module_cache[loop]
+            else:
+                _Python_env_module_cache[loop] = module
 
     return _Env(
         env={
