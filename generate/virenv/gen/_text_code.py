@@ -6,8 +6,8 @@ import io as _io
 import types as _types
 import typing as _typing
 
-from ..util import constant
-from ._misc import Tag
+from ..util import constant as _const
+from ._misc import Tag as _Tag
 
 
 @_typing.final
@@ -79,7 +79,7 @@ class TextCode:
             str, _typing.Sequence[TextCode.ByTagValue]
         ] = _types.MappingProxyType(
             _collections.defaultdict(
-                constant(()), {k: tuple(v) for k, v in by_tag.items()}
+                _const(()), {k: tuple(v) for k, v in by_tag.items()}
             )
         )
 
@@ -193,11 +193,11 @@ class TextCode:
         return cls(cls.compiler(text))
 
 
-def code_to_strs(code: TextCode, /, *, tag: str = Tag.COMMON) -> _typing.Iterator[str]:
+def code_to_strs(code: TextCode, /, *, tag: str = _Tag.COMMON) -> _typing.Iterator[str]:
     return (block.text for block in code.blocks if block.common or block.tag == tag)
 
 
-def code_to_str(code: TextCode, /, *, tag: str = Tag.COMMON) -> str:
+def code_to_str(code: TextCode, /, *, tag: str = _Tag.COMMON) -> str:
     return "".join(code_to_strs(code, tag=tag))
 
 

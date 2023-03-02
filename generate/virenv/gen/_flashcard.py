@@ -2,36 +2,36 @@
 import itertools as _itertools
 import typing as _typing
 
-from ..config import CONFIG
+from ..config import CONFIG as _CFG
 from ..util import (
-    ClozeFlashcardGroup,
-    FlashcardGroup,
-    FlashcardStateGroup,
-    LazyIterableSequence,
-    StatefulFlashcardGroup,
-    TwoSidedFlashcard,
-    constant,
-    identity,
-    ignore_args,
+    ClozeFlashcardGroup as _CzFcGrp,
+    FlashcardGroup as _FcGrp,
+    FlashcardStateGroup as _FcStGrp,
+    LazyIterableSequence as _LazyIterSeq,
+    StatefulFlashcardGroup as _StFcGrp,
+    TwoSidedFlashcard as _2SidedFc,
+    constant as _const,
+    identity as _id,
+    ignore_args as _ig_args,
 )
-from ._misc import split_by_punctuations
+from ._misc import split_by_punctuations as _spt_by_puncts
 
 
 def attach_flashcard_states(
-    flashcards: _typing.Iterable[FlashcardGroup],
+    flashcards: _typing.Iterable[_FcGrp],
     /,
     *,
-    states: _typing.Iterable[FlashcardStateGroup],
-) -> _typing.Iterator[StatefulFlashcardGroup]:
+    states: _typing.Iterable[_FcStGrp],
+) -> _typing.Iterator[_StFcGrp]:
     for fc, st in zip(
         flashcards,
-        _itertools.chain(states, _itertools.repeat(FlashcardStateGroup())),
+        _itertools.chain(states, _itertools.repeat(_FcStGrp())),
     ):
-        yield StatefulFlashcardGroup(flashcard=fc, state=st)
+        yield _StFcGrp(flashcard=fc, state=st)
 
 
 def listify_flashcards(
-    flashcards: _typing.Iterable[StatefulFlashcardGroup],
+    flashcards: _typing.Iterable[_StFcGrp],
 ) -> str:
     def ret_gen() -> _typing.Iterator[str]:
         newline: str = ""
@@ -49,17 +49,17 @@ def memorize_two_sided0(
     strs: _typing.Iterable[str],
     /,
     *,
-    offsets: _typing.Callable[[int], int | None] = constant(1),
+    offsets: _typing.Callable[[int], int | None] = _const(1),
     reversible: bool = True,
-    hinter: _typing.Callable[[int, str], tuple[str, str]] = constant(("", "")),
-) -> _typing.Iterator[FlashcardGroup]:
+    hinter: _typing.Callable[[int, str], tuple[str, str]] = _const(("", "")),
+) -> _typing.Iterator[_FcGrp]:
     @_typing.final
     class HintedStr(_typing.NamedTuple):
         str_: str
         left: str
         right: str
 
-    strs_seq: _typing.Sequence[str] = LazyIterableSequence(strs)
+    strs_seq: _typing.Sequence[str] = _LazyIterSeq(strs)
 
     def offseted() -> _typing.Iterator[HintedStr]:
         index: int = -1
@@ -78,24 +78,24 @@ def memorize_two_sided0(
     left: HintedStr
     right: HintedStr
     for left, right in zip(iter, iter):
-        ret: TwoSidedFlashcard = TwoSidedFlashcard(
+        ret: _2SidedFc = _2SidedFc(
             left.str_ + right.left,
             left.right + right.str_,
             reversible=reversible,
         )
-        assert isinstance(ret, FlashcardGroup)
+        assert isinstance(ret, _FcGrp)
         yield ret
 
 
 def memorize_linked_seq0(
     strs: _typing.Iterable[str],
     /,
-    hinter: _typing.Callable[[int, str], tuple[str, str]] = constant(("→", "←")),
+    hinter: _typing.Callable[[int, str], tuple[str, str]] = _const(("→", "←")),
     **kwargs: _typing.Any,
-) -> _typing.Iterator[FlashcardGroup]:
+) -> _typing.Iterator[_FcGrp]:
     return memorize_two_sided0(
         strs,
-        offsets=ignore_args(_itertools.chain((1,), _itertools.cycle((1, 0))).__next__),
+        offsets=_ig_args(_itertools.chain((1,), _itertools.cycle((1, 0))).__next__),
         hinter=hinter,
         **kwargs,
     )
@@ -107,45 +107,45 @@ def memorize_indexed_seq0(
     *,
     indices: _typing.Callable[[int], int | None] = int(1).__add__,
     reversible: bool = True,
-) -> _typing.Iterator[FlashcardGroup]:
+) -> _typing.Iterator[_FcGrp]:
     idx: int
     str_: str
     for idx, str_ in enumerate(strs):
         index: int | None = indices(idx)
         if index is None:
             continue
-        ret: TwoSidedFlashcard = TwoSidedFlashcard(
+        ret: _2SidedFc = _2SidedFc(
             str(index),
             str_,
             reversible=reversible,
         )
-        assert isinstance(ret, FlashcardGroup)
+        assert isinstance(ret, _FcGrp)
         yield ret
 
 
 def semantics_seq_map0(
     map: _typing.Iterable[tuple[str, str]], /, *, reversible: bool = False
-) -> _typing.Iterator[FlashcardGroup]:
+) -> _typing.Iterator[_FcGrp]:
     text: str
     sem: str
     for text, sem in map:
-        ret: TwoSidedFlashcard = TwoSidedFlashcard(
+        ret: _2SidedFc = _2SidedFc(
             text,
             sem,
             reversible=reversible,
         )
-        assert isinstance(ret, FlashcardGroup)
+        assert isinstance(ret, _FcGrp)
         yield ret
 
 
 def punctuation_hinter(
-    hinted: _typing.Callable[[int], bool] = constant(True),
+    hinted: _typing.Callable[[int], bool] = _const(True),
     *,
-    sanitizer: _typing.Callable[[str], str] = identity,
+    sanitizer: _typing.Callable[[str], str] = _id,
 ) -> _typing.Callable[[int, str], tuple[str, str]]:
     def ret(index: int, str_: str) -> tuple[str, str]:
         if hinted(index):
-            count: int = sum(1 for _ in split_by_punctuations(sanitizer(str_)))
+            count: int = sum(1 for _ in _spt_by_puncts(sanitizer(str_)))
             return (f"→{count}", f"{count}←")
         return ("→", "←")
 
@@ -153,10 +153,10 @@ def punctuation_hinter(
 
 
 def cloze_texts(
-    texts: _typing.Iterable[str], /, *, token: tuple[str, str] = CONFIG.cloze_token
-) -> _typing.Iterator[FlashcardGroup]:
+    texts: _typing.Iterable[str], /, *, token: tuple[str, str] = _CFG.cloze_token
+) -> _typing.Iterator[_FcGrp]:
     text: str
     for text in texts:
-        ret: ClozeFlashcardGroup = ClozeFlashcardGroup(text, token=token)
-        assert isinstance(ret, FlashcardGroup)
+        ret: _CzFcGrp = _CzFcGrp(text, token=token)
+        assert isinstance(ret, _FcGrp)
         yield ret

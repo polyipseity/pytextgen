@@ -2,7 +2,7 @@
 import dataclasses as _dataclasses
 import typing as _typing
 
-from ..util import Location, TypedTuple
+from ..util import Location as _Loc, TypedTuple as _TTuple
 
 
 @_typing.final
@@ -18,10 +18,10 @@ from ..util import Location, TypedTuple
     slots=True,
 )
 class Result:
-    location: Location
+    location: _Loc
     text: str
 
 
 @_typing.final
-class Results(TypedTuple[Result], element_type=Result):
+class Results(_TTuple[Result], element_type=Result):
     __slots__: _typing.ClassVar = ()

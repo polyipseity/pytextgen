@@ -16,7 +16,7 @@ import typing as _typing
 
 from ... import globals as _globals
 from ...util import *  # Intentional wildcard import
-from .config import CONFIG, FlashcardSeparatorType
+from .config import CONFIG as _CFG, FlashcardSeparatorType as _FcSepT
 
 
 class Location(metaclass=_abc.ABCMeta):
@@ -358,8 +358,8 @@ class TwoSidedFlashcard:
     reversible: bool
 
     def __str__(self) -> str:
-        return CONFIG.flashcard_separators[
-            FlashcardSeparatorType(
+        return _CFG.flashcard_separators[
+            _FcSepT(
                 reversible=self.reversible,
                 multiline="\n" in self.left or "\n" in self.right,
             )
@@ -399,7 +399,7 @@ class ClozeFlashcardGroup:
 
     context: str
     _: _dataclasses.KW_ONLY
-    token: tuple[str, str] = CONFIG.cloze_token
+    token: tuple[str, str] = _CFG.cloze_token
     _clozes: _typing.Sequence[str] = _dataclasses.field(
         init=False, repr=False, hash=False, compare=False
     )

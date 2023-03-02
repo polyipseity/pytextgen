@@ -17,9 +17,9 @@ import unittest.mock as _unittest_mock
 from .. import globals as _globals
 from .. import info as _info
 from .. import util as _util
-from .virenv import Environment, util as _virenv_util
-from ._options import Options
-from ._write import PythonWriter, Writer
+from .virenv import Environment as _Env, util as _virenv_util
+from ._options import Options as _Opts
+from ._write import PythonWriter as _PyWriter, Writer as _Writer
 
 
 _Python_env_builtins_exclude: _typing.AbstractSet[str] = frozenset(
@@ -33,7 +33,7 @@ class Reader(metaclass=_abc.ABCMeta):
     registry: _typing.ClassVar[_typing.MutableMapping[str, type]] = {}
 
     @_abc.abstractmethod
-    def __init__(self, *, path: _pathlib.Path, options: Options) -> None:
+    def __init__(self, *, path: _pathlib.Path, options: _Opts) -> None:
         raise NotImplementedError(self)
 
     @property
@@ -43,7 +43,7 @@ class Reader(metaclass=_abc.ABCMeta):
 
     @property
     @_abc.abstractmethod
-    def options(self) -> Options:
+    def options(self) -> _Opts:
         raise NotImplementedError(self)
 
     @_abc.abstractmethod
@@ -51,7 +51,7 @@ class Reader(metaclass=_abc.ABCMeta):
         raise NotImplementedError(self)
 
     @_abc.abstractmethod
-    def pipe(self) -> _typing.Collection[Writer]:
+    def pipe(self) -> _typing.Collection[_Writer]:
         raise NotImplementedError(self)
 
     @classmethod
@@ -80,7 +80,7 @@ def _Python_env(
         [_types.ModuleType], _contextlib.AbstractContextManager[_typing.Any]
     ]
     | None = None,
-) -> tuple[Environment, _types.ModuleType]:
+) -> tuple[_Env, _types.ModuleType]:
     if modifier is None:
 
         @_contextlib.contextmanager
@@ -121,7 +121,7 @@ def _Python_env(
                 _Python_env_module_cache = _util.copy_module(_Python_env_module_cache)
 
     return (
-        Environment(
+        _Env(
             env={
                 "cwf": reader.path,
                 "cwd": reader.path.parent,
@@ -146,12 +146,12 @@ class MarkdownReader:
         return self.__path
 
     @property
-    def options(self) -> Options:
+    def options(self) -> _Opts:
         return self.__options
 
-    def __init__(self, *, path: _pathlib.Path, options: Options) -> None:
+    def __init__(self, *, path: _pathlib.Path, options: _Opts) -> None:
         self.__path: _pathlib.Path = path.resolve(strict=True)
-        self.__options: Options = options
+        self.__options: _Opts = options
         self.__codes: _typing.MutableSequence[_types.CodeType] = []
 
     def read(self, text: str, /) -> None:
@@ -162,7 +162,7 @@ class MarkdownReader:
                 raise ValueError(f"Unenclosure at char {start}")
             self.__codes.append(
                 self.__options.compiler(
-                    Environment.transform_code(
+                    _Env.transform_code(
                         _ast.parse(
                             ("\n" * text.count("\n", 0, start + len(self.start)))
                             + text[start + len(self.start) : stop],
@@ -180,7 +180,7 @@ class MarkdownReader:
             )
             start = text.find(self.start, stop + len(self.stop))
 
-    def pipe(self) -> _typing.Collection[Writer]:
+    def pipe(self) -> _typing.Collection[_Writer]:
         assert isinstance(self, Reader)
 
         @_contextlib.contextmanager
@@ -227,17 +227,17 @@ class MarkdownReader:
                 for final in finals:
                     final()
 
-        def ret_gen() -> _typing.Iterator[Writer]:
+        def ret_gen() -> _typing.Iterator[_Writer]:
             code: _types.CodeType
             for code in self.__codes:
                 env, module = _Python_env(self, modifier)
-                ret: PythonWriter = PythonWriter(
+                ret: _PyWriter = _PyWriter(
                     code,
                     env=env,
                     module=module,
                     options=self.__options,
                 )
-                assert isinstance(ret, Writer)
+                assert isinstance(ret, _Writer)
                 yield ret
 
         return tuple(ret_gen())

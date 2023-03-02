@@ -5,7 +5,7 @@ import types as _types
 import typing as _typing
 
 from ... import globals as _globals
-from .util import maybe_async
+from .util import maybe_async as _masync
 
 
 @_typing.final
@@ -102,4 +102,4 @@ __env__.{ENTRY} = {ENTRY}"""
         )
         with self.__context():
             exec(code, globals, locals, closure=self.__closure)
-            return await maybe_async(getattr(env, self.ENTRY)())
+            return await _masync(getattr(env, self.ENTRY)())

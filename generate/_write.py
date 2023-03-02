@@ -8,8 +8,8 @@ import typing as _typing
 
 from .. import globals as _globals
 from .. import util as _util
-from .virenv import Environment, gen as _virenv_gen
-from ._options import Options
+from .virenv import Environment as _Env, gen as _virenv_gen
+from ._options import Options as _Opts
 
 
 class Writer(metaclass=_abc.ABCMeta):
@@ -34,14 +34,14 @@ class PythonWriter:
         code: _types.CodeType,
         /,
         *,
-        env: Environment,
+        env: _Env,
         module: _types.ModuleType,
-        options: Options,
+        options: _Opts,
     ) -> None:
         self.__code: _types.CodeType = code
-        self.__env: Environment = env
+        self.__env: _Env = env
         self.__module = module
-        self.__options: Options = options
+        self.__options: _Opts = options
 
     def __repr__(self) -> str:
         return f"{type(self).__qualname__}({self.__code!r}, env={self.__env!r}, options={self.__options!r})"

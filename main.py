@@ -31,18 +31,18 @@ def parser(
         help="print version and exit",
     )
     subparsers = parser.add_subparsers()
-    from .generate import main as generate_main
+    from .generate import main as _generate_main
 
-    generate_main.parser(
+    _generate_main.parser(
         _functools.partial(
-            subparsers.add_parser, generate_main.__package__.replace(f"{prog}.", "")
+            subparsers.add_parser, _generate_main.__package__.replace(f"{prog}.", "")
         )
     )
-    from .strip import main as strip_main
+    from .strip import main as _strip_main
 
-    strip_main.parser(
+    _strip_main.parser(
         _functools.partial(
-            subparsers.add_parser, strip_main.__package__.replace(f"{prog}.", "")
+            subparsers.add_parser, _strip_main.__package__.replace(f"{prog}.", "")
         )
     )
     return parser
