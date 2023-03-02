@@ -92,7 +92,7 @@ __env__.{ENTRY} = {ENTRY}"""
     def locals(self) -> _typing.Mapping[str, _typing.Any | None]:
         return self.__locals
 
-    async def exec(self, code: _types.CodeType) -> _typing.Any | None:
+    async def exec(self, code: _types.CodeType) -> _typing.Any:
         env = _types.SimpleNamespace(result=None, **self.__env)
         globals = {**self.__globals, "__env__": env}
         locals = (

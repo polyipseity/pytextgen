@@ -75,7 +75,7 @@ def _Python_env(
         [_types.ModuleType], _contextlib.AbstractContextManager[_typing.Any]
     ]
     | None = None,
-) -> tuple[_Env, _types.ModuleType]:
+) -> _Env:
     if modifier is None:
 
         @_contextlib.contextmanager
@@ -83,19 +83,25 @@ def _Python_env(
             yield
 
         modifier = dummy_modifier
-    try:
-        module = _Python_env_module_cache.pop()
-    except IndexError:
-        module = _util.copy_module(_importlib.import_module(".virenv", __package__))
-        module.__name__ = _info.NAME
+
+    def new_module():
+        try:
+            return _Python_env_module_cache.pop()
+        except IndexError:
+            module = _util.copy_module(_importlib.import_module(".virenv", __package__))
+            module.__name__ = _info.NAME
+            return module
+
+    def get_module():
+        return _sys.modules[_info.NAME]
 
     def cwf_section(section: str) -> _virenv_util.Location:
-        ret: _virenv_util.FileSection = module.util.FileSection(
+        ret: _virenv_util.FileSection = get_module().util.FileSection(
             path=reader.path, section=section
         )
         assert isinstance(
             ret,
-            _typing.cast(type[_virenv_util.Location], module.util.Location),
+            _typing.cast(type[_virenv_util.Location], get_module().util.Location),
         )
         return ret
 
@@ -109,6 +115,7 @@ def _Python_env(
 
     @_contextlib.contextmanager
     def context():
+        module = new_module()
         try:
             with modifier(module), _unittest_mock.patch.dict(
                 _sys.modules, {_info.NAME: module}
@@ -118,18 +125,15 @@ def _Python_env(
             if not module.dirty():
                 _Python_env_module_cache.append(module)
 
-    return (
-        _Env(
-            env={
-                "cwf": reader.path,
-                "cwd": reader.path.parent,
-                "cwf_section": cwf_section,
-            },
-            globals=vars,
-            locals=vars,
-            context=context,
-        ),
-        module,
+    return _Env(
+        env={
+            "cwf": reader.path,
+            "cwd": reader.path.parent,
+            "cwf_section": cwf_section,
+        },
+        globals=vars,
+        locals=vars,
+        context=context,
     )
 
 
@@ -228,11 +232,9 @@ class MarkdownReader:
         def ret_gen() -> _typing.Iterator[_Writer]:
             code: _types.CodeType
             for code in self.__codes:
-                env, module = _Python_env(self, modifier)
                 ret: _PyWriter = _PyWriter(
                     code,
-                    env=env,
-                    module=module,
+                    env=_Python_env(self, modifier),
                     options=self.__options,
                 )
                 assert isinstance(ret, _Writer)
