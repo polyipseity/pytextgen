@@ -36,7 +36,9 @@ __env__.{ENTRY} = {ENTRY}"""
         globals: _typing.Mapping[str, _typing.Any | None] = globals(),
         locals: _typing.Mapping[str, _typing.Any | None] = locals(),
         closure: tuple[_types.CellType, ...] | None = None,
-        context: _typing.Callable[[], _contextlib.AbstractContextManager[_typing.Any]]
+        context: _typing.Callable[
+            [], _contextlib.AbstractAsyncContextManager[_typing.Any]
+        ]
         | None = None,
     ) -> None:
         self.__env: _typing.Mapping[str, _typing.Any | None] = _types.MappingProxyType(
@@ -51,8 +53,8 @@ __env__.{ENTRY} = {ENTRY}"""
         self.__closure = closure
         if context is None:
 
-            @_contextlib.contextmanager
-            def dummy_context():
+            @_contextlib.asynccontextmanager
+            async def dummy_context():
                 yield
 
             self.__context = dummy_context
@@ -100,6 +102,6 @@ __env__.{ENTRY} = {ENTRY}"""
             if self.__locals == self.__globals
             else {**self.__locals, "__env__": env}
         )
-        with self.__context():
+        async with self.__context():
             exec(code, globals, locals, closure=self.__closure)
             return await _masync(getattr(env, self.ENTRY)())

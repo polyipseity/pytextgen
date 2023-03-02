@@ -1,6 +1,7 @@
 # -*- coding: UTF-8 -*-
 import abc as _abc
 import ast as _ast
+import asyncio as _asyncio
 import builtins as _builtins
 import contextlib as _contextlib
 import dataclasses as _dataclasses
@@ -25,7 +26,9 @@ _PYTHON_ENV_BUILTINS_EXCLUDE: _typing.AbstractSet[str] = frozenset(
     # constants: https://docs.python.org/library/constants.html
     # functions: https://docs.python.org/library/functions.html
 )
-_Python_env_module_cache = list[_types.ModuleType]()
+_Python_env_module_cache: _typing.MutableMapping[
+    _asyncio.AbstractEventLoop, _types.ModuleType | None
+] = {}
 
 
 class Reader(metaclass=_abc.ABCMeta):
@@ -84,10 +87,17 @@ def _Python_env(
 
         modifier = dummy_modifier
 
-    def new_module():
+    async def new_module():
+        loop = _asyncio.get_running_loop()
         try:
-            return _Python_env_module_cache.pop()
-        except IndexError:
+            module = _Python_env_module_cache[loop]
+            while module is None:
+                await _asyncio.sleep(0)
+                module = _Python_env_module_cache[loop]
+            _Python_env_module_cache[loop] = None
+            return module
+        except KeyError:
+            _Python_env_module_cache[loop] = None
             module = _util.copy_module(_importlib.import_module(".virenv", __package__))
             module.__name__ = _info.NAME
             return module
@@ -113,17 +123,20 @@ def _Python_env(
         }
     }
 
-    @_contextlib.contextmanager
-    def context():
-        module = new_module()
+    @_contextlib.asynccontextmanager
+    async def context():
+        module = await new_module()
         try:
             with modifier(module), _unittest_mock.patch.dict(
                 _sys.modules, {_info.NAME: module}
             ):
                 yield
         finally:
+            loop = _asyncio.get_running_loop()
             if not module.dirty():
-                _Python_env_module_cache.append(module)
+                _Python_env_module_cache[loop] = module
+            else:
+                del _Python_env_module_cache[loop]
 
     return _Env(
         env={
