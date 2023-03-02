@@ -34,7 +34,7 @@ __env__.{ENTRY} = {ENTRY}"""
         *,
         env: _typing.Mapping[str, _typing.Any] = {},
         globals: _typing.Mapping[str, _typing.Any] = globals(),
-        locals: _typing.Mapping[str, _typing.Any] = locals(),
+        locals: _typing.Mapping[str, object] = locals(),
         closure: tuple[_types.CellType, ...] | None = None,
         context: _typing.Callable[
             [], _contextlib.AbstractAsyncContextManager[_typing.Any]
@@ -85,7 +85,7 @@ __env__.{ENTRY} = {ENTRY}"""
         return self.__globals
 
     @property
-    def locals(self) -> _typing.Mapping[str, _typing.Any]:
+    def locals(self) -> _typing.Mapping[str, object]:
         return self.__locals
 
     async def exec(self, code: _types.CodeType) -> _typing.Any:
