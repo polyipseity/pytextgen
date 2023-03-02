@@ -83,8 +83,7 @@ def copy_module(module: _ExtendsModuleType) -> _ExtendsModuleType:
         {key: val for key, val in _sys.modules.items() if key not in names},
         clear=True,
     ):
-        copy = _importlib.import_module(module.__name__)
-    return copy
+        return _importlib.import_module(module.__name__)
 
 
 def abc_subclasshook_check(
