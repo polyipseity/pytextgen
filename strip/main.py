@@ -1,5 +1,7 @@
 # -*- coding: UTF-8 -*-
+import aiofiles as _aiofiles
 import argparse as _argparse
+import asyncio as _asyncio
 import dataclasses as _dataclasses
 import enum as _enum
 import functools as _functools
@@ -47,37 +49,42 @@ class Arguments:
         )
 
 
-def main(args: Arguments) -> _typing.NoReturn:
-    exit_code: ExitCode = ExitCode(0)
+async def main(args: Arguments) -> _typing.NoReturn:
+    exit_code = ExitCode(0)
 
-    input: _pathlib.Path
-    for input in args.inputs:
+    async def process(input: _pathlib.Path):
         try:
-            file: _typing.TextIO = open(input, mode="r+t", **_globals.open_options)
+            file = await _aiofiles.open(input, mode="r+t", **_globals.open_options)
         except OSError:
-            exit_code |= ExitCode.READ_ERROR
             _logging.exception(f"Cannot open file: {input}")
-            continue
+            return ExitCode.READ_ERROR
         except ValueError:
-            exit_code |= ExitCode.READ_ERROR
             _logging.exception(f"Encoding error opening file: {input}")
-            continue
-        with file:
+            return ExitCode.READ_ERROR
+        try:
             try:
-                text: str = file.read()
+                text: str = await file.read()
             except Exception:
-                exit_code |= ExitCode.READ_ERROR
                 _logging.exception(f"Exception reading file: {input}")
-                continue
+                return ExitCode.READ_ERROR
             try:
-                file.seek(0)
-                file.write(_flashcard_states_regex.sub("", text))
-                file.truncate()
+                seek = file.seek(0)
+                data = _flashcard_states_regex.sub("", text)
+                await seek
+                await file.write(data)
+                await file.truncate()
             except Exception:
-                exit_code |= ExitCode.WRITE_ERROR
                 _logging.exception(f"Exception writing file: {input}")
-                continue
+                return ExitCode.WRITE_ERROR
+        finally:
+            await file.close()
+        return 0
 
+    exit_code = _functools.reduce(
+        lambda left, right: left | right,
+        await _asyncio.gather(*map(process, args.inputs)),
+        exit_code,
+    )
     _sys.exit(exit_code)
 
 
@@ -113,8 +120,8 @@ def parser(
     )
 
     @_functools.wraps(main)
-    def invoke(args: _argparse.Namespace) -> _typing.NoReturn:
-        main(
+    async def invoke(args: _argparse.Namespace) -> _typing.NoReturn:
+        await main(
             Arguments(
                 inputs=args.inputs,
             )

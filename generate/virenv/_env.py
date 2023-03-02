@@ -1,11 +1,18 @@
 # -*- coding: UTF-8 -*-
+import ast as _ast
 import contextlib as _contextlib
 import types as _types
 import typing as _typing
 
+from ... import globals as _globals
+from .util import maybe_async
+
 
 @_typing.final
 class Environment:
+    ENTRY: _typing.ClassVar = f"_{_globals.uuid.replace('-', '_')}"
+    ENTRY_TEMPLATE: _typing.ClassVar = f"""async def {ENTRY}(): pass
+__env__.{ENTRY} = {ENTRY}"""
     __slots__: _typing.ClassVar = (
         "__closure",
         "__context",
@@ -13,6 +20,14 @@ class Environment:
         "__globals",
         "__locals",
     )
+
+    @classmethod
+    def transform_code(cls, ast: _ast.Module):
+        template = _ast.parse(
+            cls.ENTRY_TEMPLATE, "<string>", "exec", type_comments=True
+        )
+        _typing.cast(_ast.AsyncFunctionDef, template.body[0]).body = ast.body
+        return template
 
     def __init__(
         self,
@@ -77,7 +92,7 @@ class Environment:
     def locals(self) -> _typing.Mapping[str, _typing.Any | None]:
         return self.__locals
 
-    def exec(self, code: _types.CodeType) -> _typing.Any | None:
+    async def exec(self, code: _types.CodeType) -> _typing.Any | None:
         env = _types.SimpleNamespace(result=None, **self.__env)
         globals = {**self.__globals, "__env__": env}
         locals = (
@@ -87,4 +102,4 @@ class Environment:
         )
         with self.__context():
             exec(code, globals, locals, closure=self.__closure)
-        return env.result
+            return await maybe_async(getattr(env, self.ENTRY)())

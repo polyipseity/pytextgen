@@ -17,7 +17,7 @@ import unittest.mock as _unittest_mock
 from .. import globals as _globals
 from .. import info as _info
 from .. import util as _util
-from .virenv import util as _virenv_util
+from .virenv import Environment, util as _virenv_util
 from ._options import *
 from ._write import *
 
@@ -162,11 +162,18 @@ class MarkdownReader:
                 raise ValueError(f"Unenclosure at char {start}")
             self.__codes.append(
                 self.__options.compiler(
-                    "\n" * text.count("\n", 0, start + len(self.start))
-                    + text[start + len(self.start) : stop],
+                    Environment.transform_code(
+                        _ast.parse(
+                            ("\n" * text.count("\n", 0, start + len(self.start)))
+                            + text[start + len(self.start) : stop],
+                            self.__path,
+                            "exec",
+                            type_comments=True,
+                        )
+                    ),
                     filename=self.__path,
                     mode="exec",
-                    flags=_ast.PyCF_ALLOW_TOP_LEVEL_AWAIT,
+                    flags=0,
                     dont_inherit=True,
                     optimize=0,
                 )

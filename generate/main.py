@@ -1,7 +1,7 @@
 # -*- coding: UTF-8 -*-
+import aiofiles as _aiofiles
 import argparse as _argparse
-import atexit as _atexit
-import contextlib as _contextlib
+import asyncio as _asyncio
 import dataclasses as _dataclasses
 import enum as _enum
 import functools as _functools
@@ -49,22 +49,20 @@ class Arguments:
         )
 
 
-def main(args: Arguments) -> _typing.NoReturn:
+async def main(args: Arguments):
     exit_code: ExitCode = ExitCode(0)
 
-    def read(input: _pathlib.Path) -> _typing.Iterable[Writer]:
+    async def read(input: _pathlib.Path):
         nonlocal exit_code
         try:
-            file: _typing.TextIO = open(input, mode="rt", **_globals.open_options)
+            file = await _aiofiles.open(input, mode="rt", **_globals.open_options)
         except OSError:
-            exit_code |= ExitCode.READ_ERROR
             _logging.exception(f"Cannot open file: {input}")
-            return ()
+            return ExitCode.READ_ERROR
         except ValueError:
-            exit_code |= ExitCode.READ_ERROR
             _logging.exception(f"Encoding error opening file: {input}")
-            return ()
-        with file:
+            return ExitCode.READ_ERROR
+        try:
             try:
                 ext: str
                 _, ext = _os.path.splitext(input)
@@ -72,33 +70,51 @@ def main(args: Arguments) -> _typing.NoReturn:
                     path=input,
                     options=args.options,
                 )
-                reader.read(file.read())
+                reader.read(await file.read())
                 return reader.pipe()
             except Exception:
-                exit_code |= ExitCode.READ_ERROR
                 _logging.exception(f"Exception reading file: {input}")
-                return ()
+                return ExitCode.READ_ERROR
+        finally:
+            await file.close()
 
-    writers: _typing.Iterable[Writer] = _itertools.chain.from_iterable(
-        map(read, args.inputs)
+    def reduce_read_result(
+        left: tuple[_typing.MutableSequence[_typing.Iterable[Writer]], ExitCode],
+        right: _typing.Iterable[Writer] | ExitCode,
+    ):
+        seq, code = left
+        if isinstance(right, ExitCode):
+            code |= right
+        else:
+            seq.append(right)
+        return (seq, code)
+
+    writers0, exit_code = _functools.reduce(
+        reduce_read_result,
+        await _asyncio.gather(*map(read, args.inputs)),
+        (list[_typing.Iterable[Writer]](), exit_code),
     )
-    writer_stack: _contextlib.ExitStack = _contextlib.ExitStack().__enter__()
-    try:
-        writer: Writer
-        for writer in writers:
-            try:
-                writer_stack.enter_context(writer.write())
-            except Exception:
-                exit_code |= ExitCode.VALIDATE_ERROR
-                _logging.exception(f"Error while validation: {writer}")
-                continue
-    finally:
-        try:
-            writer_stack.close()
-        except Exception:
-            exit_code |= ExitCode.WRITE_ERROR
-            _logging.exception("Error while writing")
+    writers = _itertools.chain.from_iterable(writers0)
 
+    async def write(writer: Writer):
+        write = writer.write()
+        try:
+            await write.__aenter__()
+        except Exception:
+            _logging.exception(f"Error while validation: {writer}")
+            return ExitCode.VALIDATE_ERROR
+        try:
+            await write.__aexit__(None, None, None)
+        except Exception:
+            _logging.exception(f"Error while writing: {writer}")
+            return ExitCode.WRITE_ERROR
+        return 0
+
+    exit_code = _functools.reduce(
+        lambda left, right: left | right,
+        await _asyncio.gather(*map(write, writers)),
+        exit_code,
+    )
     _sys.exit(exit_code)
 
 
@@ -183,23 +199,18 @@ def parser(
     )
 
     @_functools.wraps(main)
-    def invoke(args: _argparse.Namespace) -> _typing.NoReturn:
-        if args.code_cache is None:
-            compiler: _util.Compiler = compile
-        else:
-            code_cache: _util.CompileCache = _util.CompileCache(folder=args.code_cache)
-            _atexit.register(code_cache.save)
-            compiler = code_cache.compile
-        main(
-            Arguments(
-                inputs=args.inputs,
-                options=Options(
-                    timestamp=args.timestamp,
-                    init_flashcards=args.init_flashcards,
-                    compiler=compiler,
-                ),
+    async def invoke(args: _argparse.Namespace):
+        async with _util.CompileCache(folder=args.code_cache) as cache:
+            await main(
+                Arguments(
+                    inputs=args.inputs,
+                    options=Options(
+                        timestamp=args.timestamp,
+                        init_flashcards=args.init_flashcards,
+                        compiler=cache.compile,
+                    ),
+                )
             )
-        )
 
     parser.set_defaults(invoke=invoke)
     return parser

@@ -1,5 +1,8 @@
 # -*- coding: UTF-8 -*-
 import abc as _abc
+import aiofiles as _aiofiles
+import aiofiles.threadpool.text as _aiofiles_threadpool_text
+import contextlib as _contextlib
 import dataclasses as _dataclasses
 import datetime as _datetime
 import threading as _threading
@@ -20,7 +23,11 @@ class Location(metaclass=_abc.ABCMeta):
     __slots__: _typing.ClassVar = ()
 
     @_abc.abstractmethod
-    def open(self) -> _typing.TextIO:
+    def open(
+        self,
+    ) -> _contextlib.AbstractAsyncContextManager[
+        _typing.TextIO | _aiofiles_threadpool_text.AsyncTextIOWrapper
+    ]:
         raise NotImplementedError(self)
 
     @classmethod
@@ -45,8 +52,12 @@ class Location(metaclass=_abc.ABCMeta):
 class PathLocation:
     path: _pathlib.Path
 
-    def open(self) -> _typing.TextIO:
-        return open(self.path, mode="r+t", **_globals.open_options)
+    @_contextlib.asynccontextmanager
+    async def open(self):
+        async with _aiofiles.open(
+            self.path, mode="r+t", **_globals.open_options
+        ) as file:
+            yield file
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "path", self.path.resolve(strict=True))
@@ -204,7 +215,7 @@ class FileSection:
         def __setitem__(
             self, key: _pathlib.Path, value: "FileSection.__CacheData"
         ) -> None:
-            raise TypeError(f"Unsupported")
+            raise TypeError("Unsupported")
 
     __ValidateCache = type(
         "__ValidateCache", (__ValidateCache,), {}, value_type=__CacheData
@@ -214,65 +225,14 @@ class FileSection:
     path: _pathlib.Path
     section: str
 
-    def open(self) -> _typing.TextIO:
-        if self.section:
-
-            @_typing.final
-            class IO(_io.StringIO):
-                __slots__: _typing.ClassVar = ("__file", "__slice")
-
-                def __init__(self, closure: FileSection, /) -> None:
-                    ext: str
-                    _, ext = _os.path.splitext(closure.path)
-                    start_format: str = closure.section_formats[ext].start.format(
-                        section=closure.section
-                    )
-                    stop_format: str = closure.section_formats[ext].stop.format(
-                        section=closure.section
-                    )
-                    self.__file: _typing.TextIO = open(
-                        closure.path, mode="r+t", **_globals.open_options
-                    )
-                    try:
-                        text: str = self.__file.read()
-                        start: int = text.find(start_format)
-                        if start == -1:
-                            raise ValueError(f"Not found: {closure}")
-                        start += len(start_format)
-                        stop: int = text.find(stop_format, start)
-                        if stop == -1:
-                            raise ValueError(
-                                f"Unenclosure from char {start}: {closure}"
-                            )
-                        self.__slice: slice = slice(start, stop)
-                        super().__init__(text[self.__slice])
-                    except Exception as ex:
-                        self.__file.close()
-                        raise ex
-
-                def close(self) -> None:
-                    try:
-                        self.seek(0)
-                        data: str = self.read()
-                        with self.__file:
-                            self.__file.seek(0)
-                            text: str = self.__file.read()
-                            self.__file.seek(0)
-                            self.__file.write(
-                                "".join(
-                                    (
-                                        text[: self.__slice.start],
-                                        data,
-                                        text[self.__slice.stop :],
-                                    )
-                                )
-                            )
-                            self.__file.truncate()
-                    finally:
-                        super().close()
-
-            return IO(self)
-        return open(self.path, mode="r+t", **_globals.open_options)
+    @_contextlib.asynccontextmanager
+    async def open(self):
+        async with (
+            _FileSectionIO(self)
+            if self.section
+            else _aiofiles.open(self.path, mode="r+t", **_globals.open_options)
+        ) as file:
+            yield file
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "path", self.path.resolve(strict=True))
@@ -281,6 +241,84 @@ class FileSection:
             or self.section not in self.__validate_cache[self.path].sections
         ):
             raise ValueError(f"Section not found: {self}")
+
+
+@_typing.final
+class _FileSectionIO(_io.StringIO):
+    __slots__: _typing.ClassVar = ("__closure", "__file", "__slice")
+
+    def __init__(self, closure: FileSection, /):
+        self.__closure = closure
+
+    def __enter__(self):
+        raise TypeError("Unsupported")
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: _types.TracebackType | None,
+    ):
+        raise TypeError("Unsupported")
+
+    def close(self):
+        raise TypeError("Unsupported")
+
+    async def __aenter__(self):
+        _, ext = _os.path.splitext(self.__closure.path)
+        start_format: str = self.__closure.section_formats[ext].start.format(
+            section=self.__closure.section
+        )
+        stop_format: str = self.__closure.section_formats[ext].stop.format(
+            section=self.__closure.section
+        )
+        self.__file = await _aiofiles.open(
+            self.__closure.path, mode="r+t", **_globals.open_options
+        ).__aenter__()
+        try:
+            text = await self.__file.read()
+            start: int = text.find(start_format)
+            if start == -1:
+                raise ValueError(f"Not found: {self.__closure}")
+            start += len(start_format)
+            stop: int = text.find(stop_format, start)
+            if stop == -1:
+                raise ValueError(f"Unenclosure from char {start}: {self.__closure}")
+            self.__slice = slice(start, stop)
+            super().__init__(text[self.__slice])
+            super().__enter__()
+        except Exception as ex:
+            await self.__file.close()
+            raise ex
+        return self
+
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: _types.TracebackType | None,
+    ):
+        try:
+            self.seek(0)
+            data: str = self.read()
+            try:
+                await self.__file.seek(0)
+                text = await self.__file.read()
+                seek = self.__file.seek(0)
+                write = "".join(
+                    (
+                        text[: self.__slice.start],
+                        data,
+                        text[self.__slice.stop :],
+                    )
+                )
+                await seek
+                await self.__file.write(write)
+                await self.__file.truncate()
+            finally:
+                await self.__file.close()
+        finally:
+            super().close()
 
 
 Location.register(FileSection)

@@ -1,7 +1,9 @@
 # -*- coding: UTF-8 -*-
 from __future__ import annotations
 import abc as _abc
+import aiofiles as _aiofiles
 import ast as _ast
+import asyncio as _asyncio
 import dataclasses as _dataclasses
 import functools as _functools
 import importlib as _importlib
@@ -54,6 +56,13 @@ def ignore_args(func: _typing.Callable[[], _T]) -> _typing.Callable[..., _T]:
 
 def tuple1(var: _T) -> tuple[_T]:
     return (var,)
+
+
+async def maybe_async(value: _typing.Awaitable[_T] | _T) -> _T:
+    if isinstance(value, _typing.Awaitable):
+        value0: _typing.Awaitable[_T] = value
+        return await value0
+    return value
 
 
 def copy_module(module: _ExtendsModuleType) -> _ExtendsModuleType:
@@ -309,47 +318,125 @@ class CompileCache:
             ret = self.__cache_name_format.format(str(_uuid.uuid4()))
         return ret
 
-    def __init__(self, *, folder: _pathlib.Path) -> None:
-        folder.mkdir(parents=True, exist_ok=True)
-        self.__folder: _pathlib.Path = folder.resolve(strict=True)
-        metadata_path: _pathlib.Path = self.__folder / self.__metadata_filename
-        if not metadata_path.exists():
-            metadata_path.write_text("[]", **_globals.open_options)
-        metadata_file: _typing.TextIO
-        with open(metadata_path, mode="rt", **_globals.open_options) as metadata_file:
-            metadata: _typing.Collection[CompileCache.MetadataEntry] = _json.load(
-                metadata_file
-            )
+    def __init__(self, *, folder: _pathlib.Path | None):
+        if folder is None:
+            self.__folder = None
+        else:
+            folder.mkdir(parents=True, exist_ok=True)
+            self.__folder = folder.resolve(strict=True)
         self.__cache: _typing.MutableMapping[
             CompileCache.CacheKey, CompileCache.CacheEntry
         ] = {}
         self.__cache_names: _typing.MutableSet[str] = set()
-        entry: CompileCache.MetadataEntry
-        for entry in metadata:
+
+    async def __aenter__(self):
+        folder = self.__folder
+        if folder is None:
+            return self
+
+        async def read_metadata():
+            metadata_path: _pathlib.Path = folder / self.__metadata_filename
+            if not metadata_path.exists():
+                metadata_path.write_text("[]", **_globals.open_options)
+            async with _aiofiles.open(
+                metadata_path, mode="rt", **_globals.open_options
+            ) as metadata_file:
+                metadata: _typing.Collection[CompileCache.MetadataEntry] = _json.loads(
+                    await metadata_file.read()
+                )
+                return metadata
+
+        metadata = read_metadata()
+
+        async def read_entry(entry: CompileCache.MetadataEntry):
             try:
                 key: CompileCache.MetadataKey = entry["key"]
                 value: CompileCache.MetadataValue = entry["value"]
                 cache_name: str = value["cache_name"]
             except KeyError:
-                continue
-            cache_path: _pathlib.Path = self.__folder / cache_name
+                return
+            path = folder / cache_name
             try:
-                cache_file: _typing.BinaryIO = open(cache_path, mode="rb")
+                file = await _aiofiles.open(path, mode="rb")
             except OSError | ValueError:
-                _logging.exception(f"Cannot open code cache: {cache_path}")
-                continue
-            with cache_file:
+                _logging.exception(f"Cannot open code cache: {path}")
+                return
+            try:
                 try:
-                    code: _types.CodeType | None = _marshal.load(cache_file)
+                    code: _types.CodeType | None = _marshal.loads(await file.read())
                     if code is None:
                         raise ValueError
                 except EOFError | ValueError | TypeError:
-                    _logging.exception(f"Cannot load code cache: {cache_path}")
-                    continue
+                    _logging.exception(f"Cannot load code cache: {path}")
+                    return
+            finally:
+                await file.close()
             self.__cache_names.add(cache_name)
             self.__cache[
                 CompileCache.CacheKey.from_metadata(key)
             ] = CompileCache.CacheEntry(value=value, code=code)
+
+        await _asyncio.gather(*map(read_entry, await metadata))
+        return self
+
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: _types.TracebackType | None,
+    ):
+        folder = self.__folder
+        if folder is None:
+            return
+        cur_time: int = self.__time()
+
+        async def save_cache(
+            key: CompileCache.CacheKey,
+            cache: CompileCache.CacheEntry,
+        ):
+            cache_path: _pathlib.Path = folder / cache.value["cache_name"]
+            if cur_time - cache.value["access_time"] >= self.__timeout:
+                try:
+                    _os.remove(cache_path)
+                except FileNotFoundError:
+                    pass
+                return
+            if cache_path.exists():
+                return
+            async with _aiofiles.open(cache_path, mode="wb") as cache_file:
+                try:
+                    await cache_file.write(_marshal.dumps(cache.code))
+                except ValueError:
+                    _logging.exception(f"Cannot save cache with key: {key}")
+                    await cache_file.close()
+                    try:
+                        _os.remove(cache_path)
+                    except FileNotFoundError:
+                        pass
+                    return
+            return CompileCache.MetadataEntry(key=key.to_metadata(), value=cache.value)
+
+        async with _aiofiles.open(
+            folder / self.__metadata_filename, mode="wt", **_globals.open_options
+        ) as metadata_file:
+            await metadata_file.write(
+                _json.dumps(
+                    tuple(
+                        filter(
+                            lambda x: x is not None,
+                            await _asyncio.gather(
+                                *_itertools.starmap(
+                                    save_cache,
+                                    self.__cache.items(),
+                                )
+                            ),
+                        )
+                    ),
+                    ensure_ascii=False,
+                    sort_keys=True,
+                    indent=2,
+                )
+            )
 
     def compile(
         self,
@@ -364,8 +451,22 @@ class CompileCache:
         dont_inherit: bool = False,
         optimize: int = -1,
     ) -> _types.CodeType:
+        compile0 = _functools.partial(
+            compile,
+            source=source,
+            filename=filename,
+            mode=mode,
+            flags=flags,
+            dont_inherit=dont_inherit,
+            optimize=optimize,
+        )
+        folder = self.__folder
+        if folder is None:
+            return compile0()
         key: CompileCache.CacheKey = CompileCache.CacheKey(
-            source=repr(source),
+            source=_ast.unparse(source)
+            if isinstance(source, _ast.AST)
+            else repr(source),
             filename=repr(filename),
             mode=mode,
             flags=flags,
@@ -382,60 +483,9 @@ class CompileCache:
                 value=CompileCache.MetadataValue(
                     cache_name=cache_name, access_time=self.__time()
                 ),
-                code=compile(
-                    source=source,
-                    filename=filename,
-                    mode=mode,
-                    flags=flags,
-                    dont_inherit=dont_inherit,
-                    optimize=optimize,
-                ),
+                code=compile0(),
             )
         return entry.code
-
-    def save(self) -> None:
-        cur_time: int = self.__time()
-
-        def save_cache() -> _typing.Iterator[CompileCache.MetadataEntry]:
-            key: CompileCache.CacheKey
-            cache: CompileCache.CacheEntry
-            for key, cache in self.__cache.items():
-                cache_path: _pathlib.Path = self.__folder / cache.value["cache_name"]
-                if cur_time - cache.value["access_time"] >= self.__timeout:
-                    try:
-                        _os.remove(cache_path)
-                    except FileNotFoundError:
-                        pass
-                    continue
-                if cache_path.exists():
-                    continue
-                cache_file: _typing.BinaryIO
-                with open(cache_path, mode="wb") as cache_file:
-                    try:
-                        _marshal.dump(cache.code, cache_file)
-                    except ValueError:
-                        _logging.exception(f"Cannot save cache with key: {key}")
-                        cache_file.close()
-                        try:
-                            _os.remove(cache_path)
-                        except FileNotFoundError:
-                            pass
-                        continue
-                yield CompileCache.MetadataEntry(
-                    key=key.to_metadata(), value=cache.value
-                )
-
-        metadata_file: _typing.TextIO
-        with open(
-            self.__folder / self.__metadata_filename, mode="wt", **_globals.open_options
-        ) as metadata_file:
-            _json.dump(
-                tuple(save_cache()),
-                metadata_file,
-                ensure_ascii=False,
-                sort_keys=True,
-                indent=2,
-            )
 
     def __repr__(self) -> str:
         return f"{type(self).__qualname__}(folder={self.__folder!r})"

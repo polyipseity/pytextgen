@@ -17,7 +17,7 @@ class Writer(metaclass=_abc.ABCMeta):
     __slots__: _typing.ClassVar = ()
 
     @_abc.abstractmethod
-    def write(self) -> _contextlib.AbstractContextManager[None]:
+    def write(self) -> _contextlib.AbstractAsyncContextManager[None]:
         raise NotImplementedError(self)
 
     @classmethod
@@ -50,9 +50,9 @@ class PythonWriter:
     def __str__(self) -> str:
         return f"{type(self).__qualname__}({self.__code}, env={self.__env}, options={self.__options})"
 
-    @_contextlib.contextmanager
-    def write(self) -> _typing.Iterator[None]:
-        results0: _typing.Any | None = self.__env.exec(self.__code)
+    @_contextlib.asynccontextmanager
+    async def write(self):
+        results0 = await self.__env.exec(self.__code)
         if not isinstance(
             results0,
             _typing.cast(
@@ -68,9 +68,8 @@ class PythonWriter:
         finally:
             result: _virenv_gen.Result
             for result in results:
-                io: _typing.TextIO
-                with result.location.open() as io:
-                    text: str = io.read()
+                async with result.location.open() as io:
+                    text = await _util.maybe_async(io.read())
                     timestamp: _re.Match[
                         str
                     ] | None = _globals.generate_comment_regex.search(text)
@@ -79,19 +78,20 @@ class PythonWriter:
                         if timestamp
                         else text
                     ):
-                        io.seek(0)
-                        if self.__options.timestamp:
-                            io.write(
-                                _globals.generate_comment_format.format(
-                                    now=_datetime.datetime.now()
-                                    .astimezone()
-                                    .isoformat()
-                                )
+                        await _util.maybe_async(io.seek(0))
+                        timestamp_text = (
+                            _globals.generate_comment_format.format(
+                                now=_datetime.datetime.now().astimezone().isoformat()
                             )
-                        elif timestamp:
-                            io.write(text[timestamp.start() : timestamp.end()])
-                        io.write(result.text)
-                        io.truncate()
+                            if self.__options.timestamp
+                            else text[timestamp.start() : timestamp.end()]
+                            if timestamp
+                            else ""
+                        )
+                        await _util.maybe_async(
+                            io.write(f"{timestamp_text}{result.text}")
+                        )
+                        await _util.maybe_async(io.truncate())
 
 
 Writer.register(PythonWriter)
