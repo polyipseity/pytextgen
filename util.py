@@ -397,8 +397,9 @@ class CompileCache:
                 except FileNotFoundError:
                     pass
                 return
+            ret = CompileCache.MetadataEntry(key=key.to_metadata(), value=cache.value)
             if cache_path.exists():
-                return
+                return ret
             async with _aiofiles.open(cache_path, mode="wb") as cache_file:
                 try:
                     await cache_file.write(_marshal.dumps(cache.code))
@@ -410,7 +411,7 @@ class CompileCache:
                     except FileNotFoundError:
                         pass
                     return
-            return CompileCache.MetadataEntry(key=key.to_metadata(), value=cache.value)
+            return ret
 
         async with _aiofiles.open(
             folder / self.__METADATA_FILENAME, mode="wt", **_globals.OPEN_OPTIONS
