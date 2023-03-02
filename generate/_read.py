@@ -148,7 +148,7 @@ class MarkdownReader:
     __slots__: _typing.ClassVar = ("__codes", "__options", "__path")
 
     START: _typing.ClassVar = f"```Python\n# {_globals.UUID} generate data"
-    stop: _typing.ClassVar = "```"
+    STOP: _typing.ClassVar = "```"
 
     @property
     def path(self) -> _pathlib.Path:
@@ -166,7 +166,7 @@ class MarkdownReader:
     def read(self, text: str, /) -> None:
         start: int = text.find(self.START)
         while start != -1:
-            stop: int = text.find(self.stop, start + len(self.stop))
+            stop: int = text.find(self.STOP, start + len(self.STOP))
             if stop == -1:
                 raise ValueError(f"Unenclosure at char {start}")
             self.__codes.append(
@@ -187,7 +187,7 @@ class MarkdownReader:
                     optimize=0,
                 )
             )
-            start = text.find(self.START, stop + len(self.stop))
+            start = text.find(self.START, stop + len(self.STOP))
 
     def pipe(self) -> _typing.Collection[_Writer]:
         assert isinstance(self, Reader)
