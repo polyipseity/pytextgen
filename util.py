@@ -35,10 +35,9 @@ _T1_co = _typing.TypeVar("_T1_co", covariant=True)
 _ExtendsUnit = _typing.TypeVar("_ExtendsUnit", bound="Unit[_typing.Any]")
 _ExtendsModuleType = _typing.TypeVar("_ExtendsModuleType", bound=_types.ModuleType)
 StrPath = str | _os.PathLike[str]
-_PUNCTUATIONS = tuple(
-    chr(char)
-    for char in range(_sys.maxunicode)
-    if _unicodedata.category(chr(char)).startswith("P")
+_PUNCTUATIONS = filter(
+    lambda char: _unicodedata.category(char).startswith("P"),
+    map(chr, range(_sys.maxunicode + 1)),
 )
 _PUNCTUATION_REGEX = _regex.compile(
     r"(?<={delims})(?<!^(?:{delims})+)(?!$|{delims})".format(
