@@ -1,6 +1,7 @@
 # -*- coding: UTF-8 -*-
 import collections as _collections
 import dataclasses as _dataclasses
+import re as _re
 import types as _types
 import typing as _typing
 
@@ -11,8 +12,9 @@ from ._misc import Tag as _Tag
 @_typing.final
 class TextCode:
     __slots__: _typing.ClassVar = ("__blocks", "__by_tag")
-    ESCAPES: _typing.ClassVar[_typing.Collection[str]] = frozenset(
-        {"\\", "{", "}", ":"}
+    ESCAPES: _typing.ClassVar = frozenset({"\\", "{", "}", ":"})
+    ESCAPE_REGEX: _typing.ClassVar = _re.compile(
+        rf"({'|'.join(map(_re.escape, ESCAPES))})"
     )
 
     @_typing.final
@@ -99,12 +101,7 @@ class TextCode:
 
     @classmethod
     def escape(cls, text: str, /, *, block: bool = False) -> str:
-        def translate(char: str) -> str:
-            if char in cls.ESCAPES:
-                return f"\\{char}"
-            return char
-
-        ret = "".join(map(translate, text))
+        ret = cls.ESCAPE_REGEX.sub(text, R"\\1")
         return f"{{:{ret}}}" if block else ret
 
     @_typing.final
