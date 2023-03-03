@@ -14,7 +14,7 @@ class TextCode:
     __slots__: _typing.ClassVar = ("__blocks", "__by_tag")
     ESCAPES: _typing.ClassVar = frozenset({"\\", "{", "}", ":"})
     ESCAPE_REGEX: _typing.ClassVar = _re.compile(
-        rf"({'|'.join(map(_re.escape, ESCAPES))})"
+        rf"{'|'.join(map(_re.escape, ESCAPES))}", flags=_re.NOFLAG
     )
 
     @_typing.final
@@ -101,7 +101,7 @@ class TextCode:
 
     @classmethod
     def escape(cls, text: str, /, *, block: bool = False) -> str:
-        ret = cls.ESCAPE_REGEX.sub(text, R"\\1")
+        ret = cls.ESCAPE_REGEX.sub(lambda match: Rf"\{match[0]}", text)
         return f"{{:{ret}}}" if block else ret
 
     @_typing.final
