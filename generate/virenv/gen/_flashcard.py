@@ -13,8 +13,8 @@ from ..util import (
     constant as _const,
     identity as _id,
     ignore_args as _ig_args,
+    split_by_punctuations as _spt_by_puncts,
 )
-from ._misc import split_by_punctuations as _spt_by_puncts
 
 
 def attach_flashcard_states(

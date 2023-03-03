@@ -13,11 +13,14 @@ import logging as _logging
 import marshal as _marshal
 import os as _os
 import pathlib as _pathlib
+import re as _re
+import regex as _regex
 import sys as _sys
 import threading as _threading
 import time as _time
 import types as _types
 import typing as _typing
+import unicodedata as _unicodedata
 import uuid as _uuid
 import unittest.mock as _unittest_mock
 
@@ -32,6 +35,17 @@ _T1_co = _typing.TypeVar("_T1_co", covariant=True)
 _ExtendsUnit = _typing.TypeVar("_ExtendsUnit", bound="Unit[_typing.Any]")
 _ExtendsModuleType = _typing.TypeVar("_ExtendsModuleType", bound=_types.ModuleType)
 StrPath = str | _os.PathLike[str]
+_PUNCTUATIONS = tuple(
+    chr(char)
+    for char in range(_sys.maxunicode)
+    if _unicodedata.category(chr(char)).startswith("P")
+)
+_PUNCTUATION_REGEX = _regex.compile(
+    r"(?<={delims})(?<!^(?:{delims})+)(?!$|{delims})".format(
+        delims=r"|".join(map(_re.escape, _PUNCTUATIONS))
+    ),
+    flags=_regex.VERSION0,
+)
 
 
 def identity(var: _T) -> _T:
@@ -486,3 +500,24 @@ class CompileCache:
 
     def __repr__(self) -> str:
         return f"{type(self).__qualname__}(folder={self.__folder!r})"
+
+
+def affix_lines(text: str, /, *, prefix: str = "", suffix: str = "") -> str:
+    def ret_gen() -> _typing.Iterator[str]:
+        newline: str = ""
+        for line in text.splitlines():
+            yield newline
+            yield prefix
+            yield line
+            yield suffix
+            newline = "\n"
+
+    return "".join(ret_gen())
+
+
+def strip_lines(text: str, /, *, chars: str | None = None) -> str:
+    return "\n".join(line.strip(chars) for line in text.splitlines())
+
+
+def split_by_punctuations(text: str) -> _typing.Iterator[str]:
+    return _PUNCTUATION_REGEX.splititer(text)

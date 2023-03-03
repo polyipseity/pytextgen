@@ -12,8 +12,10 @@ from ..util import (
     FlashcardGroup as _FcGrp,
     FlashcardStateGroup as _FcStGrp,
     Unit as _Unit,
+    affix_lines as _afx_ls,
     constant as _const,
     identity as _id,
+    strip_lines as _strp_ls,
 )
 from ._flashcard import (
     attach_flashcard_states,
@@ -25,7 +27,7 @@ from ._flashcard import (
     punctuation_hinter,
     semantics_seq_map0,
 )
-from ._misc import Tag as _Tag, affix_lines as _afx_ls, strip_lines as _strp_ls
+from ._misc import Tag as _Tag
 from ._text_code import (
     TextCode as _TextCode,
     code_to_str as _c2s,
