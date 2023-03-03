@@ -111,7 +111,7 @@ def abc_subclasshook_check(
     if cls is impl_cls:
         if typing == "nominal":
             if any(
-                getattr(c, "__subclasshook__")(subclass) is False
+                c.__subclasshook__(subclass) is False
                 for c in cls.__mro__
                 if c is not cls and hasattr(c, "__subclasshook__")
             ) or any(
@@ -121,7 +121,7 @@ def abc_subclasshook_check(
                 return False
         elif typing == "structural":
             if all(
-                getattr(c, "__subclasshook__")(subclass) is not False
+                c.__subclasshook__(subclass) is not False
                 for c in cls.__mro__
                 if c is not cls and hasattr(c, "__subclasshook__")
             ) and all(
