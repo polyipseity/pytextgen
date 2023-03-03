@@ -1,8 +1,6 @@
 # -*- coding: UTF-8 -*-
 import collections as _collections
 import dataclasses as _dataclasses
-import enum as _enum
-import io as _io
 import types as _types
 import typing as _typing
 
@@ -109,82 +107,139 @@ class TextCode:
         ret = "".join(map(translate, text))
         return f"{{:{ret}}}" if block else ret
 
-    @staticmethod
-    def compiler(code: str) -> _typing.Iterator[Block]:
-        @_typing.final
-        @_enum.unique
-        class State(_enum.Enum):
-            __slots__: _typing.ClassVar = ()
+    @_typing.final
+    @_dataclasses.dataclass(
+        init=True,
+        repr=True,
+        eq=True,
+        order=False,
+        unsafe_hash=False,
+        frozen=False,
+        match_args=True,
+        kw_only=True,
+        slots=True,
+    )
+    class __CompilerState:
+        Tag = _typing.Literal["block", "escape", "normal", "tag"]
+        __Tag0 = _typing.Literal["normal", "tag"]
+        __Tag1 = _typing.Literal["block"]
+        __Tag2 = _typing.Literal["escape"]
+        tag: Tag
+        data: _typing.Any
 
-            NORMAL: _typing.ClassVar = _enum.auto()
-            ESCAPE: _typing.ClassVar = _enum.auto()
-            TAG: _typing.ClassVar = _enum.auto()
-            BLOCK: _typing.ClassVar = _enum.auto()
+        @_typing.overload
+        @classmethod
+        def wrap(cls, tag: __Tag0, data: str) -> _typing.Self:
+            ...
 
-        state: State = State.NORMAL
-        stack: _typing.MutableSequence[_io.StringIO | State] = []
-        stack.append(_io.StringIO())
+        @_typing.overload
+        def unwrap(self, tag: __Tag0) -> str:
+            ...
+
+        @_typing.overload
+        def mutate(self, tag: __Tag0, data: str) -> None:
+            ...
+
+        @_typing.overload
+        @classmethod
+        def wrap(cls, tag: __Tag1, data: tuple[str, str]) -> _typing.Self:
+            ...
+
+        @_typing.overload
+        def unwrap(self, tag: __Tag1) -> tuple[str, str]:
+            ...
+
+        @_typing.overload
+        def mutate(self, tag: __Tag1, data: tuple[str, str]) -> None:
+            ...
+
+        @_typing.overload
+        @classmethod
+        def wrap(cls, tag: __Tag2, data: __Tag0 | __Tag1) -> _typing.Self:
+            ...
+
+        @_typing.overload
+        def unwrap(self, tag: __Tag2) -> __Tag0 | __Tag1:
+            ...
+
+        @_typing.overload
+        def mutate(self, tag: __Tag2, data: __Tag0 | __Tag1) -> None:
+            ...
+
+        @classmethod
+        def wrap(cls, tag: Tag, data: _typing.Any):
+            return cls(tag=tag, data=data)
+
+        def unwrap(self, tag: Tag):
+            return self.data
+
+        def mutate(self, tag: Tag, data: _typing.Any):
+            self.data = data
+
+    @classmethod
+    def compiler(cls, code: str) -> _typing.Iterator[Block]:
+        stack = list[TextCode.__CompilerState]()
+        stack.append(cls.__CompilerState.wrap("normal", ""))
         for index, char in enumerate(
             (code + "{}")
             if not code.endswith("}") or code.endswith(R"\}") or code.endswith("{}")
             else code
         ):
-            if state == State.NORMAL:
+            state = stack[-1]
+            if state.tag == "normal":
                 if char == "\\":
-                    stack.append(state)
-                    state = State.ESCAPE
+                    stack.append(cls.__CompilerState.wrap("escape", state.tag))
                 elif char == "{":
-                    text: _io.StringIO = _typing.cast(_io.StringIO, stack[-1])
-                    text0: str = text.getvalue()
-                    if text0:
-                        yield TextCode.Block(text0, char=index - len(text0))
-                        text.seek(0)
-                        text.truncate()
-                    stack.append(_io.StringIO())
-                    state = State.TAG
+                    text = state.unwrap(state.tag)
+                    if text:
+                        yield TextCode.Block(text, char=index - len(text))
+                        state.mutate(state.tag, "")
+                    stack.append(cls.__CompilerState.wrap("tag", ""))
                 elif char == "}":
                     raise ValueError(f"Unexpected char at {index}: {code}")
                 else:
-                    _typing.cast(_io.StringIO, stack[-1]).write(char)
-            elif state == State.ESCAPE:
-                prev_state: State = _typing.cast(State, stack.pop())
-                _typing.cast(_io.StringIO, stack[-1]).write(char)
-                state = prev_state
-            elif state == State.TAG:
+                    state.mutate(state.tag, f"{state.unwrap(state.tag)}{char}")
+            elif state.tag == "escape":
+                prev_tag = state.unwrap(state.tag)
+                stack.pop()
+                prev_state = stack[-1]
+                if prev_tag == "block":
+                    aa, bb = prev_state.unwrap(prev_tag)
+                    prev_state.mutate(prev_tag, (aa, f"{bb}{char}"))
+                else:
+                    prev_state.mutate(prev_tag, f"{prev_state.unwrap(prev_tag)}{char}")
+            elif state.tag == "tag":
                 if char == "\\":
-                    stack.append(state)
-                    state = State.ESCAPE
+                    stack.append(cls.__CompilerState.wrap("escape", state.tag))
                 elif char == "{":
                     raise ValueError(f"Unexpected char at {index}: {code}")
                 elif char == ":":
-                    stack.append(_io.StringIO())
-                    state = State.BLOCK
+                    stack[-1] = cls.__CompilerState.wrap(
+                        "block", (state.unwrap(state.tag), "")
+                    )
                 elif char == "}":
-                    text: _io.StringIO = _typing.cast(_io.StringIO, stack.pop())
-                    if text.getvalue():
+                    text = state.unwrap(state.tag)
+                    if text:
                         raise ValueError(f"Unexpected char at {index}: {code}")
-                    state = State.NORMAL
+                    stack.pop()
                 else:
-                    _typing.cast(_io.StringIO, stack[-1]).write(char)
-            elif state == State.BLOCK:
+                    state.mutate(state.tag, f"{state.unwrap(state.tag)}{char}")
+            elif state.tag == "block":
                 if char == "\\":
-                    stack.append(state)
-                    state = State.ESCAPE
+                    stack.append(cls.__CompilerState.wrap("escape", state.tag))
                 elif char == "{" or char == ":":
                     raise ValueError(f"Unexpected char at {index}: {code}")
                 elif char == "}":
-                    text: _io.StringIO = _typing.cast(_io.StringIO, stack.pop())
-                    tag: _io.StringIO = _typing.cast(_io.StringIO, stack.pop())
-                    text0: str = text.getvalue()
-                    tag0: str = tag.getvalue()
+                    tag, text = state.unwrap(state.tag)
                     yield TextCode.Block(
-                        text0,
-                        char=index - len("{") - len(tag0) - len(":") - len(text0),
-                        tag=tag0,
+                        text,
+                        char=index - len("{") - len(tag) - len(":") - len(text),
+                        tag=tag,
                     )
-                    state = State.NORMAL
+                    stack.pop()
                 else:
-                    _typing.cast(_io.StringIO, stack[-1]).write(char)
+                    aa, bb = state.unwrap(state.tag)
+                    state.mutate(state.tag, (aa, f"{bb}{char}"))
             else:
                 raise ValueError(f'Unexpected state "{state}": {code}')
 
