@@ -222,7 +222,7 @@ class LazyIterableSequence(_typing.Generic[_T_co], _typing.Sequence[_T_co]):
     __slots__: _typing.ClassVar = ("__cache", "__done", "__iterable", "__lock")
 
     def __init__(self, iterable: _typing.Iterable[_T_co]) -> None:
-        self.__lock: _threading.Lock = _threading.Lock()
+        self.__lock = _threading.Lock()
         self.__iterable: _typing.Iterable[_T_co] = iterable
         self.__cache: _typing.MutableSequence[_T_co] = []
         self.__done: bool = False

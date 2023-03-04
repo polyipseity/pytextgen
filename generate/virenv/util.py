@@ -2,6 +2,7 @@
 import abc as _abc
 import asyncio as _asyncio
 import anyio as _anyio
+import collections as _collections
 import contextlib as _contextlib
 import dataclasses as _dataclasses
 import datetime as _datetime
@@ -29,10 +30,21 @@ class Location(metaclass=_abc.ABCMeta):
     ]:
         raise NotImplementedError(self)
 
+    @property
+    @_abc.abstractmethod
+    def path(self) -> _anyio.Path | None:
+        raise NotImplementedError(self)
+
     @classmethod
     def __subclasshook__(cls, subclass: type) -> bool | _types.NotImplementedType:
         return abc_subclasshook_check(
-            Location, cls, subclass, names=(cls.open.__name__,)
+            Location,
+            cls,
+            subclass,
+            names=(
+                "path",
+                cls.open.__name__,
+            ),
         )
 
 
@@ -158,20 +170,23 @@ _FileSectionCacheData.EMPTY = _FileSectionCacheData(mod_time=-1, sections={})
 
 
 class _FileSectionCache(dict[_anyio.Path, _typing.Awaitable[_FileSectionCacheData]]):
-    __slots__: _typing.ClassVar = ("__lock",)
+    __slots__: _typing.ClassVar = ("__locks",)
 
     def __init__(self) -> None:
         super().__init__()
-        self.__lock: _threading.Lock = _threading.Lock()
+        self.__locks = _collections.defaultdict[_anyio.Path, _threading.Lock](
+            _threading.Lock
+        )
 
     async def __getitem__(self, key: _anyio.Path):
+        key = await key.resolve(strict=True)
         _, ext = _os.path.splitext(key)
         try:
             format = FileSection.SECTION_FORMATS[ext]
         except KeyError as ex:
             raise ValueError(f"Unknown extension: {key}") from ex
         mod_time = (await asyncify(_os.stat)(key)).st_mtime_ns
-        async with async_lock(self.__lock):
+        async with async_lock(self.__locks[key]):
             try:
                 cache = await super().__getitem__(key)
             except KeyError:

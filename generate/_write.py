@@ -1,9 +1,12 @@
 # -*- coding: UTF-8 -*-
 import abc as _abc
+import anyio as _anyio
 import asyncio as _asyncio
+import collections as _collections
 import contextlib as _contextlib
 import datetime as _datetime
 import re as _re
+import threading as _threading
 import types as _types
 import typing as _typing
 
@@ -11,6 +14,8 @@ from .. import globals as _globals
 from .. import util as _util
 from .virenv import Environment as _Env, gen as _virenv_gen
 from ._options import Options as _Opts
+
+_WRITE_LOCKS = _collections.defaultdict[_anyio.Path, _threading.Lock](_threading.Lock)
 
 
 class Writer(metaclass=_abc.ABCMeta):
@@ -56,34 +61,39 @@ class PythonWriter:
         finally:
             result: _virenv_gen.Result
             for result in results:
-                async with result.location.open() as io:
-                    text = await _util.maybe_async(io.read())
-                    timestamp: _re.Match[
-                        str
-                    ] | None = _globals.GENERATE_COMMENT_REGEX.search(text)
-                    if result.text != (
-                        text[: timestamp.start()] + text[timestamp.end() :]
-                        if timestamp
-                        else text
-                    ):
-                        async with _asyncio.TaskGroup() as group:
-                            group.create_task(_util.maybe_async(io.seek(0)))
-                            data = "".join(
-                                (
-                                    _globals.GENERATE_COMMENT_FORMAT.format(
-                                        now=_datetime.datetime.now()
-                                        .astimezone()
-                                        .isoformat()
+                loc = result.location
+                path = loc.path
+                async with _contextlib.nullcontext() if path is None else _util.async_lock(
+                    _WRITE_LOCKS[path]
+                ):
+                    async with result.location.open() as io:
+                        text = await _util.maybe_async(io.read())
+                        timestamp: _re.Match[
+                            str
+                        ] | None = _globals.GENERATE_COMMENT_REGEX.search(text)
+                        if result.text != (
+                            text[: timestamp.start()] + text[timestamp.end() :]
+                            if timestamp
+                            else text
+                        ):
+                            async with _asyncio.TaskGroup() as group:
+                                group.create_task(_util.maybe_async(io.seek(0)))
+                                data = "".join(
+                                    (
+                                        _globals.GENERATE_COMMENT_FORMAT.format(
+                                            now=_datetime.datetime.now()
+                                            .astimezone()
+                                            .isoformat()
+                                        )
+                                        if self.__options.timestamp
+                                        else text[timestamp.start() : timestamp.end()]
+                                        if timestamp
+                                        else "",
+                                        result.text,
                                     )
-                                    if self.__options.timestamp
-                                    else text[timestamp.start() : timestamp.end()]
-                                    if timestamp
-                                    else "",
-                                    result.text,
                                 )
-                            )
-                        await _util.maybe_async(io.write(data))
-                        await _util.maybe_async(io.truncate())
+                            await _util.maybe_async(io.write(data))
+                            await _util.maybe_async(io.truncate())
 
 
 Writer.register(PythonWriter)
