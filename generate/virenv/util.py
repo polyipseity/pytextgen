@@ -118,65 +118,75 @@ class FileSection:
         }
     )
 
-    @_typing.final
-    @_dataclasses.dataclass(
-        init=True,
-        repr=True,
-        eq=True,
-        order=False,
-        unsafe_hash=False,
-        frozen=True,
-        match_args=True,
-        kw_only=True,
-        slots=True,
-    )
-    class __CacheData:
-        EMPTY: _typing.ClassVar[_typing.Self]
-        mod_time: int
-        sections: _typing.AbstractSet[str]
+    path: _anyio.Path
+    section: str
 
-        def __post_init__(self) -> None:
-            object.__setattr__(self, "sections", frozenset(self.sections))
+    @_contextlib.asynccontextmanager
+    async def open(self):
+        async with (
+            _FileSectionIO(self)
+            if self.section
+            else await _anyio.open_file(self.path, mode="r+t", **_globals.OPEN_OPTIONS)
+        ) as file:
+            yield file
 
-    __CacheData.EMPTY = __CacheData(mod_time=-1, sections=frozenset())
 
-    class __ValidateCache(dict[_anyio.Path, _typing.Awaitable[__CacheData]]):
-        __slots__: _typing.ClassVar = ("__lock",)
-        __VALUE_TYPE: _typing.ClassVar
+@_typing.final
+@_dataclasses.dataclass(
+    init=True,
+    repr=True,
+    eq=True,
+    order=False,
+    unsafe_hash=False,
+    frozen=True,
+    match_args=True,
+    kw_only=True,
+    slots=True,
+)
+class _FileSectionCacheData:
+    EMPTY: _typing.ClassVar[_typing.Self]
+    mod_time: int
+    sections: _typing.Mapping[str, slice]
 
-        def __init_subclass__(
-            cls,
-            value_type: type["FileSection.__CacheData"],
-            **kwargs: _typing.Any,
-        ) -> None:
-            super().__init_subclass__(**kwargs)
-            cls.__VALUE_TYPE = value_type
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self, "sections", _types.MappingProxyType(dict(self.sections))
+        )
 
-        def __init__(self) -> None:
-            super().__init__()
-            self.__lock: _threading.Lock = _threading.Lock()
 
-        async def __getitem__(self, key: _anyio.Path):
-            _, ext = _os.path.splitext(key)
+_FileSectionCacheData.EMPTY = _FileSectionCacheData(mod_time=-1, sections={})
+
+
+class _FileSectionCache(dict[_anyio.Path, _typing.Awaitable[_FileSectionCacheData]]):
+    __slots__: _typing.ClassVar = ("__lock",)
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.__lock: _threading.Lock = _threading.Lock()
+
+    async def __getitem__(self, key: _anyio.Path):
+        _, ext = _os.path.splitext(key)
+        try:
+            format = FileSection.SECTION_FORMATS[ext]
+        except KeyError as ex:
+            raise ValueError(f"Unknown extension: {key}") from ex
+        mod_time = (await asyncify(_os.stat)(key)).st_mtime_ns
+        async with async_lock(self.__lock):
             try:
-                format = FileSection.SECTION_FORMATS[ext]
-            except KeyError as ex:
-                raise ValueError(f"Unknown extension: {key}") from ex
-            mod_time = (await asyncify(_os.stat)(key)).st_mtime_ns
-            async with async_lock(self.__lock):
-                try:
-                    cache = await super().__getitem__(key)
-                except KeyError:
-                    cache = self.__VALUE_TYPE.EMPTY
+                cache = await super().__getitem__(key)
+            except KeyError:
+                cache = _FileSectionCacheData.EMPTY
+            try:
                 if mod_time != cache.mod_time:
                     async with await _anyio.open_file(
                         key, mode="rt", **_globals.OPEN_OPTIONS
                     ) as file:
                         text = await file.read()
-                    sections: _typing.MutableSet[str] = set()
+                    sections = dict[str, slice]()
                     read_to: int = 0
                     start: _re.Match[str]
                     for start in format.start_regex.finditer(text):
+                        start_idx = start.start()
                         if start.start() < read_to:
                             raise ValueError(
                                 f"Overlapping section at char {start.start()}: {key}"
@@ -184,7 +194,6 @@ class FileSection:
                         section: str = text[start.start(1) : start.end(1)]
                         if section in sections:
                             raise ValueError(f'Duplicated section "{section}": {key}')
-                        sections.add(section)
                         end_str: str = format.stop.format(section=section)
                         try:
                             end_idx: int = text.index(end_str, start.end())
@@ -192,6 +201,7 @@ class FileSection:
                             raise ValueError(
                                 f"Unenclosure from char {start.start()}: {key}"
                             ) from ex
+                        sections[section] = slice(start_idx + len(start[0]), end_idx)
                         read_to = end_idx + len(end_str)
                     end: _re.Match[str]
                     for end in _itertools.islice(
@@ -200,38 +210,23 @@ class FileSection:
                         raise ValueError(
                             f"Too many closings at char {end.start()}: {key}"
                         )
-                    cache = self.__VALUE_TYPE(
+                    cache = _FileSectionCacheData(
                         mod_time=mod_time,
                         sections=sections,
                     )
-                super().__setitem__(key, async_value(cache))
-            return cache
+            finally:
+                super().__setitem__(key, async_value(cache))  # Replenish awaitable
+        return cache
 
-        def __setitem__(
-            self,
-            key: _anyio.Path,
-            value: "_typing.Awaitable[FileSection.__CacheData]",
-        ):
-            raise TypeError("Unsupported")
+    def __setitem__(
+        self,
+        key: _anyio.Path,
+        value: _typing.Awaitable[_FileSectionCacheData],
+    ):
+        raise TypeError("Unsupported")
 
-    __ValidateCache = type(
-        "__ValidateCache", (__ValidateCache,), {}, value_type=__CacheData
-    )
-    __VALIDATE_CACHE: _typing.ClassVar = __ValidateCache()
 
-    path: _anyio.Path
-    section: str
-
-    @_contextlib.asynccontextmanager
-    async def open(self):
-        if self.section not in (await self.__VALIDATE_CACHE[self.path]).sections:
-            raise ValueError(f"Section not found: {self}")
-        async with (
-            _FileSectionIO(self)
-            if self.section
-            else await _anyio.open_file(self.path, mode="r+t", **_globals.OPEN_OPTIONS)
-        ) as file:
-            yield file
+_FILE_SECTION_CACHE = _FileSectionCache()
 
 
 @_typing.final
@@ -256,31 +251,18 @@ class _FileSectionIO(_io.StringIO):
         raise TypeError("Unsupported")
 
     async def __aenter__(self):
-        _, ext = _os.path.splitext(self.__closure.path)
-        start_format: str = self.__closure.SECTION_FORMATS[ext].start.format(
-            section=self.__closure.section
-        )
-        stop_format: str = self.__closure.SECTION_FORMATS[ext].stop.format(
-            section=self.__closure.section
-        )
         self.__file = await _anyio.open_file(
             self.__closure.path, mode="r+t", **_globals.OPEN_OPTIONS
         )
         try:
-            text = await self.__file.read()
-            start: int = text.find(start_format)
-            if start == -1:
-                raise ValueError(f"Not found: {self.__closure}")
-            start += len(start_format)
-            stop: int = text.find(stop_format, start)
-            if stop == -1:
-                raise ValueError(f"Unenclosure from char {start}: {self.__closure}")
-            self.__slice = slice(start, stop)
-            super().__init__(text[self.__slice])
+            self.__slice = (await _FILE_SECTION_CACHE[self.__closure.path]).sections[
+                self.__closure.section
+            ]
+            super().__init__((await self.__file.read())[self.__slice])
             super().__enter__()
-        except Exception as ex:
+        except Exception:
             await self.__file.aclose()
-            raise ex
+            raise
         return self
 
     async def __aexit__(
