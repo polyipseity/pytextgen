@@ -14,9 +14,7 @@ import typing as _typing
 from .. import globals as _globals
 from .. import info as _info
 from .. import util as _util
-from ._options import Options
-from ._read import Reader
-from ._write import Writer
+from ..io import Options as _Opts, Reader as _Reader, Writer as _Writer
 
 
 @_typing.final
@@ -41,7 +39,7 @@ class ExitCode(_enum.IntFlag):
 )
 class Arguments:
     inputs: _typing.Sequence[_anyio.Path]
-    options: Options
+    options: _Opts
 
     def __post_init__(self):
         object.__setattr__(self, "inputs", tuple(self.inputs))
@@ -63,7 +61,7 @@ async def main(args: Arguments):
             try:
                 ext: str
                 _, ext = _os.path.splitext(input)
-                reader: Reader = Reader.REGISTRY[ext](
+                reader = _Reader.REGISTRY[ext](
                     path=input,
                     options=args.options,
                 )
@@ -76,8 +74,8 @@ async def main(args: Arguments):
             await file.aclose()
 
     def reduce_read_result(
-        left: tuple[_typing.MutableSequence[_typing.Iterable[Writer]], ExitCode],
-        right: _typing.Iterable[Writer] | ExitCode,
+        left: tuple[_typing.MutableSequence[_typing.Iterable[_Writer]], ExitCode],
+        right: _typing.Iterable[_Writer] | ExitCode,
     ):
         seq, code = left
         if isinstance(right, ExitCode):
@@ -89,11 +87,11 @@ async def main(args: Arguments):
     writers0, exit_code = _functools.reduce(
         reduce_read_result,
         await _asyncio.gather(*map(read, args.inputs)),
-        (list[_typing.Iterable[Writer]](), exit_code),
+        (list[_typing.Iterable[_Writer]](), exit_code),
     )
     writers = _itertools.chain.from_iterable(writers0)
 
-    async def write(writer: Writer):
+    async def write(writer: _Writer):
         write = writer.write()
         try:
             await write.__aenter__()
@@ -210,7 +208,7 @@ def parser(
                             args.inputs,
                         )
                     ),
-                    options=Options(
+                    options=_Opts(
                         timestamp=args.timestamp,
                         init_flashcards=args.init_flashcards,
                         compiler=cache.compile,

@@ -37,7 +37,7 @@ _PYTHON_ENV_MODULE_CACHE = _weakref.WeakKeyDictionary[
 
 class Reader(metaclass=_abc.ABCMeta):
     __slots__: _typing.ClassVar = ()
-    REGISTRY: _typing.ClassVar[_typing.MutableMapping[str, type]] = {}
+    REGISTRY: _typing.ClassVar[_typing.MutableMapping[str, type[_typing.Self]]] = {}
 
     @_abc.abstractmethod
     def __init__(self, *, path: _anyio.Path, options: _Opts) -> None:
