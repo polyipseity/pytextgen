@@ -43,6 +43,9 @@ class ExitCode(_enum.IntFlag):
 class Arguments:
     inputs: _typing.Sequence[_anyio.Path]
 
+    def __post_init__(self):
+        object.__setattr__(self, "inputs", tuple(self.inputs))
+
 
 async def main(args: Arguments) -> _typing.NoReturn:
     exit_code = ExitCode(0)
