@@ -65,9 +65,9 @@ async def main(args: Arguments) -> _typing.NoReturn:
                 _logging.exception(f"Exception reading file: {input}")
                 return ExitCode.READ_ERROR
             try:
-                seek = file.seek(0)
-                data = _FLASHCARD_STATES_REGEX.sub("", text)
-                await seek
+                async with _asyncio.TaskGroup() as group:
+                    group.create_task(file.seek(0))
+                    data = _FLASHCARD_STATES_REGEX.sub("", text)
                 await file.write(data)
                 await file.truncate()
             except Exception:

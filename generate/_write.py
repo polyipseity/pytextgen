@@ -1,5 +1,6 @@
 # -*- coding: UTF-8 -*-
 import abc as _abc
+import asyncio as _asyncio
 import contextlib as _contextlib
 import datetime as _datetime
 import re as _re
@@ -65,22 +66,22 @@ class PythonWriter:
                         if timestamp
                         else text
                     ):
-                        seek = _util.maybe_async(io.seek(0))
-                        data = "".join(
-                            (
-                                _globals.GENERATE_COMMENT_FORMAT.format(
-                                    now=_datetime.datetime.now()
-                                    .astimezone()
-                                    .isoformat()
+                        async with _asyncio.TaskGroup() as group:
+                            group.create_task(_util.maybe_async(io.seek(0)))
+                            data = "".join(
+                                (
+                                    _globals.GENERATE_COMMENT_FORMAT.format(
+                                        now=_datetime.datetime.now()
+                                        .astimezone()
+                                        .isoformat()
+                                    )
+                                    if self.__options.timestamp
+                                    else text[timestamp.start() : timestamp.end()]
+                                    if timestamp
+                                    else "",
+                                    result.text,
                                 )
-                                if self.__options.timestamp
-                                else text[timestamp.start() : timestamp.end()]
-                                if timestamp
-                                else "",
-                                result.text,
                             )
-                        )
-                        await seek
                         await _util.maybe_async(io.write(data))
                         await _util.maybe_async(io.truncate())
 

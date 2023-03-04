@@ -1,5 +1,6 @@
 # -*- coding: UTF-8 -*-
 import abc as _abc
+import asyncio as _asyncio
 import anyio as _anyio
 import contextlib as _contextlib
 import dataclasses as _dataclasses
@@ -290,20 +291,24 @@ class _FileSectionIO(_io.StringIO):
     ):
         try:
             try:
-                seek = self.__file.seek(0)
-                self.seek(0)
-                data: str = self.read()
-                await seek
-                text = await self.__file.read()
-                seek1 = self.__file.seek(0)
-                write = "".join(
-                    (
-                        text[: self.__slice.start],
-                        data,
-                        text[self.__slice.stop :],
+                async with _asyncio.TaskGroup() as group:
+
+                    async def read():
+                        await self.__file.seek(0)
+                        return await self.__file.read()
+
+                    text = group.create_task(read())
+                    data = self.read()
+                text = await text
+                async with _asyncio.TaskGroup() as group:
+                    group.create_task(self.__file.seek(0))
+                    write = "".join(
+                        (
+                            text[: self.__slice.start],
+                            data,
+                            text[self.__slice.stop :],
+                        )
                     )
-                )
-                await seek1
                 await self.__file.write(write)
                 await self.__file.truncate()
             finally:
