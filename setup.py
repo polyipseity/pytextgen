@@ -8,6 +8,7 @@ setup(
     include_package_data=True,
     install_requires=[
         "aiofiles",
+        "anyio",
         "regex",
     ],
     license="AGPL-3.0-or-later",

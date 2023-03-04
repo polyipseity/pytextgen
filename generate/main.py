@@ -1,5 +1,6 @@
 # -*- coding: UTF-8 -*-
 import aiofiles as _aiofiles
+import anyio as _anyio
 import argparse as _argparse
 import asyncio as _asyncio
 import dataclasses as _dataclasses
@@ -8,7 +9,6 @@ import functools as _functools
 import itertools as _itertools
 import logging as _logging
 import os as _os
-import pathlib as _pathlib
 import sys as _sys
 import typing as _typing
 
@@ -41,19 +41,14 @@ class ExitCode(_enum.IntFlag):
     slots=True,
 )
 class Arguments:
-    inputs: _typing.Sequence[_pathlib.Path]
+    inputs: _typing.Sequence[_anyio.Path]
     options: Options
-
-    def __post_init__(self) -> None:
-        object.__setattr__(
-            self, "inputs", tuple(input.resolve(strict=True) for input in self.inputs)
-        )
 
 
 async def main(args: Arguments):
     exit_code: ExitCode = ExitCode(0)
 
-    async def read(input: _pathlib.Path):
+    async def read(input: _anyio.Path):
         nonlocal exit_code
         try:
             file = await _aiofiles.open(input, mode="rt", **_globals.OPEN_OPTIONS)
@@ -178,8 +173,8 @@ def parser(
     code_cache_group.add_argument(
         "--code-cache",
         action="store",
-        default=_pathlib.Path("./__pycache__/"),
-        type=_pathlib.Path,
+        default=_anyio.Path("./__pycache__/"),
+        type=_anyio.Path,
         help="specify code cache (default: ./__pycache__/)",
         dest="code_cache",
     )
@@ -195,7 +190,7 @@ def parser(
         "inputs",
         action="store",
         nargs=_argparse.ONE_OR_MORE,
-        type=lambda path: _pathlib.Path(path).resolve(strict=True),
+        type=_anyio.Path,
         help="sequence of input(s) to read",
     )
 

@@ -2,6 +2,7 @@
 from __future__ import annotations
 import abc as _abc
 import aiofiles as _aiofiles
+import anyio as _anyio
 import ast as _ast
 import asyncio as _asyncio
 import concurrent.futures as _concurrent_futures
@@ -14,7 +15,6 @@ import json as _json
 import logging as _logging
 import marshal as _marshal
 import os as _os
-import pathlib as _pathlib
 import re as _re
 import regex as _regex
 import sys as _sys
@@ -345,12 +345,8 @@ class CompileCache:
             ret = self.__CACHE_NAME_FORMAT.format(str(_uuid.uuid4()))
         return ret
 
-    def __init__(self, *, folder: _pathlib.Path | None):
-        if folder is None:
-            self.__folder = None
-        else:
-            folder.mkdir(parents=True, exist_ok=True)
-            self.__folder = folder.resolve(strict=True)
+    def __init__(self, *, folder: _anyio.Path | None):
+        self.__folder = folder
         self.__cache: _typing.MutableMapping[
             CompileCache.CacheKey, CompileCache.CacheEntry
         ] = {}
@@ -360,11 +356,12 @@ class CompileCache:
         folder = self.__folder
         if folder is None:
             return self
+        await folder.mkdir(parents=True, exist_ok=True)
 
         async def read_metadata():
-            metadata_path: _pathlib.Path = folder / self.__METADATA_FILENAME
-            if not metadata_path.exists():
-                metadata_path.write_text("[]", **_globals.OPEN_OPTIONS)
+            metadata_path = folder / self.__METADATA_FILENAME
+            if not await metadata_path.exists():
+                await metadata_path.write_text("[]", **_globals.OPEN_OPTIONS)
             async with _aiofiles.open(
                 metadata_path, mode="rt", **_globals.OPEN_OPTIONS
             ) as metadata_file:
@@ -421,7 +418,7 @@ class CompileCache:
             key: CompileCache.CacheKey,
             cache: CompileCache.CacheEntry,
         ):
-            cache_path: _pathlib.Path = folder / cache.value["cache_name"]
+            cache_path = folder / cache.value["cache_name"]
             if cur_time - cache.value["access_time"] >= self.__TIMEOUT:
                 try:
                     _os.remove(cache_path)
@@ -429,7 +426,7 @@ class CompileCache:
                     pass
                 return
             ret = CompileCache.MetadataEntry(key=key.to_metadata(), value=cache.value)
-            if cache_path.exists():
+            if await cache_path.exists():
                 return ret
             async with _aiofiles.open(cache_path, mode="wb") as cache_file:
                 try:

@@ -1,12 +1,12 @@
 # -*- coding: UTF-8 -*-
 import aiofiles as _aiofiles
+import anyio as _anyio
 import argparse as _argparse
 import asyncio as _asyncio
 import dataclasses as _dataclasses
 import enum as _enum
 import functools as _functools
 import logging as _logging
-import pathlib as _pathlib
 import re as _re
 import sys as _sys
 import typing as _typing
@@ -41,18 +41,13 @@ class ExitCode(_enum.IntFlag):
     slots=True,
 )
 class Arguments:
-    inputs: _typing.Sequence[_pathlib.Path]
-
-    def __post_init__(self) -> None:
-        object.__setattr__(
-            self, "inputs", tuple(input.resolve(strict=True) for input in self.inputs)
-        )
+    inputs: _typing.Sequence[_anyio.Path]
 
 
 async def main(args: Arguments) -> _typing.NoReturn:
     exit_code = ExitCode(0)
 
-    async def process(input: _pathlib.Path):
+    async def process(input: _anyio.Path):
         try:
             file = await _aiofiles.open(input, mode="r+t", **_globals.OPEN_OPTIONS)
         except OSError:
@@ -115,7 +110,7 @@ def parser(
         "inputs",
         action="store",
         nargs=_argparse.ONE_OR_MORE,
-        type=lambda path: _pathlib.Path(path).resolve(strict=True),
+        type=_anyio.Path,
         help="sequence of input(s) to read",
     )
 

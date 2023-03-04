@@ -2,6 +2,7 @@
 import abc as _abc
 import aiofiles as _aiofiles
 import aiofiles.threadpool.text as _aiofiles_threadpool_text
+import anyio as _anyio
 import contextlib as _contextlib
 import dataclasses as _dataclasses
 import datetime as _datetime
@@ -9,7 +10,6 @@ import threading as _threading
 import io as _io
 import itertools as _itertools
 import os as _os
-import pathlib as _pathlib
 import re as _re
 import types as _types
 import typing as _typing
@@ -50,7 +50,7 @@ class Location(metaclass=_abc.ABCMeta):
     slots=True,
 )
 class PathLocation:
-    path: _pathlib.Path
+    path: _anyio.Path
 
     @_contextlib.asynccontextmanager
     async def open(self):
@@ -58,9 +58,6 @@ class PathLocation:
             self.path, mode="r+t", **_globals.OPEN_OPTIONS
         ) as file:
             yield file
-
-    def __post_init__(self) -> None:
-        object.__setattr__(self, "path", self.path.resolve(strict=True))
 
 
 Location.register(PathLocation)
@@ -144,7 +141,7 @@ class FileSection:
 
     __CacheData.EMPTY = __CacheData(mod_time=-1, sections=frozenset())
 
-    class __ValidateCache(dict[_pathlib.Path, _typing.Awaitable[__CacheData]]):
+    class __ValidateCache(dict[_anyio.Path, _typing.Awaitable[__CacheData]]):
         __slots__: _typing.ClassVar = ("__lock",)
         __VALUE_TYPE: _typing.ClassVar
 
@@ -160,7 +157,7 @@ class FileSection:
             super().__init__()
             self.__lock: _threading.Lock = _threading.Lock()
 
-        async def __getitem__(self, key: _pathlib.Path):
+        async def __getitem__(self, key: _anyio.Path):
             _, ext = _os.path.splitext(key)
             try:
                 format = FileSection.SECTION_FORMATS[ext]
@@ -213,7 +210,7 @@ class FileSection:
 
         def __setitem__(
             self,
-            key: _pathlib.Path,
+            key: _anyio.Path,
             value: "_typing.Awaitable[FileSection.__CacheData]",
         ):
             raise TypeError("Unsupported")
@@ -223,7 +220,7 @@ class FileSection:
     )
     __VALIDATE_CACHE: _typing.ClassVar = __ValidateCache()
 
-    path: _pathlib.Path
+    path: _anyio.Path
     section: str
 
     @_contextlib.asynccontextmanager
@@ -236,9 +233,6 @@ class FileSection:
             else _aiofiles.open(self.path, mode="r+t", **_globals.OPEN_OPTIONS)
         ) as file:
             yield file
-
-    def __post_init__(self):
-        object.__setattr__(self, "path", self.path.resolve(strict=True))
 
 
 @_typing.final

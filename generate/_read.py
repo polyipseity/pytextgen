@@ -1,6 +1,7 @@
 # -*- coding: UTF-8 -*-
 import abc as _abc
 import ast as _ast
+import anyio as _anyio
 import asyncio as _asyncio
 import builtins as _builtins
 import collections as _collections
@@ -10,7 +11,6 @@ import datetime as _datetime
 import functools as _functools
 import importlib as _importlib
 import itertools as _itertools
-import pathlib as _pathlib
 import sys as _sys
 import types as _types
 import typing as _typing
@@ -40,12 +40,12 @@ class Reader(metaclass=_abc.ABCMeta):
     registry: _typing.ClassVar[_typing.MutableMapping[str, type]] = {}
 
     @_abc.abstractmethod
-    def __init__(self, *, path: _pathlib.Path, options: _Opts) -> None:
+    def __init__(self, *, path: _anyio.Path, options: _Opts) -> None:
         raise NotImplementedError(self)
 
     @property
     @_abc.abstractmethod
-    def path(self) -> _pathlib.Path:
+    def path(self) -> _anyio.Path:
         raise NotImplementedError(self)
 
     @property
@@ -151,15 +151,15 @@ class MarkdownReader:
     STOP: _typing.ClassVar = "```"
 
     @property
-    def path(self) -> _pathlib.Path:
+    def path(self):
         return self.__path
 
     @property
     def options(self) -> _Opts:
         return self.__options
 
-    def __init__(self, *, path: _pathlib.Path, options: _Opts) -> None:
-        self.__path: _pathlib.Path = path.resolve(strict=True)
+    def __init__(self, *, path: _anyio.Path, options: _Opts) -> None:
+        self.__path = path
         self.__options: _Opts = options
         self.__codes: _typing.MutableSequence[_types.CodeType] = []
 
