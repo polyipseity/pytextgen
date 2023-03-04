@@ -12,8 +12,9 @@ import weakref as _weakref
 
 from .. import globals as _globals
 from .. import util as _util
-from .virenv import Environment as _Env, gen as _virenv_gen
+from ._env import Environment as _Env
 from ._options import Options as _Opts
+from ._util import Result as _Ret, Results as _Rets
 
 _WRITE_LOCKS = _weakref.WeakKeyDictionary[
     _anyio.Path, _typing.Callable[[], _threading.Lock]
@@ -57,12 +58,15 @@ class PythonWriter:
 
     @_contextlib.asynccontextmanager
     async def write(self):
-        results: _virenv_gen.Results = await self.__env.exec(self.__code)
+        results0 = await self.__env.exec(self.__code)
+        if not isinstance(results0, _Rets):
+            raise TypeError(results0)
+        results = results0
         try:
             yield
         finally:
 
-            async def process(result: _virenv_gen.Result):
+            async def process(result: _Ret):
                 loc = result.location
                 path = loc.path
                 path = path if path is None else await path.resolve(strict=True)

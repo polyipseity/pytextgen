@@ -4,8 +4,8 @@ import contextlib as _contextlib
 import types as _types
 import typing as _typing
 
-from ... import globals as _globals
-from .util import maybe_async as _masync
+from .. import globals as _globals
+from ..util import maybe_async as _masync
 
 
 @_typing.final

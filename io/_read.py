@@ -19,8 +19,9 @@ import weakref as _weakref
 from .. import globals as _globals
 from .. import info as _info
 from .. import util as _util
-from .virenv import Environment as _Env, util as _virenv_util
+from ._env import Environment as _Env
 from ._options import Options as _Opts
+from ._util import FileSection as _FSect, Location as _Loc
 from ._write import PythonWriter as _PyWriter, Writer as _Writer
 
 _PYTHON_ENV_BUILTINS_EXCLUDE: _typing.AbstractSet[str] = frozenset(
@@ -86,17 +87,9 @@ def _Python_env(
     if modifier is None:
         modifier = lambda _: _contextlib.nullcontext()
 
-    def module():
-        return _sys.modules[_info.NAME]
-
-    def cwf_section(section: str) -> _virenv_util.Location:
-        ret: _virenv_util.FileSection = module().util.FileSection(
-            path=reader.path, section=section
-        )
-        assert isinstance(
-            ret,
-            _typing.cast(type[_virenv_util.Location], module().util.Location),
-        )
+    def cwf_section(section: str) -> _Loc:
+        ret = _FSect(path=reader.path, section=section)
+        assert isinstance(ret, _Loc)
         return ret
 
     vars: _typing.MutableMapping[str, _typing.Any] = {
@@ -194,15 +187,11 @@ class MarkdownReader:
             finals: _typing.MutableSequence[_typing.Callable[[], None]] = []
             try:
                 if self.options.init_flashcards:
-                    cls: type[
-                        _virenv_util.StatefulFlashcardGroup
-                    ] = mod.util.StatefulFlashcardGroup
-                    old: _typing.Callable[
-                        [_virenv_util.StatefulFlashcardGroup], str
-                    ] = cls.__str__
+                    cls: type[object] = mod.util.StatefulFlashcardGroup
+                    old = cls.__str__
 
                     @_functools.wraps(old)
-                    def new(self: _virenv_util.StatefulFlashcardGroup) -> str:
+                    def new(self: _typing.Any) -> str:
                         diff: int = len(self.flashcard) - len(self.state)
                         if diff > 0:
                             self = _dataclasses.replace(
