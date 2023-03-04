@@ -135,7 +135,7 @@ class FileSection:
         slots=True,
     )
     class __CacheData:
-        EMPTY: _typing.ClassVar
+        EMPTY: _typing.ClassVar[_typing.Self]
         mod_time: int
         sections: _typing.AbstractSet[str]
 
@@ -144,7 +144,7 @@ class FileSection:
 
     __CacheData.EMPTY = __CacheData(mod_time=-1, sections=frozenset())
 
-    class __ValidateCache(dict[_pathlib.Path, __CacheData]):
+    class __ValidateCache(dict[_pathlib.Path, _typing.Awaitable[__CacheData]]):
         __slots__: _typing.ClassVar = ("__lock",)
         __VALUE_TYPE: _typing.ClassVar
 
@@ -160,24 +160,23 @@ class FileSection:
             super().__init__()
             self.__lock: _threading.Lock = _threading.Lock()
 
-        def __getitem__(self, key: _pathlib.Path) -> "FileSection.__CacheData":
-            ext: str
+        async def __getitem__(self, key: _pathlib.Path):
             _, ext = _os.path.splitext(key)
             try:
-                format: FileSection.SectionFormat = FileSection.SECTION_FORMATS[ext]
+                format = FileSection.SECTION_FORMATS[ext]
             except KeyError as ex:
                 raise ValueError(f"Unknown extension: {key}") from ex
-            mod_time: int = _os.stat(key).st_mtime_ns
-            with self.__lock:
+            mod_time = _os.stat(key).st_mtime_ns
+            async with async_lock(self.__lock):
                 try:
-                    cache: FileSection.__CacheData = super().__getitem__(key)
+                    cache = await super().__getitem__(key)
                 except KeyError:
                     cache = self.__VALUE_TYPE.EMPTY
                 if mod_time != cache.mod_time:
-                    text: str
-                    file: _typing.TextIO
-                    with open(key, mode="rt", **_globals.OPEN_OPTIONS) as file:
-                        text = file.read()
+                    async with _aiofiles.open(
+                        key, mode="rt", **_globals.OPEN_OPTIONS
+                    ) as file:
+                        text = await file.read()
                     sections: _typing.MutableSet[str] = set()
                     read_to: int = 0
                     start: _re.Match[str]
@@ -209,12 +208,14 @@ class FileSection:
                         mod_time=mod_time,
                         sections=sections,
                     )
-                    super().__setitem__(key, cache)
+                super().__setitem__(key, async_value(cache))
             return cache
 
         def __setitem__(
-            self, key: _pathlib.Path, value: "FileSection.__CacheData"
-        ) -> None:
+            self,
+            key: _pathlib.Path,
+            value: "_typing.Awaitable[FileSection.__CacheData]",
+        ):
             raise TypeError("Unsupported")
 
     __ValidateCache = type(
@@ -227,6 +228,8 @@ class FileSection:
 
     @_contextlib.asynccontextmanager
     async def open(self):
+        if self.section not in (await self.__VALIDATE_CACHE[self.path]).sections:
+            raise ValueError(f"Section not found: {self}")
         async with (
             _FileSectionIO(self)
             if self.section
@@ -234,13 +237,8 @@ class FileSection:
         ) as file:
             yield file
 
-    def __post_init__(self) -> None:
+    def __post_init__(self):
         object.__setattr__(self, "path", self.path.resolve(strict=True))
-        if (
-            not self.section
-            or self.section not in self.__VALIDATE_CACHE[self.path].sections
-        ):
-            raise ValueError(f"Section not found: {self}")
 
 
 @_typing.final

@@ -4,6 +4,8 @@ import abc as _abc
 import aiofiles as _aiofiles
 import ast as _ast
 import asyncio as _asyncio
+import concurrent.futures as _concurrent_futures
+import contextlib as _contextlib
 import dataclasses as _dataclasses
 import functools as _functools
 import importlib as _importlib
@@ -45,6 +47,7 @@ _PUNCTUATION_REGEX = _regex.compile(
     ),
     flags=_regex.VERSION0,
 )
+_ASYNC_LOCK_THREAD_POOL = _concurrent_futures.ThreadPoolExecutor()
 
 
 def identity(var: _T) -> _T:
@@ -75,6 +78,21 @@ async def maybe_async(value: _typing.Awaitable[_T] | _T) -> _T:
         value0: _typing.Awaitable[_T] = value
         return await value0
     return value
+
+
+async def async_value(value: _T) -> _T:
+    return value
+
+
+@_contextlib.asynccontextmanager
+async def async_lock(lock: _threading.Lock):
+    await _asyncio.get_running_loop().run_in_executor(
+        _ASYNC_LOCK_THREAD_POOL, lock.acquire
+    )
+    try:
+        yield
+    finally:
+        lock.release()
 
 
 def copy_module(module: _ExtendsModuleType) -> _ExtendsModuleType:
