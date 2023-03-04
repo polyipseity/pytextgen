@@ -4,7 +4,6 @@ import abc as _abc
 import anyio as _anyio
 import ast as _ast
 import asyncio as _asyncio
-import collections as _collections
 import concurrent.futures as _concurrent_futures
 import contextlib as _contextlib
 import dataclasses as _dataclasses
@@ -25,6 +24,7 @@ import typing as _typing
 import unicodedata as _unicodedata
 import uuid as _uuid
 import unittest.mock as _unittest_mock
+import weakref as _weakref
 
 from . import globals as _globals
 
@@ -46,9 +46,9 @@ _PUNCTUATION_REGEX = _regex.compile(
     ),
     flags=_regex.VERSION0,
 )
-_ASYNC_LOCK_THREAD_POOLS = _collections.defaultdict[
-    _threading.Lock, _concurrent_futures.Executor
-](_functools.partial(_concurrent_futures.ThreadPoolExecutor, 1))
+_ASYNC_LOCK_THREAD_POOLS = _weakref.WeakKeyDictionary[
+    _threading.Lock, _typing.Callable[[], _concurrent_futures.Executor]
+]()
 
 
 def identity(var: _T) -> _T:
@@ -100,7 +100,13 @@ def asyncify(
 @_contextlib.asynccontextmanager
 async def async_lock(lock: _threading.Lock):
     await _asyncio.get_running_loop().run_in_executor(
-        _ASYNC_LOCK_THREAD_POOLS[lock], lock.acquire
+        _ASYNC_LOCK_THREAD_POOLS.setdefault(
+            lock,
+            _functools.cache(
+                _functools.partial(_concurrent_futures.ThreadPoolExecutor, 1)
+            ),
+        )(),
+        lock.acquire,
     )
     try:
         yield

@@ -2,10 +2,10 @@
 import abc as _abc
 import asyncio as _asyncio
 import anyio as _anyio
-import collections as _collections
 import contextlib as _contextlib
 import dataclasses as _dataclasses
 import datetime as _datetime
+import functools as _functools
 import threading as _threading
 import io as _io
 import itertools as _itertools
@@ -13,6 +13,7 @@ import os as _os
 import re as _re
 import types as _types
 import typing as _typing
+import weakref as _weakref
 
 from ... import globals as _globals
 from ...util import *  # Intentional wildcard import
@@ -174,9 +175,9 @@ class _FileSectionCache(dict[_anyio.Path, _typing.Awaitable[_FileSectionCacheDat
 
     def __init__(self) -> None:
         super().__init__()
-        self.__locks = _collections.defaultdict[_anyio.Path, _threading.Lock](
-            _threading.Lock
-        )
+        self.__locks = _weakref.WeakKeyDictionary[
+            _anyio.Path, _typing.Callable[[], _threading.Lock]
+        ]()
 
     async def __getitem__(self, key: _anyio.Path):
         key = await key.resolve(strict=True)
@@ -186,7 +187,9 @@ class _FileSectionCache(dict[_anyio.Path, _typing.Awaitable[_FileSectionCacheDat
         except KeyError as ex:
             raise ValueError(f"Unknown extension: {key}") from ex
         mod_time = (await asyncify(_os.stat)(key)).st_mtime_ns
-        async with async_lock(self.__locks[key]):
+        async with async_lock(
+            self.__locks.setdefault(key, _functools.cache(_threading.Lock))()
+        ):
             try:
                 cache = await super().__getitem__(key)
             except KeyError:

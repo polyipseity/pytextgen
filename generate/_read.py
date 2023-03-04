@@ -4,7 +4,6 @@ import ast as _ast
 import anyio as _anyio
 import asyncio as _asyncio
 import builtins as _builtins
-import collections as _collections
 import contextlib as _contextlib
 import dataclasses as _dataclasses
 import datetime as _datetime
@@ -15,6 +14,7 @@ import sys as _sys
 import types as _types
 import typing as _typing
 import unittest.mock as _unittest_mock
+import weakref as _weakref
 
 from .. import globals as _globals
 from .. import info as _info
@@ -27,12 +27,12 @@ _PYTHON_ENV_BUILTINS_EXCLUDE: _typing.AbstractSet[str] = frozenset(
     # constants: https://docs.python.org/library/constants.html
     # functions: https://docs.python.org/library/functions.html
 )
-_PYTHON_ENV_MODULE_LOCKS = _collections.defaultdict[
-    _asyncio.AbstractEventLoop, _asyncio.Lock
-](_asyncio.Lock)
-_PYTHON_ENV_MODULE_CACHE: _typing.MutableMapping[
+_PYTHON_ENV_MODULE_LOCKS = _weakref.WeakKeyDictionary[
+    _asyncio.AbstractEventLoop, _typing.Callable[[], _asyncio.Lock]
+]()
+_PYTHON_ENV_MODULE_CACHE = _weakref.WeakKeyDictionary[
     _asyncio.AbstractEventLoop, _types.ModuleType
-] = {}
+]()
 
 
 class Reader(metaclass=_abc.ABCMeta):
@@ -110,7 +110,9 @@ def _Python_env(
     @_contextlib.asynccontextmanager
     async def context():
         loop = _asyncio.get_running_loop()
-        async with _PYTHON_ENV_MODULE_LOCKS[loop]:
+        async with _PYTHON_ENV_MODULE_LOCKS.setdefault(
+            loop, _functools.cache(_asyncio.Lock)
+        )():
             try:
                 module = _PYTHON_ENV_MODULE_CACHE[loop]
             except KeyError:

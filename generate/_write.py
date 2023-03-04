@@ -2,19 +2,22 @@
 import abc as _abc
 import anyio as _anyio
 import asyncio as _asyncio
-import collections as _collections
 import contextlib as _contextlib
 import datetime as _datetime
+import functools as _functools
 import threading as _threading
 import types as _types
 import typing as _typing
+import weakref as _weakref
 
 from .. import globals as _globals
 from .. import util as _util
 from .virenv import Environment as _Env, gen as _virenv_gen
 from ._options import Options as _Opts
 
-_WRITE_LOCKS = _collections.defaultdict[_anyio.Path, _threading.Lock](_threading.Lock)
+_WRITE_LOCKS = _weakref.WeakKeyDictionary[
+    _anyio.Path, _typing.Callable[[], _threading.Lock]
+]()
 
 
 class Writer(metaclass=_abc.ABCMeta):
@@ -62,8 +65,9 @@ class PythonWriter:
             async def process(result: _virenv_gen.Result):
                 loc = result.location
                 path = loc.path
+                path = path if path is None else await path.resolve(strict=True)
                 async with _contextlib.nullcontext() if path is None else _util.async_lock(
-                    _WRITE_LOCKS[await path.resolve(strict=True)]
+                    _WRITE_LOCKS.setdefault(path, _functools.cache(_threading.Lock))()
                 ):
                     async with loc.open() as io:
                         text = await _util.maybe_async(io.read())
