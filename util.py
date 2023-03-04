@@ -368,17 +368,17 @@ class CompileCache:
             return self
         await folder.mkdir(parents=True, exist_ok=True)
 
-        async def read_metadata():
+        async def read_metadata() -> _typing.Collection[CompileCache.MetadataEntry]:
             metadata_path = folder / self.__METADATA_FILENAME
             if not await metadata_path.exists():
                 await metadata_path.write_text("[]", **_globals.OPEN_OPTIONS)
             async with await _anyio.open_file(
                 metadata_path, mode="rt", **_globals.OPEN_OPTIONS
             ) as metadata_file:
-                metadata: _typing.Collection[CompileCache.MetadataEntry] = _json.loads(
-                    await metadata_file.read()
-                )
-                return metadata
+                try:
+                    return _json.loads(await metadata_file.read())
+                except _json.JSONDecodeError:
+                    return []
 
         metadata = read_metadata()
 
