@@ -200,7 +200,7 @@ def parser(
         async with _util.CompileCache(
             folder=args.code_cache
             if args.code_cache is None
-            else await args.code_cache.resolve(strict=True)
+            else await args.code_cache.resolve()
         ) as cache:
             await main(
                 Arguments(
