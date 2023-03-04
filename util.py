@@ -36,7 +36,6 @@ _T_co = _typing.TypeVar("_T_co", covariant=True)
 _T1_co = _typing.TypeVar("_T1_co", covariant=True)
 _ExtendsUnit = _typing.TypeVar("_ExtendsUnit", bound="Unit[_typing.Any]")
 _ExtendsModuleType = _typing.TypeVar("_ExtendsModuleType", bound=_types.ModuleType)
-StrPath = str | _os.PathLike[str]
 _PUNCTUATIONS = filter(
     lambda char: _unicodedata.category(char).startswith("P"),
     map(chr, range(_sys.maxunicode + 1)),
