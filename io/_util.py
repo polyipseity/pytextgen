@@ -253,7 +253,7 @@ _FILE_SECTION_CACHE = _FileSectionCache()
 
 @_typing.final
 class _FileSectionIO(_io.StringIO):
-    __slots__: _typing.ClassVar = ("__closure", "__file", "__slice")
+    __slots__: _typing.ClassVar = ("__closure", "__file", "__slice", "__initial_value")
 
     def __init__(self, closure: FileSection, /):
         self.__closure = closure
@@ -280,7 +280,8 @@ class _FileSectionIO(_io.StringIO):
             self.__slice = (await _FILE_SECTION_CACHE[self.__closure.path]).sections[
                 self.__closure.section
             ]
-            super().__init__((await self.__file.read())[self.__slice])
+            self.__initial_value = (await self.__file.read())[self.__slice]
+            super().__init__(self.__initial_value)
             super().__enter__()
         except Exception:
             await self.__file.aclose()
@@ -295,16 +296,12 @@ class _FileSectionIO(_io.StringIO):
     ):
         try:
             try:
-                async with _asyncio.TaskGroup() as group:
-
-                    async def read():
-                        await self.__file.seek(0)
-                        return await self.__file.read()
-
-                    text = group.create_task(read())
-                    self.seek(0)
-                    data = self.read()
-                text = await text
+                self.seek(0)
+                data = self.read()
+                if data == self.__initial_value:
+                    return
+                await self.__file.seek(0)
+                text = await self.__file.read()
                 async with _asyncio.TaskGroup() as group:
                     group.create_task(self.__file.seek(0))
                     write = (
