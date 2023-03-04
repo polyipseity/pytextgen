@@ -10,9 +10,10 @@ from .util import maybe_async as _masync
 
 @_typing.final
 class Environment:
+    ENV_NAME: _typing.ClassVar = "__env__"
     ENTRY: _typing.ClassVar = f"_{_globals.UUID.replace('-', '_')}"
     ENTRY_TEMPLATE: _typing.ClassVar = f"""async def {ENTRY}(): pass
-__env__.{ENTRY} = {ENTRY}"""
+{ENV_NAME}.{ENTRY} = {ENTRY}"""
     __slots__: _typing.ClassVar = (
         "__closure",
         "__context",
@@ -54,8 +55,8 @@ __env__.{ENTRY} = {ENTRY}"""
             self.__context = dummy_context
         else:
             self.__context = context
-        assert "__env__" not in self.globals
-        assert "__env__" not in self.locals
+        assert self.ENV_NAME not in self.globals
+        assert self.ENV_NAME not in self.locals
 
     def __repr__(self) -> str:
         return f"{type(self).__qualname__}(env={self.__env!r}, globals={self.__globals!r}, locals={self.__locals!r})"
@@ -94,9 +95,11 @@ __env__.{ENTRY} = {ENTRY}"""
 
     async def exec(self, code: _types.CodeType) -> _typing.Any:
         env = _types.SimpleNamespace(result=None, **self.env)
-        globals = {**self.globals, "__env__": env}
+        globals = {**self.globals, self.ENV_NAME: env}
         locals = (
-            globals if self.locals == self.globals else {**self.locals, "__env__": env}
+            globals
+            if self.locals == self.globals
+            else {**self.locals, self.ENV_NAME: env}
         )
         async with self.__context():
             exec(code, globals, locals, closure=self.closure)
