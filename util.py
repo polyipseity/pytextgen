@@ -84,6 +84,18 @@ async def async_value(value: _T) -> _T:
     return value
 
 
+def asyncify(
+    func: _typing.Callable[..., _T]
+) -> _typing.Callable[..., _typing.Awaitable[_T]]:
+    @_functools.wraps(func)
+    async def run(*args: _typing.Any, **kwargs: _typing.Any):
+        return await _asyncio.get_running_loop().run_in_executor(
+            None, _functools.partial(func, *args, **kwargs)
+        )
+
+    return run
+
+
 @_contextlib.asynccontextmanager
 async def async_lock(lock: _threading.Lock):
     await _asyncio.get_running_loop().run_in_executor(
@@ -421,7 +433,7 @@ class CompileCache:
             cache_path = folder / cache.value["cache_name"]
             if cur_time - cache.value["access_time"] >= self.__TIMEOUT:
                 try:
-                    _os.remove(cache_path)
+                    await asyncify(_os.remove)(cache_path)
                 except FileNotFoundError:
                     pass
                 return
@@ -435,7 +447,7 @@ class CompileCache:
                     _logging.exception(f"Cannot save cache with key: {key}")
                     await cache_file.close()
                     try:
-                        _os.remove(cache_path)
+                        await asyncify(_os.remove)(cache_path)
                     except FileNotFoundError:
                         pass
                     return

@@ -163,7 +163,7 @@ class FileSection:
                 format = FileSection.SECTION_FORMATS[ext]
             except KeyError as ex:
                 raise ValueError(f"Unknown extension: {key}") from ex
-            mod_time = _os.stat(key).st_mtime_ns
+            mod_time = (await asyncify(_os.stat)(key)).st_mtime_ns
             async with async_lock(self.__lock):
                 try:
                     cache = await super().__getitem__(key)
