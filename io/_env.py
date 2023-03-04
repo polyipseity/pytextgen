@@ -4,8 +4,7 @@ import contextlib as _contextlib
 import types as _types
 import typing as _typing
 
-from .. import globals as _globals
-from ..util import maybe_async as _masync
+from .. import globals as _globals, util as _util
 
 
 @_typing.final
@@ -95,4 +94,4 @@ class Environment:
         )
         async with self.__context():
             exec(code, globals, locals, closure=self.closure)
-            return await _masync(getattr(env, self.ENTRY)())
+            return await _util.maybe_async(getattr(env, self.ENTRY)())

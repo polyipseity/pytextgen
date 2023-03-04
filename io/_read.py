@@ -16,9 +16,7 @@ import typing as _typing
 import unittest.mock as _unittest_mock
 import weakref as _weakref
 
-from .. import globals as _globals
-from .. import info as _info
-from .. import util as _util
+from .. import globals as _globals, info as _info, util as _util
 from ._env import Environment as _Env
 from ._options import GenOpts as _GenOpts
 from ._util import FileSection as _FSect, Location as _Loc

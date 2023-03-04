@@ -1,8 +1,5 @@
 # -*- coding: UTF-8 -*-
-from . import config as config
-from . import gen as gen
-from . import read as read
-from . import util as util
+from . import config as config, gen as gen, read as read, util as util
 
 
 def dirty() -> bool:

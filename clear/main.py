@@ -9,8 +9,7 @@ import logging as _logging
 import sys as _sys
 import typing as _typing
 
-from .. import info as _info
-from ..io import ClearOpts as _ClrOpts, ClearType as _ClrT, ClearWriter as _ClrWriter
+from .. import info as _info, io as _io
 
 
 @_typing.final
@@ -33,7 +32,7 @@ class ExitCode(_enum.IntFlag):
 )
 class Arguments:
     inputs: _typing.Sequence[_anyio.Path]
-    types: _typing.AbstractSet[_ClrT]
+    types: _typing.AbstractSet[_io.ClearType]
 
     def __post_init__(self):
         object.__setattr__(self, "inputs", tuple(self.inputs))
@@ -42,11 +41,11 @@ class Arguments:
 
 async def main(args: Arguments) -> _typing.NoReturn:
     exit_code = ExitCode(0)
-    options = _ClrOpts(types=args.types)
+    options = _io.ClearOpts(types=args.types)
 
     async def write(input: _anyio.Path):
         try:
-            async with _ClrWriter(input, options=options).write():
+            async with _io.ClearWriter(input, options=options).write():
                 pass
         except Exception:
             _logging.exception(f"Exception writing file: {input}")
@@ -89,9 +88,9 @@ def parser(
         "--type",
         action="store",
         nargs=_argparse.ONE_OR_MORE,
-        choices=_ClrT.__members__.values(),
-        type=_ClrT,
-        default=frozenset({_ClrT.CONTENT}),
+        choices=_io.ClearType.__members__.values(),
+        type=_io.ClearType,
+        default=frozenset({_io.ClearType.CONTENT}),
         dest="types",
         help="list of type(s) of data to clear",
     )

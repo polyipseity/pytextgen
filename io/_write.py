@@ -8,8 +8,7 @@ import re as _re
 import types as _types
 import typing as _typing
 
-from .. import globals as _globals
-from .. import util as _util
+from .. import globals as _globals, util as _util
 from ._env import Environment as _Env
 from ._options import ClearOpts as _ClrOpts, ClearType as _ClrT, GenOpts as _GenOpts
 from ._util import (

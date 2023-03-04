@@ -18,14 +18,14 @@ from ..util import (
     strip_lines as _strp_ls,
 )
 from ._flashcard import (
-    attach_flashcard_states,
-    cloze_texts,
-    listify_flashcards,
-    memorize_indexed_seq0,
-    memorize_linked_seq0,
-    memorize_two_sided0,
-    punctuation_hinter,
-    semantics_seq_map0,
+    attach_flashcard_states as _atch_fc_s,
+    cloze_texts as _cz_txts,
+    listify_flashcards as _lsty_fc,
+    memorize_indexed_seq0 as _mem_idx_seq,
+    memorize_linked_seq0 as _mem_lkd_seq,
+    memorize_two_sided0 as _mem_2s,
+    punctuation_hinter as _punct_htr,
+    semantics_seq_map0 as _sem_seq_map,
 )
 from ._misc import Tag as _Tag
 from ._text_code import (
@@ -34,7 +34,6 @@ from ._text_code import (
     code_to_strs as _c2ss,
     separate_code_by_tag as _sep_c_by_t,
 )
-
 
 _T = _typing.TypeVar("_T")
 
@@ -135,8 +134,8 @@ def cloze_text(
         _Unit(code)
         .map(_functools.partial(_sep_c_by_t, tag=sep_tag))
         .map(lambda codes: map(_functools.partial(_c2s, tag=tag), codes))
-        .map(_functools.partial(cloze_texts, token=token))
-        .map(_functools.partial(attach_flashcard_states, states=states))
+        .map(_functools.partial(_cz_txts, token=token))
+        .map(_functools.partial(_atch_fc_s, states=states))
         .map(lambda groups: map(str, groups))
         .map(lambda strs: map(_functools.partial(quote, prefix=line_prefix), strs))
         .map(separator.join)
@@ -165,8 +164,8 @@ def memorize(
         )
     return (
         unit.map(func)
-        .map(_functools.partial(attach_flashcard_states, states=states))
-        .map(listify_flashcards)
+        .map(_functools.partial(_atch_fc_s, states=states))
+        .map(_lsty_fc)
         .map(text)
         .counit()
     )
@@ -184,7 +183,7 @@ def memorize_two_sided(
     return memorize(
         code,
         func=_functools.partial(
-            memorize_two_sided0,
+            _mem_2s,
             offsets=(
                 _const(offsets)
                 if isinstance(offsets, int)
@@ -211,9 +210,9 @@ def memorize_linked_seq(
     return memorize(
         code,
         func=_functools.partial(
-            memorize_linked_seq0,
+            _mem_lkd_seq,
             reversible=reversible,
-            hinter=punctuation_hinter(
+            hinter=_punct_htr(
                 (
                     _const(hinted)
                     if isinstance(hinted, bool)
@@ -241,7 +240,7 @@ def memorize_indexed_seq(
     return memorize(
         code,
         func=_functools.partial(
-            memorize_indexed_seq0,
+            _mem_idx_seq,
             indices=(
                 indices.__add__
                 if isinstance(indices, int)
@@ -272,9 +271,9 @@ def semantics_seq_map(
             )
         )
         .map(lambda strss: zip(*strss, strict=True))
-        .map(_functools.partial(semantics_seq_map0, reversible=reversible))
-        .map(_functools.partial(attach_flashcard_states, states=states))
-        .map(listify_flashcards)
+        .map(_functools.partial(_sem_seq_map, reversible=reversible))
+        .map(_functools.partial(_atch_fc_s, states=states))
+        .map(_lsty_fc)
         .map(text)
         .counit()
     )
