@@ -45,6 +45,13 @@ def listify_flashcards(
     return "".join(ret_gen())
 
 
+@_typing.final
+class HintedStr(_typing.NamedTuple):
+    str_: str
+    left: str
+    right: str
+
+
 def memorize_two_sided0(
     strs: _typing.Iterable[str],
     /,
@@ -53,13 +60,8 @@ def memorize_two_sided0(
     reversible: bool = True,
     hinter: _typing.Callable[[int, str], tuple[str, str]] = _const(("", "")),
 ) -> _typing.Iterator[_FcGrp]:
-    @_typing.final
-    class HintedStr(_typing.NamedTuple):
-        str_: str
-        left: str
-        right: str
 
-    strs_seq: _typing.Sequence[str] = _LazyIterSeq(strs)
+    strs_seq: _typing.Sequence[str] = _LazyIterSeq(strs)  # Handles infinite sequences
 
     def offseted() -> _typing.Iterator[HintedStr]:
         index: int = -1
