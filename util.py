@@ -109,7 +109,7 @@ async def async_lock(lock: _threading.Lock):
         lock.acquire,
     )
     try:
-        yield
+        yield lock
     finally:
         lock.release()
 

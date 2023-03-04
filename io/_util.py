@@ -161,7 +161,7 @@ class FileSection:
 class _FileSectionCacheData:
     EMPTY: _typing.ClassVar[_typing.Self]
     mod_time: int
-    sections: _typing.Mapping[str, slice]
+    sections: _typing.Mapping[str, tuple[slice, str]]
 
     def __post_init__(self) -> None:
         object.__setattr__(
@@ -188,7 +188,6 @@ class _FileSectionCache(dict[_anyio.Path, _typing.Awaitable[_FileSectionCacheDat
             format = FileSection.SECTION_FORMATS[ext]
         except KeyError as ex:
             raise ValueError(f"Unknown extension: {key}") from ex
-        mod_time = (await _util.asyncify(_os.stat)(key)).st_mtime_ns
         async with _util.async_lock(
             self.__locks.setdefault(key, _functools.cache(_threading.Lock))()
         ):
@@ -197,12 +196,13 @@ class _FileSectionCache(dict[_anyio.Path, _typing.Awaitable[_FileSectionCacheDat
             except KeyError:
                 cache = _FileSectionCacheData.EMPTY
             try:
+                mod_time = (await _util.asyncify(_os.stat)(key)).st_mtime_ns
                 if mod_time != cache.mod_time:
                     async with await _anyio.open_file(
                         key, mode="rt", **_globals.OPEN_OPTIONS
                     ) as file:
                         text = await file.read()
-                    sections = dict[str, slice]()
+                    sections = dict[str, tuple[slice, str]]()
                     read_to: int = 0
                     start: _re.Match[str]
                     for start in format.start_regex.finditer(text):
@@ -221,7 +221,8 @@ class _FileSectionCache(dict[_anyio.Path, _typing.Awaitable[_FileSectionCacheDat
                             raise ValueError(
                                 f"Unenclosure from char {start.start()}: {key}"
                             ) from ex
-                        sections[section] = slice(start_idx + len(start[0]), end_idx)
+                        slice0 = slice(start_idx + len(start[0]), end_idx)
+                        sections[section] = (slice0, text[slice0])
                         read_to = end_idx + len(end_str)
                     end: _re.Match[str]
                     for end in _itertools.islice(
@@ -277,10 +278,9 @@ class _FileSectionIO(_io.StringIO):
             self.__closure.path, mode="r+t", **_globals.OPEN_OPTIONS
         )
         try:
-            self.__slice = (await _FILE_SECTION_CACHE[self.__closure.path]).sections[
-                self.__closure.section
-            ]
-            self.__initial_value = (await self.__file.read())[self.__slice]
+            self.__slice, self.__initial_value = (
+                await _FILE_SECTION_CACHE[self.__closure.path]
+            ).sections[self.__closure.section]
             super().__init__(self.__initial_value)
             super().__enter__()
         except Exception:

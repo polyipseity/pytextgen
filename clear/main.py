@@ -44,7 +44,7 @@ async def main(args: Arguments) -> _typing.NoReturn:
     exit_code = ExitCode(0)
     options = _ClrOpts(types=args.types)
 
-    async def process(input: _anyio.Path):
+    async def write(input: _anyio.Path):
         try:
             async with _ClrWriter(input, options=options).write():
                 pass
@@ -55,7 +55,7 @@ async def main(args: Arguments) -> _typing.NoReturn:
 
     exit_code = _functools.reduce(
         lambda left, right: left | right,
-        await _asyncio.gather(*map(process, args.inputs)),
+        await _asyncio.gather(*map(write, args.inputs)),
         exit_code,
     )
     _sys.exit(exit_code)
