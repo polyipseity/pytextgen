@@ -2,6 +2,7 @@
 import abc as _abc
 import anyio as _anyio
 import asyncio as _asyncio
+import collections as _collections
 import contextlib as _contextlib
 import dataclasses as _dataclasses
 import functools as _functools
@@ -18,6 +19,13 @@ from .. import globals as _globals
 from .. import util as _util
 
 MaybeAsyncTextIO = _typing.TextIO | _anyio.AsyncFile[str]
+_FILE_LOCKS = _collections.defaultdict[_anyio.Path, _threading.Lock](_threading.Lock)
+
+
+@_contextlib.asynccontextmanager
+async def lock_file(path: _anyio.Path):
+    async with _util.async_lock(_FILE_LOCKS[await path.resolve(strict=True)]):
+        yield
 
 
 class Location(metaclass=_abc.ABCMeta):
