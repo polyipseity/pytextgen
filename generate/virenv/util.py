@@ -295,6 +295,7 @@ class _FileSectionIO(_io.StringIO):
                         return await self.__file.read()
 
                     text = group.create_task(read())
+                    self.seek(0)
                     data = self.read()
                 text = await text
                 async with _asyncio.TaskGroup() as group:
