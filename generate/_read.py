@@ -84,12 +84,7 @@ def _Python_env(
     | None = None,
 ) -> _Env:
     if modifier is None:
-
-        @_contextlib.contextmanager
-        def dummy_modifier(_: _types.ModuleType):
-            yield
-
-        modifier = dummy_modifier
+        modifier = lambda _: _contextlib.nullcontext()
 
     def module():
         return _sys.modules[_info.NAME]

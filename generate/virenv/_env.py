@@ -46,15 +46,7 @@ class Environment:
         self.__globals = _types.MappingProxyType(dict(globals))
         self.__locals = _types.MappingProxyType(dict(locals))
         self.__closure = closure
-        if context is None:
-
-            @_contextlib.asynccontextmanager
-            async def dummy_context():
-                yield
-
-            self.__context = dummy_context
-        else:
-            self.__context = context
+        self.__context = context if context else lambda: _contextlib.nullcontext()
         assert self.ENV_NAME not in self.globals
         assert self.ENV_NAME not in self.locals
 
