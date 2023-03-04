@@ -4,6 +4,7 @@ import abc as _abc
 import anyio as _anyio
 import ast as _ast
 import asyncio as _asyncio
+import collections as _collections
 import concurrent.futures as _concurrent_futures
 import contextlib as _contextlib
 import dataclasses as _dataclasses
@@ -45,7 +46,9 @@ _PUNCTUATION_REGEX = _regex.compile(
     ),
     flags=_regex.VERSION0,
 )
-_ASYNC_LOCK_THREAD_POOL = _concurrent_futures.ThreadPoolExecutor()
+_ASYNC_LOCK_THREAD_POOLS = _collections.defaultdict[
+    _threading.Lock, _concurrent_futures.Executor
+](_functools.partial(_concurrent_futures.ThreadPoolExecutor, 1))
 
 
 def identity(var: _T) -> _T:
@@ -97,7 +100,7 @@ def asyncify(
 @_contextlib.asynccontextmanager
 async def async_lock(lock: _threading.Lock):
     await _asyncio.get_running_loop().run_in_executor(
-        _ASYNC_LOCK_THREAD_POOL, lock.acquire
+        _ASYNC_LOCK_THREAD_POOLS[lock], lock.acquire
     )
     try:
         yield

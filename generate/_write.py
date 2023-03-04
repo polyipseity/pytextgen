@@ -61,32 +61,36 @@ class PythonWriter:
             result: _virenv_gen.Result
             for result in results:
                 loc = result.location
-                async with loc.open() as io:
-                    text = await _util.maybe_async(io.read())
-                    timestamp = _globals.GENERATE_COMMENT_REGEX.search(text)
-                    if result.text != (
-                        text[: timestamp.start()] + text[timestamp.end() :]
-                        if timestamp
-                        else text
-                    ):
-                        async with _asyncio.TaskGroup() as group:
-                            group.create_task(_util.maybe_async(io.seek(0)))
-                            data = "".join(
-                                (
-                                    _globals.GENERATE_COMMENT_FORMAT.format(
-                                        now=_datetime.datetime.now()
-                                        .astimezone()
-                                        .isoformat()
+                path = loc.path
+                async with _contextlib.nullcontext() if path is None else _util.async_lock(
+                    _WRITE_LOCKS[await path.resolve(strict=True)]
+                ):
+                    async with loc.open() as io:
+                        text = await _util.maybe_async(io.read())
+                        timestamp = _globals.GENERATE_COMMENT_REGEX.search(text)
+                        if result.text != (
+                            text[: timestamp.start()] + text[timestamp.end() :]
+                            if timestamp
+                            else text
+                        ):
+                            async with _asyncio.TaskGroup() as group:
+                                group.create_task(_util.maybe_async(io.seek(0)))
+                                data = "".join(
+                                    (
+                                        _globals.GENERATE_COMMENT_FORMAT.format(
+                                            now=_datetime.datetime.now()
+                                            .astimezone()
+                                            .isoformat()
+                                        )
+                                        if self.__options.timestamp
+                                        else text[timestamp.start() : timestamp.end()]
+                                        if timestamp
+                                        else "",
+                                        result.text,
                                     )
-                                    if self.__options.timestamp
-                                    else text[timestamp.start() : timestamp.end()]
-                                    if timestamp
-                                    else "",
-                                    result.text,
                                 )
-                            )
-                        await _util.maybe_async(io.write(data))
-                        await _util.maybe_async(io.truncate())
+                            await _util.maybe_async(io.write(data))
+                            await _util.maybe_async(io.truncate())
 
 
 Writer.register(PythonWriter)
