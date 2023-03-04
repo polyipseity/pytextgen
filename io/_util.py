@@ -17,6 +17,8 @@ import weakref as _weakref
 from .. import globals as _globals
 from .. import util as _util
 
+MaybeAsyncTextIO = _typing.TextIO | _anyio.AsyncFile[str]
+
 
 class Location(metaclass=_abc.ABCMeta):
     __slots__: _typing.ClassVar = ()
@@ -24,9 +26,7 @@ class Location(metaclass=_abc.ABCMeta):
     @_abc.abstractmethod
     def open(
         self,
-    ) -> _contextlib.AbstractAsyncContextManager[
-        _typing.TextIO | _anyio.AsyncFile[str]
-    ]:
+    ) -> _contextlib.AbstractAsyncContextManager[MaybeAsyncTextIO]:
         raise NotImplementedError(self)
 
     @property
@@ -131,6 +131,10 @@ class FileSection:
 
     path: _anyio.Path
     section: str
+
+    @classmethod
+    async def find(cls, path: _anyio.Path) -> _typing.Collection[str]:
+        return (await _FILE_SECTION_CACHE[path]).sections.keys()
 
     @_contextlib.asynccontextmanager
     async def open(self):

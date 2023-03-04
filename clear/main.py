@@ -6,25 +6,17 @@ import dataclasses as _dataclasses
 import enum as _enum
 import functools as _functools
 import logging as _logging
-import re as _re
 import sys as _sys
 import typing as _typing
 
-from .. import globals as _globals
 from .. import info as _info
-
-
-_FLASHCARD_STATES_REGEX = _re.compile(
-    r" ?" + _globals.FLASHCARD_STATES_REGEX.pattern,
-    _globals.FLASHCARD_STATES_REGEX.flags,
-)
+from ..io import ClearOpts as _ClrOpts, ClearType as _ClrT, ClearWriter as _ClrWriter
 
 
 @_typing.final
 @_enum.unique
 class ExitCode(_enum.IntFlag):
-    READ_ERROR: _typing.ClassVar = _enum.auto()
-    WRITE_ERROR: _typing.ClassVar = _enum.auto()
+    ERROR: _typing.ClassVar = _enum.auto()
 
 
 @_typing.final
@@ -41,40 +33,24 @@ class ExitCode(_enum.IntFlag):
 )
 class Arguments:
     inputs: _typing.Sequence[_anyio.Path]
+    types: _typing.AbstractSet[_ClrT]
 
     def __post_init__(self):
         object.__setattr__(self, "inputs", tuple(self.inputs))
+        object.__setattr__(self, "types", frozenset(self.types))
 
 
 async def main(args: Arguments) -> _typing.NoReturn:
     exit_code = ExitCode(0)
+    options = _ClrOpts(types=args.types)
 
     async def process(input: _anyio.Path):
         try:
-            file = await _anyio.open_file(input, mode="r+t", **_globals.OPEN_OPTIONS)
-        except OSError:
-            _logging.exception(f"Cannot open file: {input}")
-            return ExitCode.READ_ERROR
-        except ValueError:
-            _logging.exception(f"Encoding error opening file: {input}")
-            return ExitCode.READ_ERROR
-        try:
-            try:
-                text: str = await file.read()
-            except Exception:
-                _logging.exception(f"Exception reading file: {input}")
-                return ExitCode.READ_ERROR
-            try:
-                async with _asyncio.TaskGroup() as group:
-                    group.create_task(file.seek(0))
-                    data = _FLASHCARD_STATES_REGEX.sub("", text)
-                await file.write(data)
-                await file.truncate()
-            except Exception:
-                _logging.exception(f"Exception writing file: {input}")
-                return ExitCode.WRITE_ERROR
-        finally:
-            await file.aclose()
+            async with _ClrWriter(input, options=options).write():
+                pass
+        except Exception:
+            _logging.exception(f"Exception writing file: {input}")
+            return ExitCode.ERROR
         return 0
 
     exit_code = _functools.reduce(
@@ -109,6 +85,17 @@ def parser(
         help="print version and exit",
     )
     parser.add_argument(
+        "-t",
+        "--type",
+        action="store",
+        nargs=_argparse.ONE_OR_MORE,
+        choices=_ClrT.__members__.values(),
+        type=_ClrT,
+        default=frozenset({_ClrT.CONTENT}),
+        dest="types",
+        help="list of type(s) of data to clear",
+    )
+    parser.add_argument(
         "inputs",
         action="store",
         nargs=_argparse.ONE_OR_MORE,
@@ -126,6 +113,7 @@ def parser(
                         args.inputs,
                     )
                 ),
+                types=args.types,
             )
         )
 

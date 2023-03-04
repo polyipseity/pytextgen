@@ -5,6 +5,7 @@ import asyncio as _asyncio
 import contextlib as _contextlib
 import datetime as _datetime
 import functools as _functools
+import re as _re
 import threading as _threading
 import types as _types
 import typing as _typing
@@ -13,12 +14,23 @@ import weakref as _weakref
 from .. import globals as _globals
 from .. import util as _util
 from ._env import Environment as _Env
-from ._options import Options as _Opts
-from ._util import Result as _Ret, Results as _Rets
+from ._options import ClearOpts as _ClrOpts, ClearType as _ClrT, GenOpts as _GenOpts
+from ._util import (
+    FileSection as _FSect,
+    MaybeAsyncTextIO as _MATextIO,
+    Result as _Ret,
+    Results as _Rets,
+)
 
 _WRITE_LOCKS = _weakref.WeakKeyDictionary[
     _anyio.Path, _typing.Callable[[], _threading.Lock]
 ]()
+
+
+async def _lock_write(path: _anyio.Path):
+    return _WRITE_LOCKS.setdefault(
+        await path.resolve(strict=True), _functools.cache(_threading.Lock)
+    )()
 
 
 class Writer(metaclass=_abc.ABCMeta):
@@ -35,6 +47,52 @@ class Writer(metaclass=_abc.ABCMeta):
         )
 
 
+class ClearWriter:
+    __slots__: _typing.ClassVar = ("__options", "__path")
+    __FLASHCARD_STATES_REGEX = _re.compile(
+        r" ?" + _globals.FLASHCARD_STATES_REGEX.pattern,
+        _globals.FLASHCARD_STATES_REGEX.flags,
+    )
+
+    def __init__(self, path: _anyio.Path, *, options: _ClrOpts):
+        self.__path = path
+        self.__options = options
+
+    @_contextlib.asynccontextmanager
+    async def write(self):
+        if _ClrT.CONTENT in self.__options.types:
+
+            async def process(io: _MATextIO):
+                await _util.maybe_async(io.truncate())
+
+        elif _ClrT.FLASHCARD_STATE in self.__options.types:
+
+            async def process(io: _MATextIO):
+                data = await _util.maybe_async(io.read())
+                async with _asyncio.TaskGroup() as group:
+                    group.create_task(_util.maybe_async(io.seek(0)))
+                    data = self.__FLASHCARD_STATES_REGEX.sub("", data)
+                await _util.maybe_async(io.write(data))
+                await _util.maybe_async(io.truncate())
+
+        else:
+
+            async def process(io: _MATextIO):
+                pass
+
+        try:
+            yield
+        finally:
+            async with _util.async_lock(await _lock_write(self.__path)):
+                for section in await _FSect.find(self.__path):
+                    async with _FSect(path=self.__path, section=section).open() as io:
+                        await process(io)
+
+
+Writer.register(ClearWriter)
+assert issubclass(ClearWriter, Writer)
+
+
 class PythonWriter:
     __slots__: _typing.ClassVar = ("__code", "__env", "__options")
 
@@ -44,11 +102,11 @@ class PythonWriter:
         /,
         *,
         env: _Env,
-        options: _Opts,
+        options: _GenOpts,
     ) -> None:
         self.__code: _types.CodeType = code
         self.__env: _Env = env
-        self.__options: _Opts = options
+        self.__options: _GenOpts = options
 
     def __repr__(self) -> str:
         return f"{type(self).__qualname__}({self.__code!r}, env={self.__env!r}, options={self.__options!r})"
@@ -69,9 +127,8 @@ class PythonWriter:
             async def process(result: _Ret):
                 loc = result.location
                 path = loc.path
-                path = path if path is None else await path.resolve(strict=True)
                 async with _contextlib.nullcontext() if path is None else _util.async_lock(
-                    _WRITE_LOCKS.setdefault(path, _functools.cache(_threading.Lock))()
+                    await _lock_write(path)
                 ):
                     async with loc.open() as io:
                         text = await _util.maybe_async(io.read())

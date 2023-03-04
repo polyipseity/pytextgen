@@ -14,7 +14,7 @@ import typing as _typing
 from .. import globals as _globals
 from .. import info as _info
 from .. import util as _util
-from ..io import Options as _Opts, Reader as _Reader, Writer as _Writer
+from ..io import GenOpts as _Opts, Reader as _Reader, Writer as _Writer
 
 
 @_typing.final

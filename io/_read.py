@@ -20,7 +20,7 @@ from .. import globals as _globals
 from .. import info as _info
 from .. import util as _util
 from ._env import Environment as _Env
-from ._options import Options as _Opts
+from ._options import GenOpts as _GenOpts
 from ._util import FileSection as _FSect, Location as _Loc
 from ._write import PythonWriter as _PyWriter, Writer as _Writer
 
@@ -41,7 +41,7 @@ class Reader(metaclass=_abc.ABCMeta):
     REGISTRY: _typing.ClassVar[_typing.MutableMapping[str, type[_typing.Self]]] = {}
 
     @_abc.abstractmethod
-    def __init__(self, *, path: _anyio.Path, options: _Opts) -> None:
+    def __init__(self, *, path: _anyio.Path, options: _GenOpts) -> None:
         raise NotImplementedError(self)
 
     @property
@@ -51,7 +51,7 @@ class Reader(metaclass=_abc.ABCMeta):
 
     @property
     @_abc.abstractmethod
-    def options(self) -> _Opts:
+    def options(self) -> _GenOpts:
         raise NotImplementedError(self)
 
     @_abc.abstractmethod
@@ -145,12 +145,12 @@ class MarkdownReader:
         return self.__path
 
     @property
-    def options(self) -> _Opts:
+    def options(self) -> _GenOpts:
         return self.__options
 
-    def __init__(self, *, path: _anyio.Path, options: _Opts) -> None:
+    def __init__(self, *, path: _anyio.Path, options: _GenOpts) -> None:
         self.__path = path
-        self.__options: _Opts = options
+        self.__options: _GenOpts = options
         self.__codes: _typing.MutableSequence[_types.CodeType] = []
 
     def read(self, text: str, /) -> None:
