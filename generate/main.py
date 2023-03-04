@@ -52,7 +52,6 @@ async def main(args: Arguments):
     exit_code: ExitCode = ExitCode(0)
 
     async def read(input: _anyio.Path):
-        nonlocal exit_code
         try:
             file = await _aiofiles.open(input, mode="rt", **_globals.OPEN_OPTIONS)
         except OSError:
