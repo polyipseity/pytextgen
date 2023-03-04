@@ -121,7 +121,7 @@ def parser(
     async def invoke(args: _argparse.Namespace) -> _typing.NoReturn:
         await main(
             Arguments(
-                inputs=args.inputs,
+                inputs=[await input.resolve(strict=True) for input in args.inputs],
             )
         )
 

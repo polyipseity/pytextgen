@@ -199,10 +199,14 @@ def parser(
 
     @_functools.wraps(main)
     async def invoke(args: _argparse.Namespace):
-        async with _util.CompileCache(folder=args.code_cache) as cache:
+        async with _util.CompileCache(
+            folder=args.code_cache
+            if args.code_cache is None
+            else await args.code_cache.resolve(strict=True)
+        ) as cache:
             await main(
                 Arguments(
-                    inputs=args.inputs,
+                    inputs=[await input.resolve(strict=True) for input in args.inputs],
                     options=Options(
                         timestamp=args.timestamp,
                         init_flashcards=args.init_flashcards,
