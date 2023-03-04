@@ -1,4 +1,5 @@
 # -*- coding: UTF-8 -*-
+import dataclasses as _dataclasses
 import itertools as _itertools
 import typing as _typing
 
@@ -46,7 +47,18 @@ def listify_flashcards(
 
 
 @_typing.final
-class HintedStr(_typing.NamedTuple):
+@_dataclasses.dataclass(
+    init=True,
+    repr=True,
+    eq=True,
+    order=False,
+    unsafe_hash=False,
+    frozen=True,
+    match_args=True,
+    kw_only=False,
+    slots=True,
+)
+class _HintedStr:
     str_: str
     left: str
     right: str
@@ -63,22 +75,20 @@ def memorize_two_sided0(
 
     strs_seq: _typing.Sequence[str] = _LazyIterSeq(strs)  # Handles infinite sequences
 
-    def offseted() -> _typing.Iterator[HintedStr]:
-        index: int = -1
+    def offseted() -> _typing.Iterator[_HintedStr]:
+        index = -1
         while True:
-            offset: int | None = offsets(index)
+            offset = offsets(index)
             if offset is None:
                 break
             index += offset
             try:
-                str_: str = strs_seq[index]
+                str_ = strs_seq[index]
             except IndexError:
                 break
-            yield HintedStr(str_, *hinter(index, str_))
+            yield _HintedStr(str_, *hinter(index, str_))
 
-    iter: _typing.Iterator[HintedStr] = offseted()
-    left: HintedStr
-    right: HintedStr
+    iter: _typing.Iterator[_HintedStr] = offseted()
     for left, right in zip(iter, iter):
         ret: _2SidedFc = _2SidedFc(
             left.str_ + right.left,
