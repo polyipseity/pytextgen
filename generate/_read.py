@@ -170,17 +170,17 @@ class MarkdownReader:
             if stop == -1:
                 raise ValueError(f"Unenclosure at char {start}")
             self.__codes.append(
-                self.__options.compiler(
+                self.options.compiler(
                     _Env.transform_code(
                         _ast.parse(
                             ("\n" * text.count("\n", 0, start + len(self.START)))
                             + text[start + len(self.START) : stop],
-                            self.__path,
+                            self.path,
                             "exec",
                             type_comments=True,
                         )
                     ),
-                    filename=self.__path,
+                    filename=self.path,
                     mode="exec",
                     flags=0,
                     dont_inherit=True,
@@ -196,7 +196,7 @@ class MarkdownReader:
         def modifier(mod: _types.ModuleType):
             finals: _typing.MutableSequence[_typing.Callable[[], None]] = []
             try:
-                if self.__options.init_flashcards:
+                if self.options.init_flashcards:
                     cls: type[
                         _virenv_util.StatefulFlashcardGroup
                     ] = mod.util.StatefulFlashcardGroup
@@ -242,7 +242,7 @@ class MarkdownReader:
                 ret: _PyWriter = _PyWriter(
                     code,
                     env=_Python_env(self, modifier),
-                    options=self.__options,
+                    options=self.options,
                 )
                 assert isinstance(ret, _Writer)
                 yield ret

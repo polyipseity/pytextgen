@@ -54,8 +54,8 @@ __env__.{ENTRY} = {ENTRY}"""
             self.__context = dummy_context
         else:
             self.__context = context
-        assert "__env__" not in self.__globals
-        assert "__env__" not in self.__locals
+        assert "__env__" not in self.globals
+        assert "__env__" not in self.locals
 
     def __repr__(self) -> str:
         return f"{type(self).__qualname__}(env={self.__env!r}, globals={self.__globals!r}, locals={self.__locals!r})"
@@ -88,14 +88,16 @@ __env__.{ENTRY} = {ENTRY}"""
     def locals(self) -> _typing.Mapping[str, object]:
         return self.__locals
 
+    @property
+    def closure(self):
+        return self.__closure
+
     async def exec(self, code: _types.CodeType) -> _typing.Any:
-        env = _types.SimpleNamespace(result=None, **self.__env)
-        globals = {**self.__globals, "__env__": env}
+        env = _types.SimpleNamespace(result=None, **self.env)
+        globals = {**self.globals, "__env__": env}
         locals = (
-            globals
-            if self.__locals == self.__globals
-            else {**self.__locals, "__env__": env}
+            globals if self.locals == self.globals else {**self.locals, "__env__": env}
         )
         async with self.__context():
-            exec(code, globals, locals, closure=self.__closure)
+            exec(code, globals, locals, closure=self.closure)
             return await _masync(getattr(env, self.ENTRY)())

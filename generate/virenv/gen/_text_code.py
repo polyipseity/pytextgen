@@ -71,7 +71,7 @@ class TextCode:
         by_tag: _typing.MutableMapping[
             str, _typing.MutableSequence[TextCode.ByTagValue]
         ] = {}
-        for idx, block in enumerate(self.__blocks):
+        for idx, block in enumerate(self.blocks):
             by_tag.setdefault(block.tag, []).append(
                 TextCode.ByTagValue(idx=idx, block=block)
             )
@@ -84,10 +84,10 @@ class TextCode:
         )
 
     def __repr__(self) -> str:
-        return f"{type(self).__qualname__}(blocks={self.__blocks!r})"
+        return f"{type(self).__qualname__}(blocks={self.blocks!r})"
 
     def __str__(self) -> str:
-        return "".join(map(str, self.__blocks))
+        return "".join(map(str, self.blocks))
 
     @property
     def blocks(self) -> _typing.Sequence[Block]:
