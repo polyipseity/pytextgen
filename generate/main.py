@@ -204,7 +204,12 @@ def parser(
         ) as cache:
             await main(
                 Arguments(
-                    inputs=[await input.resolve(strict=True) for input in args.inputs],
+                    inputs=await _asyncio.gather(
+                        *map(
+                            _functools.partial(_anyio.Path.resolve, strict=True),
+                            args.inputs,
+                        )
+                    ),
                     options=Options(
                         timestamp=args.timestamp,
                         init_flashcards=args.init_flashcards,

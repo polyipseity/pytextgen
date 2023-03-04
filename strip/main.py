@@ -120,7 +120,12 @@ def parser(
     async def invoke(args: _argparse.Namespace) -> _typing.NoReturn:
         await main(
             Arguments(
-                inputs=[await input.resolve(strict=True) for input in args.inputs],
+                inputs=await _asyncio.gather(
+                    *map(
+                        _functools.partial(_anyio.Path.resolve, strict=True),
+                        args.inputs,
+                    )
+                ),
             )
         )
 
