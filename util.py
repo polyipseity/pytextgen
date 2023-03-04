@@ -1,7 +1,6 @@
 # -*- coding: UTF-8 -*-
 from __future__ import annotations
 import abc as _abc
-import aiofiles as _aiofiles
 import anyio as _anyio
 import ast as _ast
 import asyncio as _asyncio
@@ -373,7 +372,7 @@ class CompileCache:
             metadata_path = folder / self.__METADATA_FILENAME
             if not await metadata_path.exists():
                 await metadata_path.write_text("[]", **_globals.OPEN_OPTIONS)
-            async with _aiofiles.open(
+            async with await _anyio.open_file(
                 metadata_path, mode="rt", **_globals.OPEN_OPTIONS
             ) as metadata_file:
                 metadata: _typing.Collection[CompileCache.MetadataEntry] = _json.loads(
@@ -392,7 +391,7 @@ class CompileCache:
                 return
             path = folder / cache_name
             try:
-                file = await _aiofiles.open(path, mode="rb")
+                file = await _anyio.open_file(path, mode="rb")
             except OSError | ValueError:
                 _logging.exception(f"Cannot open code cache: {path}")
                 return
@@ -405,7 +404,7 @@ class CompileCache:
                     _logging.exception(f"Cannot load code cache: {path}")
                     return
             finally:
-                await file.close()
+                await file.aclose()
             self.__cache_names.add(cache_name)
             self.__cache[
                 CompileCache.CacheKey.from_metadata(key)
@@ -439,12 +438,12 @@ class CompileCache:
             ret = CompileCache.MetadataEntry(key=key.to_metadata(), value=cache.value)
             if await cache_path.exists():
                 return ret
-            async with _aiofiles.open(cache_path, mode="wb") as cache_file:
+            async with await _anyio.open_file(cache_path, mode="wb") as cache_file:
                 try:
                     await cache_file.write(_marshal.dumps(cache.code))
                 except ValueError:
                     _logging.exception(f"Cannot save cache with key: {key}")
-                    await cache_file.close()
+                    await cache_file.aclose()
                     try:
                         await asyncify(_os.remove)(cache_path)
                     except FileNotFoundError:
@@ -452,7 +451,7 @@ class CompileCache:
                     return
             return ret
 
-        async with _aiofiles.open(
+        async with await _anyio.open_file(
             folder / self.__METADATA_FILENAME, mode="wt", **_globals.OPEN_OPTIONS
         ) as metadata_file:
             await metadata_file.write(

@@ -7,7 +7,6 @@ setup(
     author_email="polyipseity@gmail.com",
     include_package_data=True,
     install_requires=[
-        "aiofiles",
         "anyio",
         "regex",
     ],

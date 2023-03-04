@@ -1,5 +1,4 @@
 # -*- coding: UTF-8 -*-
-import aiofiles as _aiofiles
 import anyio as _anyio
 import argparse as _argparse
 import asyncio as _asyncio
@@ -53,7 +52,7 @@ async def main(args: Arguments):
 
     async def read(input: _anyio.Path):
         try:
-            file = await _aiofiles.open(input, mode="rt", **_globals.OPEN_OPTIONS)
+            file = await _anyio.open_file(input, mode="rt", **_globals.OPEN_OPTIONS)
         except OSError:
             _logging.exception(f"Cannot open file: {input}")
             return ExitCode.READ_ERROR
@@ -74,7 +73,7 @@ async def main(args: Arguments):
                 _logging.exception(f"Exception reading file: {input}")
                 return ExitCode.READ_ERROR
         finally:
-            await file.close()
+            await file.aclose()
 
     def reduce_read_result(
         left: tuple[_typing.MutableSequence[_typing.Iterable[Writer]], ExitCode],

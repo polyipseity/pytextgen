@@ -1,7 +1,5 @@
 # -*- coding: UTF-8 -*-
 import abc as _abc
-import aiofiles as _aiofiles
-import aiofiles.threadpool.text as _aiofiles_threadpool_text
 import anyio as _anyio
 import contextlib as _contextlib
 import dataclasses as _dataclasses
@@ -26,7 +24,7 @@ class Location(metaclass=_abc.ABCMeta):
     def open(
         self,
     ) -> _contextlib.AbstractAsyncContextManager[
-        _typing.TextIO | _aiofiles_threadpool_text.AsyncTextIOWrapper
+        _typing.TextIO | _anyio.AsyncFile[str]
     ]:
         raise NotImplementedError(self)
 
@@ -54,7 +52,7 @@ class PathLocation:
 
     @_contextlib.asynccontextmanager
     async def open(self):
-        async with _aiofiles.open(
+        async with await _anyio.open_file(
             self.path, mode="r+t", **_globals.OPEN_OPTIONS
         ) as file:
             yield file
@@ -170,7 +168,7 @@ class FileSection:
                 except KeyError:
                     cache = self.__VALUE_TYPE.EMPTY
                 if mod_time != cache.mod_time:
-                    async with _aiofiles.open(
+                    async with await _anyio.open_file(
                         key, mode="rt", **_globals.OPEN_OPTIONS
                     ) as file:
                         text = await file.read()
@@ -230,7 +228,7 @@ class FileSection:
         async with (
             _FileSectionIO(self)
             if self.section
-            else _aiofiles.open(self.path, mode="r+t", **_globals.OPEN_OPTIONS)
+            else await _anyio.open_file(self.path, mode="r+t", **_globals.OPEN_OPTIONS)
         ) as file:
             yield file
 
@@ -264,9 +262,9 @@ class _FileSectionIO(_io.StringIO):
         stop_format: str = self.__closure.SECTION_FORMATS[ext].stop.format(
             section=self.__closure.section
         )
-        self.__file = await _aiofiles.open(
+        self.__file = await _anyio.open_file(
             self.__closure.path, mode="r+t", **_globals.OPEN_OPTIONS
-        ).__aenter__()
+        )
         try:
             text = await self.__file.read()
             start: int = text.find(start_format)
@@ -280,7 +278,7 @@ class _FileSectionIO(_io.StringIO):
             super().__init__(text[self.__slice])
             super().__enter__()
         except Exception as ex:
-            await self.__file.close()
+            await self.__file.aclose()
             raise ex
         return self
 
@@ -309,7 +307,7 @@ class _FileSectionIO(_io.StringIO):
                 await self.__file.write(write)
                 await self.__file.truncate()
             finally:
-                await self.__file.close()
+                await self.__file.aclose()
         finally:
             super().close()
 

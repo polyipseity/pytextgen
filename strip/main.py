@@ -1,5 +1,4 @@
 # -*- coding: UTF-8 -*-
-import aiofiles as _aiofiles
 import anyio as _anyio
 import argparse as _argparse
 import asyncio as _asyncio
@@ -52,7 +51,7 @@ async def main(args: Arguments) -> _typing.NoReturn:
 
     async def process(input: _anyio.Path):
         try:
-            file = await _aiofiles.open(input, mode="r+t", **_globals.OPEN_OPTIONS)
+            file = await _anyio.open_file(input, mode="r+t", **_globals.OPEN_OPTIONS)
         except OSError:
             _logging.exception(f"Cannot open file: {input}")
             return ExitCode.READ_ERROR
@@ -75,7 +74,7 @@ async def main(args: Arguments) -> _typing.NoReturn:
                 _logging.exception(f"Exception writing file: {input}")
                 return ExitCode.WRITE_ERROR
         finally:
-            await file.close()
+            await file.aclose()
         return 0
 
     exit_code = _functools.reduce(
