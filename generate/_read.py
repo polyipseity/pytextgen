@@ -27,17 +27,17 @@ _PYTHON_ENV_BUILTINS_EXCLUDE: _typing.AbstractSet[str] = frozenset(
     # constants: https://docs.python.org/library/constants.html
     # functions: https://docs.python.org/library/functions.html
 )
-_Python_env_module_locks = _collections.defaultdict[
+_PYTHON_ENV_MODULE_LOCKS = _collections.defaultdict[
     _asyncio.AbstractEventLoop, _asyncio.Lock
 ](_asyncio.Lock)
-_Python_env_module_cache: _typing.MutableMapping[
+_PYTHON_ENV_MODULE_CACHE: _typing.MutableMapping[
     _asyncio.AbstractEventLoop, _types.ModuleType
 ] = {}
 
 
 class Reader(metaclass=_abc.ABCMeta):
     __slots__: _typing.ClassVar = ()
-    registry: _typing.ClassVar[_typing.MutableMapping[str, type]] = {}
+    REGISTRY: _typing.ClassVar[_typing.MutableMapping[str, type]] = {}
 
     @_abc.abstractmethod
     def __init__(self, *, path: _anyio.Path, options: _Opts) -> None:
@@ -115,9 +115,9 @@ def _Python_env(
     @_contextlib.asynccontextmanager
     async def context():
         loop = _asyncio.get_running_loop()
-        async with _Python_env_module_locks[loop]:
+        async with _PYTHON_ENV_MODULE_LOCKS[loop]:
             try:
-                module = _Python_env_module_cache[loop]
+                module = _PYTHON_ENV_MODULE_CACHE[loop]
             except KeyError:
                 module = _util.copy_module(
                     _importlib.import_module(".virenv", __package__)
@@ -130,7 +130,7 @@ def _Python_env(
                     yield
             finally:
                 if not module.dirty():
-                    _Python_env_module_cache[loop] = module
+                    _PYTHON_ENV_MODULE_CACHE[loop] = module
 
     return _Env(
         env={
@@ -252,4 +252,4 @@ class MarkdownReader:
 
 Reader.register(MarkdownReader)
 assert issubclass(MarkdownReader, Reader)
-Reader.registry[".md"] = MarkdownReader
+Reader.REGISTRY[".md"] = MarkdownReader

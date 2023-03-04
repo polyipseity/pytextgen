@@ -63,7 +63,7 @@ async def main(args: Arguments):
             try:
                 ext: str
                 _, ext = _os.path.splitext(input)
-                reader: Reader = Reader.registry[ext](
+                reader: Reader = Reader.REGISTRY[ext](
                     path=input,
                     options=args.options,
                 )
