@@ -58,8 +58,8 @@ class PythonWriter:
         try:
             yield
         finally:
-            result: _virenv_gen.Result
-            for result in results:
+
+            async def process(result: _virenv_gen.Result):
                 loc = result.location
                 path = loc.path
                 async with _contextlib.nullcontext() if path is None else _util.async_lock(
@@ -91,6 +91,8 @@ class PythonWriter:
                                 )
                             await _util.maybe_async(io.write(data))
                             await _util.maybe_async(io.truncate())
+
+            await _asyncio.gather(*map(process, results))
 
 
 Writer.register(PythonWriter)
