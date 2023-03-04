@@ -96,7 +96,7 @@ def parser(
         _argparse.ArgumentParser if parent is None else parent
     )(
         prog=f"python -m {prog}",
-        description="generate text from input",
+        description="clear generated text in input",
         add_help=True,
         allow_abbrev=False,
         exit_on_error=False,

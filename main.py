@@ -38,11 +38,11 @@ def parser(
             subparsers.add_parser, _generate_main.__package__.replace(f"{prog}.", "")
         )
     )
-    from .strip import main as _strip_main
+    from .clear import main as _clear_main
 
-    _strip_main.parser(
+    _clear_main.parser(
         _functools.partial(
-            subparsers.add_parser, _strip_main.__package__.replace(f"{prog}.", "")
+            subparsers.add_parser, _clear_main.__package__.replace(f"{prog}.", "")
         )
     )
     return parser
