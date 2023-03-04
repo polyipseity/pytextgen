@@ -5,7 +5,6 @@ import asyncio as _asyncio
 import collections as _collections
 import contextlib as _contextlib
 import datetime as _datetime
-import re as _re
 import threading as _threading
 import types as _types
 import typing as _typing
@@ -64,13 +63,11 @@ class PythonWriter:
                 loc = result.location
                 path = loc.path
                 async with _contextlib.nullcontext() if path is None else _util.async_lock(
-                    _WRITE_LOCKS[path]
+                    _WRITE_LOCKS[await path.resolve(strict=True)]
                 ):
-                    async with result.location.open() as io:
+                    async with loc.open() as io:
                         text = await _util.maybe_async(io.read())
-                        timestamp: _re.Match[
-                            str
-                        ] | None = _globals.GENERATE_COMMENT_REGEX.search(text)
+                        timestamp = _globals.GENERATE_COMMENT_REGEX.search(text)
                         if result.text != (
                             text[: timestamp.start()] + text[timestamp.end() :]
                             if timestamp

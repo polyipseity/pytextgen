@@ -299,12 +299,8 @@ class _FileSectionIO(_io.StringIO):
                 text = await text
                 async with _asyncio.TaskGroup() as group:
                     group.create_task(self.__file.seek(0))
-                    write = "".join(
-                        (
-                            text[: self.__slice.start],
-                            data,
-                            text[self.__slice.stop :],
-                        )
+                    write = (
+                        f"{text[: self.__slice.start]}{data}{text[self.__slice.stop :]}"
                     )
                 await self.__file.write(write)
                 await self.__file.truncate()
