@@ -144,16 +144,14 @@ def cloze_text(
     )
 
 
-def memorize(
+def tagged_filter_sep(
     code: _TextCode,
     /,
     *,
-    func: _typing.Callable[[_typing.Iterable[str]], _typing.Iterable[_FcGrp]],
-    states: _typing.Iterable[_FcStGrp],
-    tag: str = _Tag.MEMORIZE,
+    tag: str,
     sep_tag: str | None = None,
-) -> str:
-    unit = _Unit(code)
+    empty: bool = False,
+) -> _typing.Iterator[str]:
     if sep_tag is None:
         unit = _Unit(code).map(_functools.partial(_c2ss, tag=tag))
     else:
@@ -162,8 +160,27 @@ def memorize(
             .map(_functools.partial(_sep_c_by_t, tag=sep_tag))
             .map(lambda codes: map(_functools.partial(_c2s, tag=tag), codes))
         )
+    if not empty:
+        unit = unit.map(lambda strs: filter(lambda x: len(x) > 0, strs))
+    return unit.counit()
+
+
+def memorize(
+    code: _TextCode,
+    /,
+    *,
+    func: _typing.Callable[[_typing.Iterable[str]], _typing.Iterable[_FcGrp]],
+    states: _typing.Iterable[_FcStGrp],
+    tag: str = _Tag.MEMORIZE,
+    sep_tag: str | None = None,
+    empty: bool = False,
+) -> str:
     return (
-        unit.map(func)
+        _Unit(code)
+        .map(
+            _functools.partial(tagged_filter_sep, tag=tag, sep_tag=sep_tag, empty=empty)
+        )
+        .map(func)
         .map(_functools.partial(_atch_fc_s, states=states))
         .map(_lsty_fc)
         .map(text)
@@ -259,15 +276,27 @@ def semantics_seq_map(
     sem: _TextCode,
     *,
     states: _typing.Iterable[_FcStGrp],
-    tag: str = _Tag.SEMANTICS,
+    tags: str | tuple[str, str] = _Tag.SEMANTICS,
+    sep_tags: tuple[str | None, str | None] | str | None = None,
+    empty: tuple[bool, bool] | bool = False,
     reversible: bool = False,
 ) -> str:
+    if not isinstance(tags, tuple):
+        tags = (tags, tags)
+    if not isinstance(sep_tags, tuple):
+        sep_tags = (sep_tags, sep_tags)
+    if not isinstance(empty, tuple):
+        empty = (empty, empty)
     return (
         _Unit((code, sem))
         .map(
             lambda codes: (
-                _c2ss(codes[0], tag=tag),
-                _c2ss(codes[1], tag=tag),
+                tagged_filter_sep(
+                    codes[0], tag=tags[0], sep_tag=sep_tags[0], empty=empty[0]
+                ),
+                tagged_filter_sep(
+                    codes[1], tag=tags[1], sep_tag=sep_tags[1], empty=empty[1]
+                ),
             )
         )
         .map(lambda strss: zip(*strss, strict=True))
