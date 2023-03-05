@@ -61,10 +61,7 @@ class Reader(metaclass=_abc.ABCMeta):
     @classmethod
     async def cached(cls, *, path: _anyio.Path, options: _GenOpts):
         path = await path.resolve(strict=True)
-        lock = cls.__CACHE_LOCKS[path]
-        if lock.locked():
-            raise RecursionError(path)
-        async with _util.async_lock(lock):
+        async with _util.async_lock(cls.__CACHE_LOCKS[path]):
             try:
                 return cls.__CACHE[path]
             except KeyError:
