@@ -43,12 +43,12 @@ class ClearWriter:
     async def write(self):
         if _ClrT.CONTENT in self.__options.types:
 
-            async def process(io: _util2.MaybeAsyncTextIO):
+            async def process(io: _util2.AnyTextIO):
                 await _util.maybe_async(io.truncate())
 
         elif _ClrT.FLASHCARD_STATE in self.__options.types:
 
-            async def process(io: _util2.MaybeAsyncTextIO):
+            async def process(io: _util2.AnyTextIO):
                 data = await _util.maybe_async(io.read())
                 async with _asyncio.TaskGroup() as group:
                     group.create_task(_util.maybe_async(io.seek(0)))
@@ -58,7 +58,7 @@ class ClearWriter:
 
         else:
 
-            async def process(io: _util2.MaybeAsyncTextIO):
+            async def process(io: _util2.AnyTextIO):
                 pass
 
         try:

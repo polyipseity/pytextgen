@@ -18,7 +18,7 @@ import weakref as _weakref
 from .. import globals as _globals
 from .. import util as _util
 
-MaybeAsyncTextIO = _typing.TextIO | _anyio.AsyncFile[str]
+AnyTextIO = _typing.TextIO | _anyio.AsyncFile[str]
 _FILE_LOCKS = _collections.defaultdict[_anyio.Path, _threading.Lock](_threading.Lock)
 
 
@@ -34,7 +34,7 @@ class Location(metaclass=_abc.ABCMeta):
     @_abc.abstractmethod
     def open(
         self,
-    ) -> _contextlib.AbstractAsyncContextManager[MaybeAsyncTextIO]:
+    ) -> _contextlib.AbstractAsyncContextManager[AnyTextIO]:
         raise NotImplementedError(self)
 
     @property
