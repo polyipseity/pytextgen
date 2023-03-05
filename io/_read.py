@@ -10,7 +10,9 @@ import datetime as _datetime
 import functools as _functools
 import importlib as _importlib
 import itertools as _itertools
+import os as _os
 import sys as _sys
+import threading as _threading
 import types as _types
 import typing as _typing
 import unittest.mock as _unittest_mock
@@ -37,6 +39,28 @@ _PYTHON_ENV_MODULE_CACHE = _weakref.WeakKeyDictionary[
 class Reader(metaclass=_abc.ABCMeta):
     __slots__: _typing.ClassVar = ()
     REGISTRY: _typing.ClassVar[_typing.MutableMapping[str, type[_typing.Self]]] = {}
+    __CACHE = dict[_anyio.Path, _typing.Self]()
+    __CACHE_LOCK = _threading.Lock()
+
+    @classmethod
+    async def new(cls, *, path: _anyio.Path, options: _GenOpts):
+        _, ext = _os.path.splitext(path)
+        ret = cls.REGISTRY[ext](path=path, options=options)
+        async with await _anyio.open_file(
+            path, mode="rt", **_globals.OPEN_OPTIONS
+        ) as io:
+            ret.read(await io.read())
+        return ret
+
+    @classmethod
+    async def cached(cls, *, path: _anyio.Path, options: _GenOpts):
+        path = await path.resolve(strict=True)
+        async with _util.async_lock(cls.__CACHE_LOCK):
+            try:
+                return cls.__CACHE[path]
+            except KeyError:
+                ret = cls.__CACHE[path] = await cls.new(path=path, options=options)
+        return ret
 
     @_abc.abstractmethod
     def __init__(self, *, path: _anyio.Path, options: _GenOpts) -> None:

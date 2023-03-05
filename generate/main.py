@@ -7,11 +7,10 @@ import enum as _enum
 import functools as _functools
 import itertools as _itertools
 import logging as _logging
-import os as _os
 import sys as _sys
 import typing as _typing
 
-from .. import globals as _globals, info as _info, io as _io, util as _util
+from .. import info as _info, io as _io, util as _util
 
 
 @_typing.final
@@ -47,28 +46,10 @@ async def main(args: Arguments):
 
     async def read(input: _anyio.Path):
         try:
-            file = await _anyio.open_file(input, mode="rt", **_globals.OPEN_OPTIONS)
-        except OSError:
-            _logging.exception(f"Cannot open file: {input}")
+            return (await _io.Reader.cached(path=input, options=args.options)).pipe()
+        except Exception:
+            _logging.exception(f"Exception reading file: {input}")
             return ExitCode.READ_ERROR
-        except ValueError:
-            _logging.exception(f"Encoding error opening file: {input}")
-            return ExitCode.READ_ERROR
-        try:
-            try:
-                ext: str
-                _, ext = _os.path.splitext(input)
-                reader = _io.Reader.REGISTRY[ext](
-                    path=input,
-                    options=args.options,
-                )
-                reader.read(await file.read())
-                return reader.pipe()
-            except Exception:
-                _logging.exception(f"Exception reading file: {input}")
-                return ExitCode.READ_ERROR
-        finally:
-            await file.aclose()
 
     def reduce_read_result(
         left: tuple[_typing.MutableSequence[_typing.Iterable[_io.Writer]], ExitCode],
