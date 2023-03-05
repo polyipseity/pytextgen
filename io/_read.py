@@ -4,6 +4,7 @@ import ast as _ast
 import anyio as _anyio
 import asyncio as _asyncio
 import builtins as _builtins
+import collections as _collections
 import contextlib as _contextlib
 import dataclasses as _dataclasses
 import datetime as _datetime
@@ -40,7 +41,9 @@ class Reader(metaclass=_abc.ABCMeta):
     __slots__: _typing.ClassVar = ()
     REGISTRY: _typing.ClassVar[_typing.MutableMapping[str, type[_typing.Self]]] = {}
     __CACHE = dict[_anyio.Path, _typing.Self]()
-    __CACHE_LOCK = _threading.Lock()
+    __CACHE_LOCKS = _collections.defaultdict[_anyio.Path, _threading.Lock](
+        _threading.Lock
+    )
 
     @classmethod
     async def new(cls, *, path: _anyio.Path, options: _GenOpts):
@@ -55,7 +58,10 @@ class Reader(metaclass=_abc.ABCMeta):
     @classmethod
     async def cached(cls, *, path: _anyio.Path, options: _GenOpts):
         path = await path.resolve(strict=True)
-        async with _util.async_lock(cls.__CACHE_LOCK):
+        lock = cls.__CACHE_LOCKS[path]
+        if lock.locked():
+            raise RecursionError(path)
+        async with _util.async_lock(lock):
             try:
                 return cls.__CACHE[path]
             except KeyError:
