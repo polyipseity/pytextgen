@@ -13,6 +13,7 @@ import itertools as _itertools
 import json as _json
 import logging as _logging
 import marshal as _marshal
+import operator as _operator
 import os as _os
 import re as _re
 import regex as _regex
@@ -114,26 +115,35 @@ async def async_lock(lock: _threading.Lock):
         lock.release()
 
 
-def copy_module(module: _ExtendsModuleType) -> _ExtendsModuleType:
+def deep_foreach_module(module: _types.ModuleType):
     names = set[str]()
 
-    def discover_names(mod: _types.ModuleType):
+    def impl(mod: _types.ModuleType) -> _typing.Iterator[_types.ModuleType]:
         name = mod.__name__
         if name in names:
             return
         names.add(name)
+        yield mod
         for attr_name in dir(mod):
             attr = getattr(mod, attr_name)
             if isinstance(attr, _types.ModuleType) and attr.__name__.startswith(name):
-                discover_names(attr)
+                yield from impl(attr)
 
-    discover_names(module)
+    return impl(module)
+
+
+def copy_module(module: _ExtendsModuleType) -> _ExtendsModuleType:
+    names = discover_module_names(module)
     with _unittest_mock.patch.dict(
         _sys.modules,
         {key: val for key, val in _sys.modules.items() if key not in names},
         clear=True,
     ):
         return _importlib.import_module(module.__name__)
+
+
+def discover_module_names(module: _types.ModuleType) -> _typing.Sequence[str]:
+    return tuple(map(_operator.attrgetter("__name__"), deep_foreach_module(module)))
 
 
 def abc_subclasshook_check(

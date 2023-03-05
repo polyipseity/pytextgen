@@ -110,10 +110,13 @@ def _Python_env(
                 module = _util.copy_module(
                     _importlib.import_module(".virenv", __package__)
                 )
-                module.__name__ = _info.NAME
+                old_name = module.__name__
+                for mod in _util.deep_foreach_module(module):
+                    mod.__name__ = mod.__name__.replace(old_name, _info.NAME, 1)
             try:
                 with modifier(module), _unittest_mock.patch.dict(
-                    _sys.modules, {_info.NAME: module}
+                    _sys.modules,
+                    {mod.__name__: mod for mod in _util.deep_foreach_module(module)},
                 ):
                     yield
             finally:
