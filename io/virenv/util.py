@@ -7,7 +7,8 @@ import types as _types
 import typing as _typing
 
 from ... import globals as _globals
-from ...util import *  # Intentional wildcard import
+from ...util import *  # Intentional wildcard
+from ..util import *  # Intentional wildcard
 from .config import CONFIG as _CFG, FlashcardSeparatorType as _FcSepT
 
 
