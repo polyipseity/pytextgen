@@ -50,7 +50,7 @@ async def main(args: Arguments) -> _typing.NoReturn:
         except Exception:
             _logging.exception(f"Exception writing file: {input}")
             return ExitCode.ERROR
-        return 0
+        return ExitCode(0)
 
     exit_code = _functools.reduce(
         lambda left, right: left | right,

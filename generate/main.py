@@ -81,7 +81,7 @@ async def main(args: Arguments):
         except Exception:
             _logging.exception(f"Error while writing: {writer}")
             return ExitCode.WRITE_ERROR
-        return 0
+        return ExitCode(0)
 
     exit_code = _functools.reduce(
         lambda left, right: left | right,
