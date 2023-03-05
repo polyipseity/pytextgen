@@ -40,7 +40,8 @@ _PYTHON_ENV_MODULE_LOCKS = _weakref.WeakKeyDictionary[
     _asyncio.AbstractEventLoop, _typing.Callable[[], _asyncio.Lock]
 ]()
 _PYTHON_ENV_MODULE_CACHE = _weakref.WeakKeyDictionary[
-    _asyncio.AbstractEventLoop, _types.ModuleType
+    _asyncio.AbstractEventLoop,
+    tuple[_types.ModuleType, _typing.Mapping[str, _types.ModuleType]],
 ]()
 
 
@@ -154,23 +155,31 @@ def _Python_env(
             loop, _functools.cache(_asyncio.Lock)
         )():
             try:
-                module = _PYTHON_ENV_MODULE_CACHE[loop]
+                module, modules = _PYTHON_ENV_MODULE_CACHE[loop]
             except KeyError:
                 module = _util.copy_module(
                     _importlib.import_module(".virenv", __package__)
                 )
+                modules = dict[str, _types.ModuleType]()
                 old_name = module.__name__
                 for mod in _util.deep_foreach_module(module):
-                    mod.__name__ = mod.__name__.replace(old_name, _info.NAME, 1)
+                    mod.__name__ = new_name = mod.__name__.replace(
+                        old_name, _info.NAME, 1
+                    )
+                    new_name_parts = new_name.split(".")
+                    new_basename = new_name_parts.pop()
+                    try:
+                        delattr(modules[".".join(new_name_parts)], new_basename)
+                    except KeyError:
+                        pass
+                    modules[new_name] = mod
+                modules = _types.MappingProxyType(modules)
             try:
-                with modifier(module), _unittest_mock.patch.dict(
-                    _sys.modules,
-                    {mod.__name__: mod for mod in _util.deep_foreach_module(module)},
-                ):
+                with modifier(module), _unittest_mock.patch.dict(_sys.modules, modules):
                     yield
             finally:
                 if not module.dirty():
-                    _PYTHON_ENV_MODULE_CACHE[loop] = module
+                    _PYTHON_ENV_MODULE_CACHE[loop] = (module, modules)
 
     return _Env(
         env={
