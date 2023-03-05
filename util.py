@@ -4,7 +4,7 @@ import abc as _abc
 import anyio as _anyio
 import ast as _ast
 import asyncio as _asyncio
-import concurrent.futures as _concurrent_futures
+from concurrent import futures as _concurrent_futures
 import contextlib as _contextlib
 import dataclasses as _dataclasses
 import functools as _functools
@@ -24,7 +24,7 @@ import types as _types
 import typing as _typing
 import unicodedata as _unicodedata
 import uuid as _uuid
-import unittest.mock as _unittest_mock
+from unittest import mock as _unittest_mock
 import weakref as _weakref
 
 from . import globals as _globals

@@ -19,7 +19,7 @@ import sys as _sys
 import threading as _threading
 import types as _types
 import typing as _typing
-import unittest.mock as _unittest_mock
+from unittest import mock as _unittest_mock
 import weakref as _weakref
 
 from .. import globals as _globals, info as _info, util as _util
