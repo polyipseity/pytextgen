@@ -84,7 +84,9 @@ class Environment:
     def closure(self):
         return self.__closure
 
-    async def exec(self, code: _types.CodeType) -> _typing.Any:
+    async def exec(
+        self, code: _types.CodeType, *init_codes: _types.CodeType
+    ) -> _typing.Any:
         env = _types.SimpleNamespace(result=None, **self.env)
         globals = {**self.globals, self.ENV_NAME: env}
         locals = (
@@ -93,5 +95,7 @@ class Environment:
             else {**self.locals, self.ENV_NAME: env}
         )
         async with self.__context():
+            for init_code in init_codes:
+                exec(init_code, globals, locals)
             exec(code, globals, locals, closure=self.closure)
             return await _util.maybe_async(getattr(env, self.ENTRY)())
