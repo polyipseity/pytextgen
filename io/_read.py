@@ -23,9 +23,9 @@ import unittest.mock as _unittest_mock
 import weakref as _weakref
 
 from .. import globals as _globals, info as _info, util as _util
+from . import util as _util2
 from ._env import Environment as _Env
 from ._options import GenOpts as _GenOpts
-from ._util import FileSection as _FSect, Location as _Loc
 from ._write import PythonWriter as _PyWriter, Writer as _Writer
 
 _PYTHON_ENV_BUILTINS_EXCLUDE: _typing.AbstractSet[str] = frozenset(
@@ -130,9 +130,9 @@ def _Python_env(
     if modifier is None:
         modifier = lambda _: _contextlib.nullcontext()
 
-    def cwf_section(section: str) -> _Loc:
-        ret = _FSect(path=reader.path, section=section)
-        assert isinstance(ret, _Loc)
+    def cwf_section(section: str) -> _util2.Location:
+        ret = _util2.FileSection(path=reader.path, section=section)
+        assert isinstance(ret, _util2.Location)
         return ret
 
     vars: _typing.MutableMapping[str, _typing.Any] = {

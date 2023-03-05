@@ -9,15 +9,9 @@ import types as _types
 import typing as _typing
 
 from .. import globals as _globals, util as _util
+from . import util as _util2
 from ._env import Environment as _Env
 from ._options import ClearOpts as _ClrOpts, ClearType as _ClrT, GenOpts as _GenOpts
-from ._util import (
-    FileSection as _FSect,
-    MaybeAsyncTextIO as _MATextIO,
-    Result as _Ret,
-    Results as _Rets,
-    lock_file as _lck_f,
-)
 
 
 class Writer(metaclass=_abc.ABCMeta):
@@ -49,12 +43,12 @@ class ClearWriter:
     async def write(self):
         if _ClrT.CONTENT in self.__options.types:
 
-            async def process(io: _MATextIO):
+            async def process(io: _util2.MaybeAsyncTextIO):
                 await _util.maybe_async(io.truncate())
 
         elif _ClrT.FLASHCARD_STATE in self.__options.types:
 
-            async def process(io: _MATextIO):
+            async def process(io: _util2.MaybeAsyncTextIO):
                 data = await _util.maybe_async(io.read())
                 async with _asyncio.TaskGroup() as group:
                     group.create_task(_util.maybe_async(io.seek(0)))
@@ -64,15 +58,17 @@ class ClearWriter:
 
         else:
 
-            async def process(io: _MATextIO):
+            async def process(io: _util2.MaybeAsyncTextIO):
                 pass
 
         try:
             yield
         finally:
-            async with _lck_f(self.__path):
-                for section in await _FSect.find(self.__path):
-                    async with _FSect(path=self.__path, section=section).open() as io:
+            async with _util2.lock_file(self.__path):
+                for section in await _util2.FileSection.find(self.__path):
+                    async with _util2.FileSection(
+                        path=self.__path, section=section
+                    ).open() as io:
                         await process(io)
 
 
@@ -106,17 +102,19 @@ class PythonWriter:
     @_contextlib.asynccontextmanager
     async def write(self):
         results0 = await self.__env.exec(self.__code, *self.__init_codes)
-        if not isinstance(results0, _Rets):
+        if not isinstance(results0, _util2.Results):
             raise TypeError(results0)
         results = results0
         try:
             yield
         finally:
 
-            async def process(result: _Ret):
+            async def process(result: _util2.Result):
                 loc = result.location
                 path = loc.path
-                async with _contextlib.nullcontext() if path is None else _lck_f(path):
+                async with _contextlib.nullcontext() if path is None else _util2.lock_file(
+                    path
+                ):
                     async with loc.open() as io:
                         text = await _util.maybe_async(io.read())
                         timestamp = _globals.GENERATE_COMMENT_REGEX.search(text)
