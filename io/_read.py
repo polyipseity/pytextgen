@@ -27,6 +27,7 @@ from .util import (
     FileSection as _FSect,
     Location as _Loc,
 )
+from .virenv import util as _vutil
 from ._env import Environment as _Env
 from ._options import GenOpts as _GenOpts
 from ._write import PythonWriter as _PyWriter, Writer as _Writer
@@ -265,11 +266,13 @@ class MarkdownReader:
             finals: _typing.MutableSequence[_typing.Callable[[], None]] = []
             try:
                 if self.options.init_flashcards:
-                    cls: type[object] = mod.util.StatefulFlashcardGroup
+                    cls: type[
+                        _vutil.StatefulFlashcardGroup
+                    ] = mod.util.StatefulFlashcardGroup
                     old = cls.__str__
 
                     @_functools.wraps(old)
-                    def new(self: _typing.Any) -> str:
+                    def new(self: _vutil.StatefulFlashcardGroup) -> str:
                         diff: int = len(self.flashcard) - len(self.state)
                         if diff > 0:
                             self = _dataclasses.replace(
