@@ -2,4 +2,4 @@
 import distutils.version as _distutils_version
 
 NAME = "pytextgen"
-VERSION = _distutils_version.StrictVersion("4.3.0")
+VERSION = _distutils_version.StrictVersion("5.0.0")
