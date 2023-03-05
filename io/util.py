@@ -244,9 +244,7 @@ class _FileSectionCache(dict[_anyio.Path, _typing.Awaitable[_FileSectionCacheDat
                         sections=sections,
                     )
             finally:
-                super().__setitem__(
-                    key, _util.async_value(cache)
-                )  # Replenish awaitable
+                super().__setitem__(key, _util.AsyncValue(cache))  # Replenish awaitable
         return cache
 
     def __setitem__(
