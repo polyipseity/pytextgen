@@ -281,6 +281,27 @@ class _FileSectionIO(_io.StringIO):
     def close(self):
         raise TypeError("Unsupported")
 
+    async def aclose(self):
+        try:
+            try:
+                self.seek(0)
+                data = self.read()
+                if data == self.__initial_value:
+                    return
+                await self.__file.seek(0)
+                text = await self.__file.read()
+                async with _asyncio.TaskGroup() as group:
+                    group.create_task(self.__file.seek(0))
+                    write = (
+                        f"{text[: self.__slice.start]}{data}{text[self.__slice.stop :]}"
+                    )
+                await self.__file.write(write)
+                await self.__file.truncate()
+            finally:
+                await self.__file.aclose()
+        finally:
+            super().close()
+
     async def __aenter__(self):
         self.__file = await _anyio.open_file(
             self.__closure.path, mode="r+t", **_globals.OPEN_OPTIONS
@@ -302,25 +323,7 @@ class _FileSectionIO(_io.StringIO):
         exc_value: BaseException | None,
         traceback: _types.TracebackType | None,
     ):
-        try:
-            try:
-                self.seek(0)
-                data = self.read()
-                if data == self.__initial_value:
-                    return
-                await self.__file.seek(0)
-                text = await self.__file.read()
-                async with _asyncio.TaskGroup() as group:
-                    group.create_task(self.__file.seek(0))
-                    write = (
-                        f"{text[: self.__slice.start]}{data}{text[self.__slice.stop :]}"
-                    )
-                await self.__file.write(write)
-                await self.__file.truncate()
-            finally:
-                await self.__file.aclose()
-        finally:
-            super().close()
+        await self.aclose()
 
 
 Location.register(FileSection)
