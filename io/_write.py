@@ -81,19 +81,21 @@ assert issubclass(ClearWriter, Writer)
 
 
 class PythonWriter:
-    __slots__: _typing.ClassVar = ("__code", "__env", "__options")
+    __slots__: _typing.ClassVar = ("__code", "__env", "__init_codes", "__options")
 
     def __init__(
         self,
         code: _types.CodeType,
         /,
         *,
+        init_codes: _typing.Iterable[_types.CodeType],
         env: _Env,
         options: _GenOpts,
     ) -> None:
-        self.__code: _types.CodeType = code
-        self.__env: _Env = env
-        self.__options: _GenOpts = options
+        self.__code = code
+        self.__init_codes = tuple(init_codes)
+        self.__env = env
+        self.__options = options
 
     def __repr__(self) -> str:
         return f"{type(self).__qualname__}({self.__code!r}, env={self.__env!r}, options={self.__options!r})"
@@ -103,7 +105,7 @@ class PythonWriter:
 
     @_contextlib.asynccontextmanager
     async def write(self):
-        results0 = await self.__env.exec(self.__code)
+        results0 = await self.__env.exec(self.__code, *self.__init_codes)
         if not isinstance(results0, _Rets):
             raise TypeError(results0)
         results = results0

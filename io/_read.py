@@ -3,6 +3,7 @@ import abc as _abc
 import ast as _ast
 import anyio as _anyio
 import asyncio as _asyncio
+import asyncstdlib as _asyncstdlib
 import builtins as _builtins
 import collections as _collections
 import contextlib as _contextlib
@@ -11,7 +12,9 @@ import datetime as _datetime
 import functools as _functools
 import importlib as _importlib
 import itertools as _itertools
+import more_itertools as _more_itertools
 import os as _os
+import re as _re
 import sys as _sys
 import threading as _threading
 import types as _types
@@ -52,7 +55,7 @@ class Reader(metaclass=_abc.ABCMeta):
         async with await _anyio.open_file(
             path, mode="rt", **_globals.OPEN_OPTIONS
         ) as io:
-            ret.read(await io.read())
+            await ret.read(await io.read())
         return ret
 
     @classmethod
@@ -83,7 +86,7 @@ class Reader(metaclass=_abc.ABCMeta):
         raise NotImplementedError(self)
 
     @_abc.abstractmethod
-    def read(self, text: str, /) -> None:
+    async def read(self, text: str, /) -> None:
         raise NotImplementedError(self)
 
     @_abc.abstractmethod
@@ -102,6 +105,21 @@ class Reader(metaclass=_abc.ABCMeta):
                 cls.pipe.__name__,
                 cls.read.__name__,
             ),
+        )
+
+
+class CodeLibrary(metaclass=_abc.ABCMeta):
+    __slots__: _typing.ClassVar = ()
+
+    @property
+    @_abc.abstractmethod
+    def codes(self) -> _typing.Collection[_typing.Sequence[_types.CodeType]]:
+        ...
+
+    @classmethod
+    def __subclasshook__(cls, subclass: type) -> bool | _types.NotImplementedType:
+        return _util.abc_subclasshook_check(
+            CodeLibrary, cls, subclass, names=("codes",)
         )
 
 
@@ -166,49 +184,78 @@ def _Python_env(
 
 
 class MarkdownReader:
-    __slots__: _typing.ClassVar = ("__codes", "__options", "__path")
+    __slots__: _typing.ClassVar = ("__codes", "__library_codes", "__options", "__path")
 
-    START: _typing.ClassVar = f"```Python\n# {_globals.UUID} generate data"
-    STOP: _typing.ClassVar = "```"
+    START: _typing.ClassVar = _re.compile(
+        rf"```Python\n# {_globals.UUID} generate (data|module)", _re.NOFLAG
+    )
+    STOP: _typing.ClassVar = _re.compile(r"```", _re.NOFLAG)
+    IMPORT: _typing.ClassVar = _re.compile(r"# import (.+)$", _re.MULTILINE)
 
     @property
     def path(self):
         return self.__path
 
     @property
-    def options(self) -> _GenOpts:
+    def options(self):
         return self.__options
+
+    @property
+    def codes(self):
+        return self.__library_codes
 
     def __init__(self, *, path: _anyio.Path, options: _GenOpts) -> None:
         self.__path = path
-        self.__options: _GenOpts = options
-        self.__codes: _typing.MutableSequence[_types.CodeType] = []
+        self.__options = options
+        self.__library_codes = list[_typing.Sequence[_types.CodeType]]()
+        self.__codes = dict[_types.CodeType, _typing.Sequence[_types.CodeType]]()
 
-    def read(self, text: str, /) -> None:
-        start: int = text.find(self.START)
-        while start != -1:
-            stop: int = text.find(self.STOP, start + len(self.STOP))
-            if stop == -1:
-                raise ValueError(f"Unenclosure at char {start}")
-            self.__codes.append(
-                self.options.compiler(
-                    _Env.transform_code(
-                        _ast.parse(
-                            ("\n" * text.count("\n", 0, start + len(self.START)))
-                            + text[start + len(self.START) : stop],
-                            self.path,
-                            "exec",
-                            type_comments=True,
-                        )
-                    ),
-                    filename=self.path,
-                    mode="exec",
-                    flags=0,
-                    dont_inherit=True,
-                    optimize=0,
-                )
+    async def read(self, text: str, /):
+        compiler = _functools.partial(
+            self.options.compiler,
+            filename=self.path,
+            mode="exec",
+            flags=0,
+            dont_inherit=True,
+            optimize=0,
+        )
+        start = self.START.search(text)
+        while start is not None:
+            stop = self.STOP.search(text, start.end())
+            if stop is None:
+                raise ValueError(f"Unenclosure at char {start.start()}")
+            code = text[start.end() : stop.start()]
+            ast = _ast.parse(
+                ("\n" * text.count("\n", 0, start.end())) + code,
+                self.path,
+                "exec",
+                type_comments=True,
             )
-            start = text.find(self.START, stop + len(self.STOP))
+
+            async def imports0():
+                for imp in self.IMPORT.finditer(code):
+                    reader = await Reader.cached(
+                        path=self.path / imp[1], options=self.options
+                    )
+                    if not isinstance(reader, CodeLibrary):
+                        raise TypeError(reader)
+                    yield _itertools.chain.from_iterable(reader.codes)
+
+            imports = _asyncstdlib.chain.from_iterable(imports0())  # type: ignore
+            type_ = start[1]
+            if type_ == "data":
+                self.__codes[
+                    compiler(_Env.transform_code(ast))
+                ] = await _asyncstdlib.tuple(imports)
+            elif type_ == "module":
+                self.__library_codes.append(
+                    await _asyncstdlib.tuple(
+                        _asyncstdlib.chain(imports, (compiler(ast),))
+                    )
+                )
+            else:
+                raise ValueError(type_)
+            start = self.START.search(text, stop.end())
 
     def pipe(self) -> _typing.Collection[_Writer]:
         assert isinstance(self, Reader)
@@ -255,9 +302,12 @@ class MarkdownReader:
 
         def ret_gen() -> _typing.Iterator[_Writer]:
             code: _types.CodeType
-            for code in self.__codes:
+            for code, library in self.__codes.items():
                 ret: _PyWriter = _PyWriter(
                     code,
+                    init_codes=_more_itertools.unique_everseen(
+                        _itertools.chain(library, *self.codes)
+                    ),
                     env=_Python_env(self, modifier),
                     options=self.options,
                 )
@@ -269,4 +319,6 @@ class MarkdownReader:
 
 Reader.register(MarkdownReader)
 assert issubclass(MarkdownReader, Reader)
+CodeLibrary.register(MarkdownReader)
+assert issubclass(MarkdownReader, CodeLibrary)
 Reader.REGISTRY[".md"] = MarkdownReader

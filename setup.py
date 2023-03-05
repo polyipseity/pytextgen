@@ -8,6 +8,8 @@ setup(
     include_package_data=True,
     install_requires=[
         "anyio",
+        "asyncstdlib",
+        "more-itertools",
         "regex",
     ],
     license="AGPL-3.0-or-later",
