@@ -85,6 +85,10 @@ _MARKDOWN_REGEXES: _typing.Sequence[_MarkdownRegex] = (
     _MarkdownRegex(
         regex=_re.compile(r"(?<=\S)\*", flags=_re.NOFLAG), desugared="</i s>"
     ),
+    _MarkdownRegex(
+        regex=_re.compile(r"\[(.*?(?<!\\))\]\(.*?(?<!\\)\)", flags=_re.DOTALL),
+        desugared=R"<a>\1</a>",
+    ),
 )
 _HTML_TAG_REGEX = _re.compile(r"<([^>]+)>", flags=_re.NOFLAG)
 
@@ -309,9 +313,7 @@ def semantics_seq_map(
 
 
 def markdown_sanitizer(text: str) -> str:
-    text = _html.unescape(text)
-
-    def get_and_remove_html_tags(text: str) -> tuple[str, _typing.AbstractSet[str]]:
+    def get_and_del_tags(text: str) -> tuple[str, _typing.AbstractSet[str]]:
         tags: _typing.MutableSet[str] = set()
         matches: _typing.MutableSequence[_re.Match[str]] = []
 
@@ -343,23 +345,20 @@ def markdown_sanitizer(text: str) -> str:
 
         return ("".join(ret_gen()), frozenset(tags))
 
-    tags: _typing.AbstractSet[str]
-    text, tags = get_and_remove_html_tags(text)
+    text, tags = get_and_del_tags(text)
     distingusher: str = "\0" * (len(max(tags, key=len, default="")) + 1)
-    md_regex: _MarkdownRegex
-    for md_regex in _MARKDOWN_REGEXES:
-        suffix: str = (
-            "/>"
-            if md_regex.desugared.endswith("/>")
-            else ">"
-            if md_regex.desugared.endswith(">")
-            else ""
+    for regex in _MARKDOWN_REGEXES:
+        text = regex.regex.sub(
+            _HTML_TAG_REGEX.sub(
+                lambda m: f"<{m[1][:-1]}{distingusher}/>"
+                if m[1].endswith("/")
+                else f"<{m[1]}{distingusher}>",
+                regex.desugared,
+            ),
+            text,
         )
-        text = md_regex.regex.sub(
-            f"{md_regex.desugared[:-len(suffix)]}{distingusher}{suffix}", text
-        )
-    text, _ = get_and_remove_html_tags(text)
-    return text
+    text, _ = get_and_del_tags(text)
+    return _html.unescape(text)
 
 
 def seq_to_code(
