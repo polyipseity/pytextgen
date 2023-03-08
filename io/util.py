@@ -2,6 +2,7 @@
 import abc as _abc
 import anyio as _anyio
 import asyncio as _asyncio
+import asyncstdlib as _asyncstdlib
 import collections as _collections
 import contextlib as _contextlib
 import dataclasses as _dataclasses
@@ -204,7 +205,7 @@ class _FileSectionCache(dict[_anyio.Path, _typing.Awaitable[_FileSectionCacheDat
             except KeyError:
                 cache = _FileSectionCacheData.EMPTY
             try:
-                mod_time = (await _util.asyncify(_os.stat)(key)).st_mtime_ns
+                mod_time = (await _asyncstdlib.sync(_os.stat)(key)).st_mtime_ns
                 if mod_time != cache.mod_time:
                     async with await _anyio.open_file(
                         key, mode="rt", **_globals.OPEN_OPTIONS
@@ -244,7 +245,7 @@ class _FileSectionCache(dict[_anyio.Path, _typing.Awaitable[_FileSectionCacheDat
                         sections=sections,
                     )
             finally:
-                super().__setitem__(key, _util.AsyncValue(cache))  # Replenish awaitable
+                super().__setitem__(key, _util.wrap_async(cache))  # Replenish awaitable
         return cache
 
     def __setitem__(

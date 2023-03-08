@@ -98,4 +98,4 @@ class Environment:
             for init_code in init_codes:
                 exec(init_code, globals, locals)
             exec(code, globals, locals, closure=self.closure)
-            return await _util.maybe_async(getattr(env, self.ENTRY)())
+            return await _util.wrap_async(getattr(env, self.ENTRY)())

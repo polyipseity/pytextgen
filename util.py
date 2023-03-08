@@ -9,6 +9,7 @@ import contextlib as _contextlib
 import dataclasses as _dataclasses
 import functools as _functools
 import importlib as _importlib
+import inspect as _inspect
 import itertools as _itertools
 import json as _json
 import logging as _logging
@@ -52,16 +53,18 @@ _ASYNC_LOCK_THREAD_POOLS = _weakref.WeakKeyDictionary[
 ]()
 
 
-@_typing.final
-class AsyncValue(_typing.Generic[_T_co]):
-    __slots__: _typing.ClassVar = ("__value",)
+@_types.coroutine
+def wrap_async(value: _T | _typing.Awaitable[_T]):
+    if _inspect.isawaitable(value):
+        avalue: _typing.Awaitable[_T] = value
+        return avalue.__await__()
+    else:
 
-    def __init__(self, value: _T_co):
-        self.__value = value
+        def impl():
+            yield
+            return _typing.cast(_T, value)
 
-    def __await__(self):
-        yield
-        return self.__value
+        return impl()
 
 
 def identity(var: _T) -> _T:
@@ -85,13 +88,6 @@ def ignore_args(func: _typing.Callable[[], _T]) -> _typing.Callable[..., _T]:
 
 def tuple1(var: _T) -> tuple[_T]:
     return (var,)
-
-
-async def maybe_async(value: _typing.Awaitable[_T] | _T) -> _T:
-    if isinstance(value, _typing.Awaitable):
-        value0: _typing.Awaitable[_T] = value
-        return await value0
-    return value
 
 
 def asyncify(

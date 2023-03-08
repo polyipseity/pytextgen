@@ -50,17 +50,17 @@ class ClearWriter:
         if _ClrT.CONTENT in self.__options.types:
 
             async def process(io: _ATxtIO):
-                await _util.maybe_async(io.truncate())
+                await _util.wrap_async(io.truncate())
 
         elif _ClrT.FLASHCARD_STATE in self.__options.types:
 
             async def process(io: _ATxtIO):
-                data = await _util.maybe_async(io.read())
+                data = await _util.wrap_async(io.read())
                 async with _asyncio.TaskGroup() as group:
-                    group.create_task(_util.maybe_async(io.seek(0)))
+                    group.create_task(_util.wrap_async(io.seek(0)).__await__())
                     data = self.__FLASHCARD_STATES_REGEX.sub("", data)
-                await _util.maybe_async(io.write(data))
-                await _util.maybe_async(io.truncate())
+                await _util.wrap_async(io.write(data))
+                await _util.wrap_async(io.truncate())
 
         else:
 
@@ -118,7 +118,7 @@ class PythonWriter:
                 path = loc.path
                 async with _contextlib.nullcontext() if path is None else _lck_f(path):
                     async with loc.open() as io:
-                        text = await _util.maybe_async(io.read())
+                        text = await _util.wrap_async(io.read())
                         timestamp = _globals.GENERATE_COMMENT_REGEX.search(text)
                         if result.text != (
                             text[: timestamp.start()] + text[timestamp.end() :]
@@ -126,7 +126,9 @@ class PythonWriter:
                             else text
                         ):
                             async with _asyncio.TaskGroup() as group:
-                                group.create_task(_util.maybe_async(io.seek(0)))
+                                group.create_task(
+                                    _util.wrap_async(io.seek(0)).__await__()
+                                )
                                 data = "".join(
                                     (
                                         _globals.GENERATE_COMMENT_FORMAT.format(
@@ -141,8 +143,8 @@ class PythonWriter:
                                         result.text,
                                     )
                                 )
-                            await _util.maybe_async(io.write(data))
-                            await _util.maybe_async(io.truncate())
+                            await _util.wrap_async(io.write(data))
+                            await _util.wrap_async(io.truncate())
 
             await _asyncio.gather(*map(process, results))
 
