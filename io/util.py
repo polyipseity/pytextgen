@@ -113,6 +113,7 @@ class FileSection:
         end_regex: _re.Pattern[str]
         start: str
         stop: str
+        data: _typing.Callable[[_re.Match[str]], str]
 
     SECTION_FORMATS: _typing.ClassVar[
         _typing.Mapping[str, SectionFormat]
@@ -120,20 +121,22 @@ class FileSection:
         {
             "": SectionFormat(
                 start_regex=_re.compile(
-                    rf"\[{_globals.UUID},generate,([^,\]]*)\]", flags=_re.NOFLAG
+                    rf"\[{_globals.UUID},generate,([^,\]]*?)\]", flags=_re.NOFLAG
                 ),
                 end_regex=_re.compile(rf"\[{_globals.UUID},end\]", flags=_re.NOFLAG),
                 start=f"[{_globals.UUID},generate,{{section}}]",
                 stop=f"[{_globals.UUID},end]",
+                data=lambda match: match[1],
             ),
             ".md": SectionFormat(
                 start_regex=_re.compile(
-                    rf'<!--{_globals.UUID} generate section="([^"]*)"-->',
-                    flags=_re.NOFLAG,
+                    rf"""<!--{_globals.UUID} generate section=(["'])(.*?)\1-->""",
+                    flags=_re.DOTALL,
                 ),
                 end_regex=_re.compile(rf"<!--/{_globals.UUID}-->", flags=_re.NOFLAG),
                 start=f'<!--{_globals.UUID} generate section="{{section}}"-->',
                 stop=f"<!--/{_globals.UUID}-->",
+                data=lambda match: match[2],
             ),
         }
     )
@@ -220,7 +223,7 @@ class _FileSectionCache(dict[_anyio.Path, _typing.Awaitable[_FileSectionCacheDat
                             raise ValueError(
                                 f"Overlapping section at char {start.start()}: {key}"
                             )
-                        section: str = text[start.start(1) : start.end(1)]
+                        section = format.data(start)
                         if section in sections:
                             raise ValueError(f'Duplicated section "{section}": {key}')
                         end_str: str = format.stop.format(section=section)
