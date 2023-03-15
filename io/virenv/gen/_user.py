@@ -11,6 +11,7 @@ from ..config import CONFIG as _CFG
 from ..util import (
     FlashcardGroup as _FcGrp,
     FlashcardStateGroup as _FcStGrp,
+    IteratorSequence as _IterSeq,
     Unit as _Unit,
     affix_lines as _afx_ls,
     constant as _const,
@@ -451,9 +452,10 @@ def rows_to_table(
     ],
     values: _typing.Callable[[_T], _typing.Iterable[_typing.Any]],
 ) -> str:
-    lf: str = "\n"
-    return f"""{' | '.join(name if isinstance(name, str) else name[0] for name in names)}
-{'|'.join(_TABLE_ALIGNS['default' if isinstance(name, str) else name[1]] for name in names)}
+    names0 = _IterSeq(iter(names))
+    lf = "\n"
+    return f"""{' | '.join(name if isinstance(name, str) else name[0] for name in names0)}
+{'|'.join(_TABLE_ALIGNS['default' if isinstance(name, str) else name[1]] for name in names0)}
 {lf.join(' | '.join(map(str, values(row))) for row in rows)}"""
 
 
