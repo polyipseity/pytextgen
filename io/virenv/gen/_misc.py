@@ -8,9 +8,10 @@ import typing as _typing
 class Tag(_enum.StrEnum):
     __slots__: _typing.ClassVar = ()
 
-    COMMON: _typing.ClassVar = ""
+    CLOZE_SEPARATOR: _typing.ClassVar = "cloze sep"
     COMMENT: _typing.ClassVar = "cmt"
-    TEXT: _typing.ClassVar = "text"
+    COMMON: _typing.ClassVar = ""
     MEMORIZE: _typing.ClassVar = "mem"
     SEMANTICS: _typing.ClassVar = "sem"
-    CLOZE_SEPARATOR: _typing.ClassVar = "cloze sep"
+    SEPARATOR: _typing.ClassVar = "sep"
+    TEXT: _typing.ClassVar = "text"
