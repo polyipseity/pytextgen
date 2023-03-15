@@ -30,7 +30,9 @@ def parser(
         version=f"{prog} v{_info.VERSION}",
         help="print version and exit",
     )
-    subparsers = parser.add_subparsers()
+    subparsers = parser.add_subparsers(
+        required=True,
+    )
     from .generate import main as _generate_main
 
     _generate_main.parser(
