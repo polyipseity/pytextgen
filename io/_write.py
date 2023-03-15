@@ -13,7 +13,6 @@ from .util import (
     FileSection as _FSect,
     AnyTextIO as _ATxtIO,
     Result as _Ret,
-    Results as _Rets,
     lock_file as _lck_f,
 )
 from ._env import Environment as _Env
@@ -105,10 +104,20 @@ class PythonWriter:
 
     @_contextlib.asynccontextmanager
     async def write(self):
-        results0 = await self.__env.exec(self.__code, *self.__init_codes)
-        if not isinstance(results0, _Rets):
-            raise TypeError(results0)
-        results = results0
+        def results0(result: _typing.Any):
+            if _Ret.isinstance(result):
+                yield result
+                return
+            if isinstance(result, _typing.Iterable):
+                result0: _typing.Iterable[_typing.Any] = result
+                for item in result0:
+                    if not _Ret.isinstance(item):
+                        raise TypeError(item)
+                    yield item
+                return
+            raise TypeError(result)
+
+        results = results0(await self.__env.exec(self.__code, *self.__init_codes))
         try:
             yield
         finally:

@@ -348,7 +348,9 @@ class Result:
     location: Location
     text: str
 
-
-@_typing.final
-class Results(_util.TypedTuple[Result], element_type=Result):
-    __slots__: _typing.ClassVar = ()
+    @classmethod
+    def isinstance(cls, any: _typing.Any) -> _typing.TypeGuard[_typing.Self]:
+        try:
+            return isinstance(any.location, Location) and isinstance(any.text, str)
+        except AttributeError:
+            return False
