@@ -128,12 +128,13 @@ class CodeLibrary(metaclass=_abc.ABCMeta):
 def _Python_env(
     reader: Reader,
     modifier: _typing.Callable[
-        [_types.ModuleType], _contextlib.AbstractContextManager[_typing.Any]
+        [_types.ModuleType, _typing.Mapping[str, _types.ModuleType]],
+        _contextlib.AbstractContextManager[_typing.Any],
     ]
     | None = None,
 ) -> _Env:
     if modifier is None:
-        modifier = lambda _: _contextlib.nullcontext()
+        modifier = _util.ignore_args(_contextlib.nullcontext)
 
     def cwf_section(section: str) -> _Loc:
         ret = _FSect(path=reader.path, section=section)
@@ -175,7 +176,9 @@ def _Python_env(
                     modules[new_name] = mod
                 modules = _types.MappingProxyType(modules)
             try:
-                with modifier(module), _unittest_mock.patch.dict(_sys.modules, modules):
+                with modifier(module, modules), _unittest_mock.patch.dict(
+                    _sys.modules, modules
+                ):
                     yield
             finally:
                 if not module.dirty():
@@ -271,13 +274,15 @@ class MarkdownReader:
         assert isinstance(self, Reader)
 
         @_contextlib.contextmanager
-        def modifier(mod: _types.ModuleType):
+        def modifier(
+            module: _types.ModuleType, modules: _typing.Mapping[str, _types.ModuleType]
+        ):
             finals: _typing.MutableSequence[_typing.Callable[[], None]] = []
             try:
                 if self.options.init_flashcards:
-                    cls: type[
-                        _vutil.StatefulFlashcardGroup
-                    ] = mod.util.StatefulFlashcardGroup
+                    cls: type[_vutil.StatefulFlashcardGroup] = modules[
+                        f"{module.__name__}.util"
+                    ].StatefulFlashcardGroup
                     old = cls.__str__
 
                     @_functools.wraps(old)
