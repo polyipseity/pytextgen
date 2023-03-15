@@ -241,35 +241,35 @@ class TypedTuple(_typing.Generic[_T], tuple[_T, ...]):
 
 
 @_typing.final
-class LazyIterableSequence(_typing.Generic[_T_co], _typing.Sequence[_T_co]):
-    __slots__: _typing.ClassVar = ("__cache", "__done", "__iterable", "__lock")
+class IteratorSequence(_typing.Generic[_T_co], _typing.Sequence[_T_co]):
+    __slots__: _typing.ClassVar = ("__cache", "__done", "__iterator", "__lock")
 
-    def __init__(self, iterable: _typing.Iterable[_T_co]) -> None:
+    def __init__(self, iterator: _typing.Iterator[_T_co]) -> None:
         self.__lock = _threading.Lock()
-        self.__iterable: _typing.Iterable[_T_co] = iterable
-        self.__cache: _typing.MutableSequence[_T_co] = []
-        self.__done: bool = False
+        self.__iterator = iterator
+        self.__cache = list[_T_co]()
+        self.__done = False
 
     def __cache_to(self, length: int | None) -> int:
-        cur_len: int = len(self.__cache)
+        cur_len = len(self.__cache)
         if self.__done or (length is not None and cur_len >= length):
             return cur_len
         if length is None:
             with self.__lock:
-                self.__cache.extend(self.__iterable)
+                self.__cache.extend(self.__iterator)
             self.__done = True
             return len(self.__cache)
         with self.__lock:
-            extend: int = length - len(self.__cache)
+            extend = length - len(self.__cache)
             if extend > 0:
-                self.__cache.extend(_itertools.islice(self.__iterable, extend))
-        new_len: int = len(self.__cache)
+                self.__cache.extend(_itertools.islice(self.__iterator, extend))
+        new_len = len(self.__cache)
         if new_len < cur_len + extend:
             self.__done = True
         return new_len
 
     def __getitem__(self, index: int) -> _T_co:
-        available: int = self.__cache_to(index + 1)
+        available = self.__cache_to(index + 1)
         if index >= available:
             raise IndexError(index)
         return self.__cache[index]
@@ -278,7 +278,7 @@ class LazyIterableSequence(_typing.Generic[_T_co], _typing.Sequence[_T_co]):
         return self.__cache_to(None)
 
 
-assert issubclass(LazyIterableSequence, _typing.Sequence)
+assert issubclass(IteratorSequence, _typing.Sequence)
 
 
 @_typing.final

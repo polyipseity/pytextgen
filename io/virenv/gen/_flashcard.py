@@ -8,7 +8,7 @@ from ..util import (
     ClozeFlashcardGroup as _CzFcGrp,
     FlashcardGroup as _FcGrp,
     FlashcardStateGroup as _FcStGrp,
-    LazyIterableSequence as _LazyIterSeq,
+    IteratorSequence as _IterSeq,
     StatefulFlashcardGroup as _StFcGrp,
     TwoSidedFlashcard as _2SidedFc,
     constant as _const,
@@ -73,7 +73,7 @@ def memorize_two_sided0(
     hinter: _typing.Callable[[int, str], tuple[str, str]] = _const(("", "")),
 ) -> _typing.Iterator[_FcGrp]:
 
-    strs_seq: _typing.Sequence[str] = _LazyIterSeq(strs)  # Handles infinite sequences
+    strs_seq: _typing.Sequence[str] = _IterSeq(iter(strs))  # Handles infinite sequences
 
     def offseted() -> _typing.Iterator[_HintedStr]:
         index = -1
@@ -88,8 +88,8 @@ def memorize_two_sided0(
                 break
             yield _HintedStr(str_, *hinter(index, str_))
 
-    iter: _typing.Iterator[_HintedStr] = offseted()
-    for left, right in zip(iter, iter):
+    iter_: _typing.Iterator[_HintedStr] = offseted()
+    for left, right in zip(iter_, iter_):
         ret: _2SidedFc = _2SidedFc(
             left.str_ + right.left,
             left.right + right.str_,
