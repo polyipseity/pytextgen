@@ -5,6 +5,8 @@ import sys as _sys
 import typing as _typing
 
 from . import info as _info
+from .clear import main as _clear_main
+from .generate import main as _generate_main
 
 
 def parser(
@@ -33,15 +35,11 @@ def parser(
     subparsers = parser.add_subparsers(
         required=True,
     )
-    from .generate import main as _generate_main
-
     _generate_main.parser(
         _functools.partial(
             subparsers.add_parser, _generate_main.__package__.replace(f"{prog}.", "")
         )
     )
-    from .clear import main as _clear_main
-
     _clear_main.parser(
         _functools.partial(
             subparsers.add_parser, _clear_main.__package__.replace(f"{prog}.", "")
