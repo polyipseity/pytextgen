@@ -377,11 +377,7 @@ def seq_to_code(
         idx: int
         str_: str
         for idx, str_ in enumerate(seq):
-            yield "{text:"
-            yield newline
-            yield str(index + idx)
-            yield ". }"
-            yield _TextCode.escape(str_, block=True) if escape else str_
+            yield f"{{{_Tag.TEXT}:{newline}{index + idx}. }}{_TextCode.escape(str_, block=True) if escape else str_}"
             newline = "\n"
         yield suffix
 
