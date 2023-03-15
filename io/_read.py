@@ -238,11 +238,13 @@ class MarkdownReader:
             if stop is None:
                 raise ValueError(f"Unenclosure at char {start.start()}")
             code = text[start.end() : stop.start()]
-            ast = _ast.parse(
-                ("\n" * text.count("\n", 0, start.end())) + code,
-                self.path,
-                "exec",
-                type_comments=True,
+            ast = _Env.transform_code(
+                _ast.parse(
+                    ("\n" * text.count("\n", 0, start.end())) + code,
+                    self.path,
+                    "exec",
+                    type_comments=True,
+                )
             )
 
             async def imports0():
@@ -257,9 +259,7 @@ class MarkdownReader:
             imports = _asyncstdlib.chain.from_iterable(imports0())  # type: ignore
             type_ = start[1]
             if type_ == "data":
-                self.__codes[
-                    compiler(_Env.transform_code(ast))
-                ] = await _asyncstdlib.tuple(imports)
+                self.__codes[compiler(ast)] = await _asyncstdlib.tuple(imports)
             elif type_ == "module":
                 self.__library_codes.append(
                     await _asyncstdlib.tuple(

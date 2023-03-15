@@ -4,7 +4,7 @@ import contextlib as _contextlib
 import types as _types
 import typing as _typing
 
-from .. import globals as _globals, util as _util
+from .. import globals as _globals
 
 
 @_typing.final
@@ -26,7 +26,8 @@ class Environment:
         template = _ast.parse(
             cls.ENTRY_TEMPLATE, "<string>", "exec", type_comments=True
         )
-        _typing.cast(_ast.AsyncFunctionDef, template.body[0]).body = ast.body
+        if ast.body:
+            _typing.cast(_ast.AsyncFunctionDef, template.body[0]).body = ast.body
         return template
 
     def __init__(
@@ -97,5 +98,8 @@ class Environment:
         async with self.__context():
             for init_code in init_codes:
                 exec(init_code, globals, locals)
+                export = await getattr(env, self.ENTRY)()
+                if export is not None:
+                    globals.update(export)
             exec(code, globals, locals, closure=self.closure)
-            return await _util.wrap_async(getattr(env, self.ENTRY)())
+            return await getattr(env, self.ENTRY)()

@@ -12,6 +12,10 @@ from ..util import *  # Intentional wildcard
 from .config import CONFIG as _CFG, FlashcardSeparatorType as _FcSepT
 
 
+def export_seq(*seq: _typing.Callable[..., _typing.Any] | type):
+    return _types.MappingProxyType({val.__name__: val for val in seq})
+
+
 class FlashcardGroup(_typing.Sequence[str], metaclass=_abc.ABCMeta):
     __slots__: _typing.ClassVar = ()
 
