@@ -451,8 +451,8 @@ def rows_to_table(
     names0 = _IterSeq(iter(names))
     lf = "\n"
     return f"""| {' | '.join(name if isinstance(name, str) else name[0] for name in names0)} |
-| {'|'.join(_TABLE_ALIGNS['default' if isinstance(name, str) else name[1]] for name in names0)} |
-| {lf.join(' | '.join(map(str, values(row))) for row in rows)} |"""
+|{'|'.join(_TABLE_ALIGNS['default' if isinstance(name, str) else name[1]] for name in names0)}|
+{lf.join(f'| {" | ".join(map(str, values(row)))} |' for row in rows)}"""
 
 
 def two_columns_to_code(
