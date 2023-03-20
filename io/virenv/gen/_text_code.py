@@ -68,13 +68,11 @@ class TextCode:
 
     def __init__(self, blocks: _typing.Iterable[Block]) -> None:
         self.__blocks: _typing.Sequence[TextCode.Block] = tuple(blocks)
-        by_tag: _typing.MutableMapping[
+        by_tag = _collections.defaultdict[
             str, _typing.MutableSequence[TextCode.ByTagValue]
-        ] = {}
+        ](list)
         for idx, block in enumerate(self.blocks):
-            by_tag.setdefault(block.tag, []).append(
-                TextCode.ByTagValue(idx=idx, block=block)
-            )
+            by_tag[block.tag].append(TextCode.ByTagValue(idx=idx, block=block))
         self.__by_tag: _typing.Mapping[
             str, _typing.Sequence[TextCode.ByTagValue]
         ] = _types.MappingProxyType(
