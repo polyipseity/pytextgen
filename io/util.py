@@ -57,6 +57,24 @@ class Location(metaclass=_abc.ABCMeta):
 
 
 @_typing.final
+class NullLocation:
+    __slots__: _typing.ClassVar = ()
+
+    @_contextlib.asynccontextmanager
+    async def open(self):
+        yield _io.StringIO()
+
+    @property
+    def path(self):
+        return None
+
+
+Location.register(NullLocation)
+assert issubclass(NullLocation, Location)
+NULL_LOCATION = NullLocation()
+
+
+@_typing.final
 @_dataclasses.dataclass(
     init=True,
     repr=True,
