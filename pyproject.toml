@@ -1,3 +1,7 @@
+[build-system]
+requires = ["setuptools>=65.6.3",]
+build-backend = "setuptools.build_meta"
+
 [project]
 authors = [
     {name = "William So", email = "polyipseity@gmail.com"},
@@ -28,7 +32,8 @@ dependencies = [
     "more-itertools>=9.1.0",
     "regex>=2022.10.31",
 ]
-dynamic = ["description", "version",]
+description = ""
+dynamic = ["version",]
 keywords = []
 license = {file = "LICENSE.txt"}
 name = "pytextgen"
@@ -37,3 +42,9 @@ requires-python = ">=3.11.0"
 
 [project.urls]
 repository = "https://github.com/polyipseity/pytextgen.git"
+
+[tool.setuptools]
+package-dir = {pytextgen = "."}
+
+[tool.setuptools.dynamic]
+version = {attr = "info.VERSION"}
