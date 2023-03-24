@@ -1,0 +1,39 @@
+[project]
+authors = [
+    {name = "William So", email = "polyipseity@gmail.com"},
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Framework :: AsyncIO",
+    "Intended Audience :: Other Audience",
+    "License :: OSI Approved",
+    "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Text Processing",
+    "Topic :: Text Processing :: General",
+    "Topic :: Text Processing :: Markup",
+    "Topic :: Text Processing :: Markup :: HTML",
+    "Topic :: Text Processing :: Markup :: Markdown",
+    "Topic :: Utilities",
+    "Typing :: Typed",
+]
+dependencies = [
+    "anyio>=3.6.2",
+    "asyncstdlib>=3.10.6",
+    "more-itertools>=9.1.0",
+    "regex>=2022.10.31",
+]
+dynamic = ["description", "version",]
+keywords = []
+license = {file = "LICENSE.txt"}
+name = "pytextgen"
+readme = "README.md"
+requires-python = ">=3.11.0"
+
+[project.urls]
+repository = "https://github.com/polyipseity/pytextgen.git"
