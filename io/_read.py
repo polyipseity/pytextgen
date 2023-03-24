@@ -256,7 +256,7 @@ class MarkdownReader:
                         raise TypeError(reader)
                     yield _itertools.chain.from_iterable(reader.codes)
 
-            imports = _asyncstdlib.chain.from_iterable(imports0())  # type: ignore
+            imports = _asyncstdlib.chain.from_iterable(imports0())
             type_ = start[1]
             if type_ == "data":
                 self.__codes[compiler(ast)] = await _asyncstdlib.tuple(imports)
