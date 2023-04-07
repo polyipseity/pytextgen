@@ -23,10 +23,7 @@ from unittest import mock as _unittest_mock
 import weakref as _weakref
 
 from .. import globals as _globals, info as _info, util as _util
-from .util import (
-    FileSection as _FSect,
-    Location as _Loc,
-)
+from .util import FileSection as _FSect
 from .virenv import util as _vutil
 from ._env import Environment as _Env
 from ._options import GenOpts as _GenOpts
@@ -136,10 +133,14 @@ def _Python_env(
     if modifier is None:
         modifier = _util.ignore_args(_contextlib.nullcontext)
 
-    def cwf_sect(section: str) -> _Loc:
-        ret = _FSect(path=reader.path, section=section)
-        assert isinstance(ret, _Loc)
-        return ret
+    def cwf_sect(section: str):
+        return _FSect(path=reader.path, section=section)
+
+    def cwf_sects0(sections: _typing.Iterable[str]):
+        return (cwf_sect(sect) for sect in sections)
+
+    def cwf_sects(*sections: str):
+        return tuple(cwf_sects0(sections))
 
     vars: _typing.MutableMapping[str, _typing.Any] = {
         "__builtins__": {
@@ -189,6 +190,8 @@ def _Python_env(
             "cwf": reader.path,
             "cwd": reader.path.parent,
             cwf_sect.__name__: cwf_sect,
+            cwf_sects.__name__: cwf_sects,
+            cwf_sects0.__name__: cwf_sects0,
         },
         globals=vars,
         locals=vars,
