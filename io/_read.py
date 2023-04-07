@@ -136,7 +136,7 @@ def _Python_env(
     if modifier is None:
         modifier = _util.ignore_args(_contextlib.nullcontext)
 
-    def cwf_section(section: str) -> _Loc:
+    def cwf_sect(section: str) -> _Loc:
         ret = _FSect(path=reader.path, section=section)
         assert isinstance(ret, _Loc)
         return ret
@@ -188,7 +188,7 @@ def _Python_env(
         env={
             "cwf": reader.path,
             "cwd": reader.path.parent,
-            "cwf_section": cwf_section,
+            cwf_sect.__name__: cwf_sect,
         },
         globals=vars,
         locals=vars,
