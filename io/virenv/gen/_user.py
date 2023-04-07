@@ -464,6 +464,9 @@ def two_columns_to_code(
 ) -> _TextCode:
     return _TextCode.compile(
         "{}".join(
-            _itertools.chain.from_iterable((left(row), right(row)) for row in rows)
+            item if item else "{:}"
+            for item in _itertools.chain.from_iterable(
+                (left(row), right(row)) for row in rows
+            )
         )
     )
