@@ -23,7 +23,7 @@ class _OpenOptions(_TDict):
 
 # update `pyproject.toml`
 NAME = "pytextgen"
-VERSION = _SVer("6.1.0")
+VERSION = _SVer("6.2.0")
 
 FLASHCARD_EASE_DEFAULT = 250
 FLASHCARD_STATES_FORMAT = "<!--SR:{states}-->"
