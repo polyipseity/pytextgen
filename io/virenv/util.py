@@ -1,15 +1,17 @@
 # -*- coding: UTF-8 -*-
+from ... import (
+    FLASHCARD_STATES_FORMAT as _FC_ST_FMT,
+    FLASHCARD_STATES_REGEX as _FC_ST_RE,
+)
+from ...util import *  # Intentional wildcard
+from ..util import *  # Intentional wildcard
+from .config import CONFIG as _CFG, FlashcardSeparatorType as _FcSepT
 import abc as _abc
 import dataclasses as _dataclasses
 import datetime as _datetime
 import re as _re
 import types as _types
 import typing as _typing
-
-from ... import globals as _globals
-from ...util import *  # Intentional wildcard
-from ..util import *  # Intentional wildcard
-from .config import CONFIG as _CFG, FlashcardSeparatorType as _FcSepT
 
 
 def export_seq(*seq: _typing.Callable[..., _typing.Any] | type):
@@ -180,8 +182,8 @@ class FlashcardState:
 @_typing.final
 class FlashcardStateGroup(TypedTuple[FlashcardState], element_type=FlashcardState):
     __slots__: _typing.ClassVar = ()
-    FORMAT: _typing.ClassVar = _globals.FLASHCARD_STATES_FORMAT
-    REGEX: _typing.ClassVar = _globals.FLASHCARD_STATES_REGEX
+    FORMAT: _typing.ClassVar = _FC_ST_FMT
+    REGEX: _typing.ClassVar = _FC_ST_RE
 
     def __str__(self) -> str:
         if self:

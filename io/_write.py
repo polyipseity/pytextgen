@@ -1,14 +1,10 @@
 # -*- coding: UTF-8 -*-
-import abc as _abc
-import anyio as _anyio
-import asyncio as _asyncio
-import contextlib as _contextlib
-import datetime as _datetime
-import re as _re
-import types as _types
-import typing as _typing
-
-from .. import globals as _globals, util as _util
+from .. import (
+    FLASHCARD_STATES_REGEX as _FC_ST_RE,
+    GENERATE_COMMENT_FORMAT as _GEN_CMT_FMT,
+    GENERATE_COMMENT_REGEX as _GEN_CMT_RE,
+    util as _util,
+)
 from .util import (
     FileSection as _FSect,
     AnyTextIO as _ATxtIO,
@@ -17,6 +13,14 @@ from .util import (
 )
 from ._env import Environment as _Env
 from ._options import ClearOpts as _ClrOpts, ClearType as _ClrT, GenOpts as _GenOpts
+import abc as _abc
+import anyio as _anyio
+import asyncio as _asyncio
+import contextlib as _contextlib
+import datetime as _datetime
+import re as _re
+import types as _types
+import typing as _typing
 
 
 class Writer(metaclass=_abc.ABCMeta):
@@ -35,10 +39,7 @@ class Writer(metaclass=_abc.ABCMeta):
 
 class ClearWriter:
     __slots__: _typing.ClassVar = ("__options", "__path")
-    __FLASHCARD_STATES_REGEX = _re.compile(
-        r" ?" + _globals.FLASHCARD_STATES_REGEX.pattern,
-        _globals.FLASHCARD_STATES_REGEX.flags,
-    )
+    __FLASHCARD_STATES_REGEX = _re.compile(r" ?" + _FC_ST_RE.pattern, _FC_ST_RE.flags)
 
     def __init__(self, path: _anyio.Path, *, options: _ClrOpts):
         self.__path = path
@@ -128,7 +129,7 @@ class PythonWriter:
                 async with _contextlib.nullcontext() if path is None else _lck_f(path):
                     async with loc.open() as io:
                         text = await _util.wrap_async(io.read())
-                        timestamp = _globals.GENERATE_COMMENT_REGEX.search(text)
+                        timestamp = _GEN_CMT_RE.search(text)
                         if result.text != (
                             text[: timestamp.start()] + text[timestamp.end() :]
                             if timestamp
@@ -140,7 +141,7 @@ class PythonWriter:
                                 )
                                 data = "".join(
                                     (
-                                        _globals.GENERATE_COMMENT_FORMAT.format(
+                                        _GEN_CMT_FMT.format(
                                             now=_datetime.datetime.now()
                                             .astimezone()
                                             .isoformat()

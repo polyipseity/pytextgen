@@ -1,5 +1,6 @@
 # -*- coding: UTF-8 -*-
 from __future__ import annotations
+from . import OPEN_TEXT_OPTIONS as _OPEN_TXT_OPTS
 import abc as _abc
 import anyio as _anyio
 import ast as _ast
@@ -27,8 +28,6 @@ import unicodedata as _unicodedata
 import uuid as _uuid
 from unittest import mock as _unittest_mock
 import weakref as _weakref
-
-from . import globals as _globals
 
 if _typing.TYPE_CHECKING:
     import _typeshed as _typeshed
@@ -394,9 +393,9 @@ class CompileCache:
         async def read_metadata() -> _typing.Collection[CompileCache.MetadataEntry]:
             metadata_path = folder / self.__METADATA_FILENAME
             if not await metadata_path.exists():
-                await metadata_path.write_text("[]", **_globals.OPEN_OPTIONS)
+                await metadata_path.write_text("[]", **_OPEN_TXT_OPTS)
             async with await _anyio.open_file(
-                metadata_path, mode="rt", **_globals.OPEN_OPTIONS
+                metadata_path, mode="rt", **_OPEN_TXT_OPTS
             ) as metadata_file:
                 try:
                     return _json.loads(await metadata_file.read())
@@ -475,7 +474,7 @@ class CompileCache:
             return ret
 
         async with await _anyio.open_file(
-            folder / self.__METADATA_FILENAME, mode="wt", **_globals.OPEN_OPTIONS
+            folder / self.__METADATA_FILENAME, mode="wt", **_OPEN_TXT_OPTS
         ) as metadata_file:
             await metadata_file.write(
                 _json.dumps(

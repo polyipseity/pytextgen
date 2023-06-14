@@ -1,4 +1,6 @@
 # -*- coding: UTF-8 -*-
+from .. import OPEN_TEXT_OPTIONS as _OPEN_TXT_OPTS, UUID as _UUID
+from .. import util as _util
 import abc as _abc
 import anyio as _anyio
 import asyncio as _asyncio
@@ -15,9 +17,6 @@ import threading as _threading
 import types as _types
 import typing as _typing
 import weakref as _weakref
-
-from .. import globals as _globals
-from .. import util as _util
 
 AnyTextIO = _typing.TextIO | _anyio.AsyncFile[str]
 _FILE_LOCKS = _collections.defaultdict[_anyio.Path, _threading.Lock](_threading.Lock)
@@ -92,7 +91,7 @@ class PathLocation:
     @_contextlib.asynccontextmanager
     async def open(self):
         async with await _anyio.open_file(
-            self.path, mode="r+t", **_globals.OPEN_OPTIONS
+            self.path, mode="r+t", **_OPEN_TXT_OPTS
         ) as file:
             yield file
 
@@ -139,21 +138,21 @@ class FileSection:
         {
             "": SectionFormat(
                 start_regex=_re.compile(
-                    rf"\[{_globals.UUID},generate,([^,\]]*?)\]", flags=_re.NOFLAG
+                    rf"\[{_UUID},generate,([^,\]]*?)\]", flags=_re.NOFLAG
                 ),
-                end_regex=_re.compile(rf"\[{_globals.UUID},end\]", flags=_re.NOFLAG),
-                start=f"[{_globals.UUID},generate,{{section}}]",
-                stop=f"[{_globals.UUID},end]",
+                end_regex=_re.compile(rf"\[{_UUID},end\]", flags=_re.NOFLAG),
+                start=f"[{_UUID},generate,{{section}}]",
+                stop=f"[{_UUID},end]",
                 data=lambda match: match[1],
             ),
             ".md": SectionFormat(
                 start_regex=_re.compile(
-                    rf"""<!--{_globals.UUID} generate section=(["'])(.*?)\1-->""",
+                    rf"""<!--{_UUID} generate section=(["'])(.*?)\1-->""",
                     flags=_re.DOTALL,
                 ),
-                end_regex=_re.compile(rf"<!--/{_globals.UUID}-->", flags=_re.NOFLAG),
-                start=f'<!--{_globals.UUID} generate section="{{section}}"-->',
-                stop=f"<!--/{_globals.UUID}-->",
+                end_regex=_re.compile(rf"<!--/{_UUID}-->", flags=_re.NOFLAG),
+                start=f'<!--{_UUID} generate section="{{section}}"-->',
+                stop=f"<!--/{_UUID}-->",
                 data=lambda match: match[2],
             ),
         }
@@ -171,7 +170,7 @@ class FileSection:
         async with (
             _FileSectionIO(self)
             if self.section
-            else await _anyio.open_file(self.path, mode="r+t", **_globals.OPEN_OPTIONS)
+            else await _anyio.open_file(self.path, mode="r+t", **_OPEN_TXT_OPTS)
         ) as file:
             yield file
 
@@ -229,7 +228,7 @@ class _FileSectionCache(dict[_anyio.Path, _typing.Awaitable[_FileSectionCacheDat
                 mod_time = (await _asyncstdlib.sync(_os.stat)(key)).st_mtime_ns
                 if mod_time != cache.mod_time:
                     async with await _anyio.open_file(
-                        key, mode="rt", **_globals.OPEN_OPTIONS
+                        key, mode="rt", **_OPEN_TXT_OPTS
                     ) as file:
                         text = await file.read()
                     sections = dict[str, tuple[slice, str]]()
@@ -324,7 +323,7 @@ class _FileSectionIO(_io.StringIO):
 
     async def __aenter__(self):
         self.__file = await _anyio.open_file(
-            self.__closure.path, mode="r+t", **_globals.OPEN_OPTIONS
+            self.__closure.path, mode="r+t", **_OPEN_TXT_OPTS
         )
         try:
             self.__slice, self.__initial_value = (

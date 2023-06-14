@@ -1,16 +1,15 @@
 # -*- coding: UTF-8 -*-
+from .. import UUID as _UUID
 import ast as _ast
 import contextlib as _contextlib
 import types as _types
 import typing as _typing
 
-from .. import globals as _globals
-
 
 @_typing.final
 class Environment:
     ENV_NAME: _typing.ClassVar = "__env__"
-    ENTRY: _typing.ClassVar = f"_{_globals.UUID.replace('-', '_')}"
+    ENTRY: _typing.ClassVar = f"_{_UUID.replace('-', '_')}"
     ENTRY_TEMPLATE: _typing.ClassVar = f"""async def {ENTRY}(): pass
 {ENV_NAME}.{ENTRY} = {ENTRY}"""
     __slots__: _typing.ClassVar = (

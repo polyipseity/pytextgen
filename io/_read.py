@@ -1,5 +1,11 @@
 # -*- coding: UTF-8 -*-
-from .. import NAME as _NAME, globals as _globals, util as _util
+from .. import (
+    FLASHCARD_EASE_DEFAULT as _FC_EASE_DEF,
+    NAME as _NAME,
+    OPEN_TEXT_OPTIONS as _OPEN_TXT_OPTS,
+    UUID as _UUID,
+    util as _util,
+)
 from .util import FileSection as _FSect
 from .virenv import util as _vutil
 from ._env import Environment as _Env
@@ -53,9 +59,7 @@ class Reader(metaclass=_abc.ABCMeta):
     async def new(cls, *, path: _anyio.Path, options: _GenOpts):
         _, ext = _os.path.splitext(path)
         ret = cls.REGISTRY[ext](path=path, options=options)
-        async with await _anyio.open_file(
-            path, mode="rt", **_globals.OPEN_OPTIONS
-        ) as io:
+        async with await _anyio.open_file(path, mode="rt", **_OPEN_TXT_OPTS) as io:
             await ret.read(await io.read())
         return ret
 
@@ -200,7 +204,7 @@ class MarkdownReader:
     __slots__: _typing.ClassVar = ("__codes", "__library_codes", "__options", "__path")
 
     START: _typing.ClassVar = _re.compile(
-        rf"```Python\n# {_globals.UUID} generate (data|module)", _re.NOFLAG
+        rf"```Python\n# {_UUID} generate (data|module)", _re.NOFLAG
     )
     STOP: _typing.ClassVar = _re.compile(r"```", _re.NOFLAG)
     IMPORT: _typing.ClassVar = _re.compile(r"# import (.+)$", _re.MULTILINE)
@@ -298,7 +302,7 @@ class MarkdownReader:
                                             type(self.state).element_type(
                                                 date=_datetime.date.today(),
                                                 interval=1,
-                                                ease=_globals.FLASHCARD_EASE_DEFAULT,
+                                                ease=_FC_EASE_DEF,
                                             ),
                                             diff,
                                         ),
