@@ -1,2 +1,6 @@
 # -*- coding: UTF-8 -*-
-# SPDX-License-Identifier: AGPL-3.0-or-later
+from distutils import version as _distutils_version
+
+# update `pyproject.toml`
+NAME = "pytextgen"
+VERSION = _distutils_version.StrictVersion("6.1.0")

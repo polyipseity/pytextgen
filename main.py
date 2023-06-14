@@ -1,12 +1,11 @@
 # -*- coding: UTF-8 -*-
+from . import VERSION as _VER
+from .clear import main as _clear_main
+from .generate import main as _generate_main
 import argparse as _argparse
 import functools as _functools
 import sys as _sys
 import typing as _typing
-
-from . import info as _info
-from .clear import main as _clear_main
-from .generate import main as _generate_main
 
 
 def parser(
@@ -29,7 +28,7 @@ def parser(
         "-v",
         "--version",
         action="version",
-        version=f"{prog} v{_info.VERSION}",
+        version=f"{prog} v{_VER}",
         help="print version and exit",
     )
     subparsers = parser.add_subparsers(

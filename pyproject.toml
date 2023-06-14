@@ -2,6 +2,7 @@
 requires = ["setuptools>=65.6.3",]
 build-backend = "setuptools.build_meta"
 
+# update `__init__.py`
 [project]
 authors = [
 	{name = "William So", email = "polyipseity@gmail.com"},
@@ -47,4 +48,4 @@ repository = "https://github.com/polyipseity/pytextgen.git"
 package-dir = {pytextgen = "."}
 
 [tool.setuptools.dynamic]
-version = {attr = "info.VERSION"}
+version = {attr = "VERSION"}

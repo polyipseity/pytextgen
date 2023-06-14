@@ -1,4 +1,5 @@
 # -*- coding: UTF-8 -*-
+from .. import VERSION as _VER, io as _io, util as _util
 import anyio as _anyio
 import argparse as _argparse
 import asyncio as _asyncio
@@ -9,8 +10,6 @@ import itertools as _itertools
 import logging as _logging
 import sys as _sys
 import typing as _typing
-
-from .. import info as _info, io as _io, util as _util
 
 
 @_typing.final
@@ -111,7 +110,7 @@ def parser(
         "-v",
         "--version",
         action="version",
-        version=f"{prog} v{_info.VERSION}",
+        version=f"{prog} v{_VER}",
         help="print version and exit",
     )
     t_group = parser.add_mutually_exclusive_group()

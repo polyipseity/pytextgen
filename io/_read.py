@@ -1,4 +1,10 @@
 # -*- coding: UTF-8 -*-
+from .. import NAME as _NAME, globals as _globals, util as _util
+from .util import FileSection as _FSect
+from .virenv import util as _vutil
+from ._env import Environment as _Env
+from ._options import GenOpts as _GenOpts
+from ._write import PythonWriter as _PyWriter, Writer as _Writer
 import abc as _abc
 import ast as _ast
 import anyio as _anyio
@@ -21,13 +27,6 @@ import types as _types
 import typing as _typing
 from unittest import mock as _unittest_mock
 import weakref as _weakref
-
-from .. import globals as _globals, info as _info, util as _util
-from .util import FileSection as _FSect
-from .virenv import util as _vutil
-from ._env import Environment as _Env
-from ._options import GenOpts as _GenOpts
-from ._write import PythonWriter as _PyWriter, Writer as _Writer
 
 _PYTHON_ENV_BUILTINS_EXCLUDE: _typing.AbstractSet[str] = frozenset(
     # constants: https://docs.python.org/library/constants.html
@@ -165,9 +164,7 @@ def _Python_env(
                 modules = dict[str, _types.ModuleType]()
                 old_name = module.__name__
                 for mod in _util.deep_foreach_module(module):
-                    mod.__name__ = new_name = mod.__name__.replace(
-                        old_name, _info.NAME, 1
-                    )
+                    mod.__name__ = new_name = mod.__name__.replace(old_name, _NAME, 1)
                     new_name_parts = new_name.split(".")
                     new_basename = new_name_parts.pop()
                     try:
