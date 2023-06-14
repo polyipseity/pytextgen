@@ -1,5 +1,5 @@
 # -*- coding: UTF-8 -*-
-from .. import VERSION as _VER, io as _io, util as _util
+from .. import LOGGER as _LOGGER, VERSION as _VER, io as _io, util as _util
 import anyio as _anyio
 import argparse as _argparse
 import asyncio as _asyncio
@@ -7,7 +7,6 @@ import dataclasses as _dataclasses
 import enum as _enum
 import functools as _functools
 import itertools as _itertools
-import logging as _logging
 import sys as _sys
 import typing as _typing
 
@@ -47,7 +46,7 @@ async def main(args: Arguments):
         try:
             return (await _io.Reader.cached(path=input, options=args.options)).pipe()
         except Exception:
-            _logging.exception(f"Exception reading file: {input}")
+            _LOGGER.exception(f"Exception reading file: {input}")
             return ExitCode.READ_ERROR
 
     def reduce_read_result(
@@ -73,12 +72,12 @@ async def main(args: Arguments):
         try:
             await write.__aenter__()
         except Exception:
-            _logging.exception(f"Error while validation: {writer}")
+            _LOGGER.exception(f"Error while validation: {writer}")
             return ExitCode.VALIDATE_ERROR
         try:
             await write.__aexit__(None, None, None)
         except Exception:
-            _logging.exception(f"Error while writing: {writer}")
+            _LOGGER.exception(f"Error while writing: {writer}")
             return ExitCode.WRITE_ERROR
         return ExitCode(0)
 

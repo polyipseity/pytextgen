@@ -1,6 +1,6 @@
 # -*- coding: UTF-8 -*-
 from __future__ import annotations
-from . import OPEN_TEXT_OPTIONS as _OPEN_TXT_OPTS
+from . import LOGGER as _LOGGER, OPEN_TEXT_OPTIONS as _OPEN_TXT_OPTS
 import abc as _abc
 import anyio as _anyio
 import ast as _ast
@@ -13,7 +13,6 @@ import importlib as _importlib
 import inspect as _inspect
 import itertools as _itertools
 import json as _json
-import logging as _logging
 import marshal as _marshal
 import operator as _operator
 import os as _os
@@ -415,7 +414,7 @@ class CompileCache:
             try:
                 file = await _anyio.open_file(path, mode="rb")
             except OSError | ValueError:
-                _logging.exception(f"Cannot open code cache: {path}")
+                _LOGGER.exception(f"Cannot open code cache: {path}")
                 return
             try:
                 try:
@@ -423,7 +422,7 @@ class CompileCache:
                     if code is None:
                         raise ValueError
                 except EOFError | ValueError | TypeError:
-                    _logging.exception(f"Cannot load code cache: {path}")
+                    _LOGGER.exception(f"Cannot load code cache: {path}")
                     return
             finally:
                 await file.aclose()
@@ -464,7 +463,7 @@ class CompileCache:
                 try:
                     await cache_file.write(_marshal.dumps(cache.code))
                 except ValueError:
-                    _logging.exception(f"Cannot save cache with key: {key}")
+                    _LOGGER.exception(f"Cannot save cache with key: {key}")
                     await cache_file.aclose()
                     try:
                         await asyncify(_os.remove)(cache_path)

@@ -1,12 +1,11 @@
 # -*- coding: UTF-8 -*-
-from .. import VERSION as _VER, io as _io
+from .. import LOGGER as _LOGGER, VERSION as _VER, io as _io
 import anyio as _anyio
 import argparse as _argparse
 import asyncio as _asyncio
 import dataclasses as _dataclasses
 import enum as _enum
 import functools as _functools
-import logging as _logging
 import sys as _sys
 import typing as _typing
 
@@ -47,7 +46,7 @@ async def main(args: Arguments) -> _typing.NoReturn:
             async with _io.ClearWriter(input, options=options).write():
                 pass
         except Exception:
-            _logging.exception(f"Exception writing file: {input}")
+            _LOGGER.exception(f"Exception writing file: {input}")
             return ExitCode.ERROR
         return ExitCode(0)
 
