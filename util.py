@@ -1,5 +1,4 @@
 # -*- coding: UTF-8 -*-
-from __future__ import annotations
 from . import LOGGER as _LOGGER, OPEN_TEXT_OPTIONS as _OPEN_TXT_OPTS
 import abc as _abc
 import anyio as _anyio
@@ -320,8 +319,8 @@ class CompileCache:
 
     @_typing.final
     class MetadataEntry(_typing.TypedDict):
-        key: CompileCache.MetadataKey
-        value: CompileCache.MetadataValue
+        key: "CompileCache.MetadataKey"
+        value: "CompileCache.MetadataValue"
 
     @_typing.final
     @_dataclasses.dataclass(
@@ -344,10 +343,10 @@ class CompileCache:
         optimize: int
 
         @classmethod
-        def from_metadata(cls, data: CompileCache.MetadataKey) -> _typing.Self:
+        def from_metadata(cls, data: "CompileCache.MetadataKey") -> _typing.Self:
             return cls(**data)
 
-        def to_metadata(self) -> CompileCache.MetadataKey:
+        def to_metadata(self) -> "CompileCache.MetadataKey":
             return CompileCache.MetadataKey(**_dataclasses.asdict(self))
 
     @_typing.final
@@ -363,7 +362,7 @@ class CompileCache:
         slots=True,
     )
     class CacheEntry:
-        value: CompileCache.MetadataValue
+        value: "CompileCache.MetadataValue"
         code: _types.CodeType
 
     @classmethod
