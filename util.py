@@ -282,12 +282,12 @@ assert issubclass(IteratorSequence, _typing.Sequence)
 class Compiler(_typing.Protocol):
     def __call__(
         self,
-        source: str
+        source: """str
         | _typeshed.ReadableBuffer
         | _ast.Module
         | _ast.Expression
-        | _ast.Interactive,
-        filename: str | _typeshed.ReadableBuffer | _os.PathLike[_typing.Any],
+        | _ast.Interactive""",
+        filename: "str | _typeshed.ReadableBuffer | _os.PathLike[_typing.Any]",
         mode: str,
         flags: int,
         dont_inherit: bool = ...,
@@ -495,12 +495,12 @@ class CompileCache:
 
     def compile(
         self,
-        source: str
+        source: """str
         | _typeshed.ReadableBuffer
         | _ast.Module
         | _ast.Expression
-        | _ast.Interactive,
-        filename: str | _typeshed.ReadableBuffer | _os.PathLike[_typing.Any],
+        | _ast.Interactive""",
+        filename: "str | _typeshed.ReadableBuffer | _os.PathLike[_typing.Any]",
         mode: str,
         flags: int = 0,
         dont_inherit: bool = False,
