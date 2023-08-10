@@ -10,6 +10,7 @@ from ast import (
     unparse as _unparse,
 )
 from asyncio import gather as _gather, get_running_loop as _run_loop
+from asyncstdlib import sync as _sync
 from concurrent.futures import Executor as _Executor, ThreadPoolExecutor as _TPExecutor
 from contextlib import asynccontextmanager as _actxmgr
 from dataclasses import asdict as _asdict, dataclass as _dc
@@ -112,14 +113,6 @@ def ignore_args(func: _Call[[], _T]) -> _Call[..., _T]:
 
 def tuple1(var: _T) -> tuple[_T]:
     return (var,)
-
-
-def asyncify(func: _Call[..., _T]) -> _Call[..., _Await[_T]]:
-    @_wraps(func)
-    async def run(*args: _Any, **kwargs: _Any):
-        return await _run_loop().run_in_executor(None, _partial(func, *args, **kwargs))
-
-    return run
 
 
 @_actxmgr
@@ -477,7 +470,7 @@ class CompileCache:
             cache_path = folder / cache.value["cache_name"]
             if cur_time - cache.value["access_time"] >= self.__TIMEOUT:
                 try:
-                    await asyncify(_rm)(cache_path)
+                    await _sync(_rm)(cache_path)
                 except FileNotFoundError:
                     pass
                 return
@@ -491,7 +484,7 @@ class CompileCache:
                     _LOGGER.exception(f"Cannot save cache with key: {key}")
                     await cache_file.aclose()
                     try:
-                        await asyncify(_rm)(cache_path)
+                        await _sync(_rm)(cache_path)
                     except FileNotFoundError:
                         pass
                     return
