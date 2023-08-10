@@ -1,23 +1,34 @@
 # -*- coding: UTF-8 -*-
-from .. import LOGGER as _LOGGER, VERSION as _VER, io as _io
-import anyio as _anyio
-import argparse as _argparse
-import asyncio as _asyncio
-import dataclasses as _dataclasses
-import enum as _enum
-import functools as _functools
-import sys as _sys
-import typing as _typing
+from .. import LOGGER as _LOGGER, VERSION as _VER
+from ..io import ClearOpts as _ClrOpts, ClearType as _ClrT, ClearWriter as _ClrWriter
+from anyio import Path as _Path
+from argparse import (
+    ArgumentParser as _ArgParser,
+    Namespace as _NS,
+    ONE_OR_MORE as _ONE_OR_MORE,
+)
+from asyncio import gather as _gather
+from dataclasses import dataclass as _dc
+from enum import IntFlag as _IntFlg, auto as _auto, unique as _unq
+from functools import partial as _partial, reduce as _reduce, wraps as _wraps
+from sys import exit as _exit, modules as _mods
+from typing import (
+    AbstractSet as _ASet,
+    Callable as _Call,
+    ClassVar as _ClsVar,
+    Sequence as _Seq,
+    final as _fin,
+)
 
 
-@_typing.final
-@_enum.unique
-class ExitCode(_enum.IntFlag):
-    ERROR: _typing.ClassVar = _enum.auto()
+@_fin
+@_unq
+class ExitCode(_IntFlg):
+    ERROR: _ClsVar = _auto()
 
 
-@_typing.final
-@_dataclasses.dataclass(
+@_fin
+@_dc(
     init=True,
     repr=True,
     eq=True,
@@ -29,45 +40,41 @@ class ExitCode(_enum.IntFlag):
     slots=True,
 )
 class Arguments:
-    inputs: _typing.Sequence[_anyio.Path]
-    types: _typing.AbstractSet[_io.ClearType]
+    inputs: _Seq[_Path]
+    types: _ASet[_ClrT]
 
     def __post_init__(self):
         object.__setattr__(self, "inputs", tuple(self.inputs))
         object.__setattr__(self, "types", frozenset(self.types))
 
 
-async def main(args: Arguments) -> _typing.NoReturn:
+async def main(args: Arguments):
     exit_code = ExitCode(0)
-    options = _io.ClearOpts(types=args.types)
+    options = _ClrOpts(types=args.types)
 
-    async def write(input: _anyio.Path):
+    async def write(input: _Path):
         try:
-            async with _io.ClearWriter(input, options=options).write():
+            async with _ClrWriter(input, options=options).write():
                 pass
         except Exception:
             _LOGGER.exception(f"Exception writing file: {input}")
             return ExitCode.ERROR
         return ExitCode(0)
 
-    exit_code = _functools.reduce(
+    exit_code = _reduce(
         lambda left, right: left | right,
-        await _asyncio.gather(*map(write, args.inputs)),
+        await _gather(*map(write, args.inputs)),
         exit_code,
     )
-    _sys.exit(exit_code)
+    _exit(exit_code)
 
 
-def parser(
-    parent: _typing.Callable[..., _argparse.ArgumentParser] | None = None,
-) -> _argparse.ArgumentParser:
-    prog0: str | None = _sys.modules[__name__].__package__
-    prog: str = prog0 if prog0 else __name__
+def parser(parent: _Call[..., _ArgParser] | None = None):
+    prog0 = _mods[__name__].__package__
+    prog = prog0 if prog0 else __name__
     del prog0
 
-    parser: _argparse.ArgumentParser = (
-        _argparse.ArgumentParser if parent is None else parent
-    )(
+    parser = (_ArgParser if parent is None else parent)(
         prog=f"python -m {prog}",
         description="clear generated text in input",
         add_help=True,
@@ -85,28 +92,28 @@ def parser(
         "-t",
         "--type",
         action="store",
-        nargs=_argparse.ONE_OR_MORE,
-        choices=_io.ClearType.__members__.values(),
-        type=_io.ClearType,
-        default=frozenset({_io.ClearType.CONTENT}),
+        nargs=_ONE_OR_MORE,
+        choices=_ClrT.__members__.values(),
+        type=_ClrT,
+        default=frozenset({_ClrT.CONTENT}),
         dest="types",
         help="list of type(s) of data to clear",
     )
     parser.add_argument(
         "inputs",
         action="store",
-        nargs=_argparse.ONE_OR_MORE,
-        type=_anyio.Path,
+        nargs=_ONE_OR_MORE,
+        type=_Path,
         help="sequence of input(s) to read",
     )
 
-    @_functools.wraps(main)
-    async def invoke(args: _argparse.Namespace) -> _typing.NoReturn:
+    @_wraps(main)
+    async def invoke(args: _NS):
         await main(
             Arguments(
-                inputs=await _asyncio.gather(
+                inputs=await _gather(
                     *map(
-                        _functools.partial(_anyio.Path.resolve, strict=True),
+                        _partial(_Path.resolve, strict=True),
                         args.inputs,
                     )
                 ),

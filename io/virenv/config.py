@@ -1,11 +1,17 @@
 # -*- coding: UTF-8 -*-
-import dataclasses as _dataclasses
-import types as _types
-import typing as _typing
+from dataclasses import dataclass as _dc, field as _field
+from typing import (
+    Callable as _Call,
+    ClassVar as _ClsVar,
+    Mapping as _Map,
+    MutableMapping as _MMap,
+    Self as _Self,
+    final as _fin,
+)
 
 
-@_typing.final
-@_dataclasses.dataclass(
+@_fin
+@_dc(
     init=True,
     repr=True,
     eq=True,
@@ -17,20 +23,16 @@ import typing as _typing
     slots=True,
 )
 class FlashcardSeparatorType:
-    OPTIONS: _typing.ClassVar[
-        _typing.Mapping[str, _typing.Callable[[_typing.Self, bool], None]]
-    ] = _types.MappingProxyType(
-        {
-            "r": lambda self, value: object.__setattr__(self, "reversible", value),
-            "m": lambda self, value: object.__setattr__(self, "multiline", value),
-        }
-    )
+    OPTIONS: _ClsVar[_Map[str, _Call[[_Self, bool], None]]] = {
+        "r": lambda self, value: object.__setattr__(self, "reversible", value),
+        "m": lambda self, value: object.__setattr__(self, "multiline", value),
+    }
 
     reversible: bool
     multiline: bool
 
     @classmethod
-    def parse(cls, options: str | _typing.Self) -> _typing.Self:
+    def parse(cls, options: str | _Self):
         if not isinstance(options, str):
             return options
         self = cls(reversible=False, multiline=False)
@@ -51,8 +53,8 @@ class FlashcardSeparatorType:
         return self
 
 
-@_typing.final
-@_dataclasses.dataclass(
+@_fin
+@_dc(
     init=True,
     repr=True,
     eq=True,
@@ -65,9 +67,7 @@ class FlashcardSeparatorType:
 )
 class Configuration:
     cloze_token: tuple[str, str] = ("{{", "}}")
-    flashcard_separators: _typing.MutableMapping[
-        FlashcardSeparatorType, str
-    ] = _dataclasses.field(
+    flashcard_separators: _MMap[FlashcardSeparatorType, str] = _field(
         default_factory=lambda: {
             FlashcardSeparatorType.parse(""): "::",
             FlashcardSeparatorType.parse("r"): ":::",

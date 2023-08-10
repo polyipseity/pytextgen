@@ -1,24 +1,29 @@
 # -*- coding: UTF-8 -*-
-import collections as _collections
-import dataclasses as _dataclasses
-import re as _re
-import types as _types
-import typing as _typing
-
 from ..util import constant as _const
 from ._misc import Tag as _Tag
+from collections import defaultdict as _defdict
+from dataclasses import KW_ONLY as _KW_ONLY, dataclass as _dc
+from re import NOFLAG as _NOFLAG, compile as _re_comp, escape as _re_esc
+from typing import (
+    Any as _Any,
+    ClassVar as _ClsVar,
+    Iterable as _Iter,
+    Literal as _Lit,
+    MutableSequence as _MSeq,
+    Self as _Self,
+    final as _fin,
+    overload as _overload,
+)
 
 
-@_typing.final
+@_fin
 class TextCode:
-    __slots__: _typing.ClassVar = ("__blocks", "__by_tag")
-    ESCAPES: _typing.ClassVar = frozenset({"\\", "{", "}", ":"})
-    ESCAPE_REGEX: _typing.ClassVar = _re.compile(
-        rf"{'|'.join(map(_re.escape, ESCAPES))}", flags=_re.NOFLAG
-    )
+    __slots__: _ClsVar = ("__blocks", "__by_tag")
+    ESCAPES: _ClsVar = frozenset({"\\", "{", "}", ":"})
+    ESCAPE_REGEX: _ClsVar = _re_comp(rf"{'|'.join(map(_re_esc, ESCAPES))}", _NOFLAG)
 
-    @_typing.final
-    @_dataclasses.dataclass(
+    @_fin
+    @_dc(
         init=True,
         repr=True,
         eq=True,
@@ -31,27 +36,27 @@ class TextCode:
     )
     class Block:
         text: str
-        _: _dataclasses.KW_ONLY
+        _: _KW_ONLY
         char: int
         tag: str = ""
 
         @property
-        def special(self) -> bool:
+        def special(self):
             return bool(self.tag)
 
         @property
-        def common(self) -> bool:
+        def common(self):
             return not self.special
 
-        def __str__(self) -> str:
+        def __str__(self):
             if self.special:
                 return f"{{{self.tag}:{TextCode.escape(self.text)}}}"
             if self.text:
                 return TextCode.escape(self.text)
             return "{:}"
 
-    @_typing.final
-    @_dataclasses.dataclass(
+    @_fin
+    @_dc(
         init=True,
         repr=True,
         eq=True,
@@ -66,44 +71,34 @@ class TextCode:
         idx: int
         block: "TextCode.Block"
 
-    def __init__(self, blocks: _typing.Iterable[Block]) -> None:
-        self.__blocks: _typing.Sequence[TextCode.Block] = tuple(blocks)
-        by_tag = _collections.defaultdict[
-            str, _typing.MutableSequence[TextCode.ByTagValue]
-        ](list)
+    def __init__(self, blocks: _Iter[Block]):
+        self.__blocks = tuple(blocks)
+        by_tag = _defdict[str, _MSeq[TextCode.ByTagValue]](list)
         for idx, block in enumerate(self.blocks):
             by_tag[block.tag].append(TextCode.ByTagValue(idx=idx, block=block))
-        self.__by_tag: _typing.Mapping[
-            str, _typing.Sequence[TextCode.ByTagValue]
-        ] = _types.MappingProxyType(
-            _collections.defaultdict(
-                _const(()), {k: tuple(v) for k, v in by_tag.items()}
-            )
-        )
+        self.__by_tag = _defdict(_const(()), {k: tuple(v) for k, v in by_tag.items()})
 
-    def __repr__(self) -> str:
+    def __repr__(self):
         return f"{type(self).__qualname__}(blocks={self.blocks!r})"
 
-    def __str__(self) -> str:
+    def __str__(self):
         return "".join(map(str, self.blocks))
 
     @property
-    def blocks(self) -> _typing.Sequence[Block]:
+    def blocks(self):
         return self.__blocks
 
     @property
-    def by_tag(
-        self,
-    ) -> _typing.Mapping[str, _typing.Sequence[ByTagValue]]:
+    def by_tag(self):
         return self.__by_tag
 
     @classmethod
-    def escape(cls, text: str, /, *, block: bool = False) -> str:
+    def escape(cls, text: str, /, *, block: bool = False):
         ret = cls.ESCAPE_REGEX.sub(lambda match: Rf"\{match[0]}", text)
         return f"{{:{ret}}}" if block else ret
 
-    @_typing.final
-    @_dataclasses.dataclass(
+    @_fin
+    @_dc(
         init=True,
         repr=True,
         eq=True,
@@ -115,64 +110,64 @@ class TextCode:
         slots=True,
     )
     class __CompilerState:
-        Tag = _typing.Literal["block", "escape", "normal", "tag"]
-        __Tag0 = _typing.Literal["normal", "tag"]
-        __Tag1 = _typing.Literal["block"]
-        __Tag2 = _typing.Literal["escape"]
+        Tag = _Lit["block", "escape", "normal", "tag"]
+        __Tag0 = _Lit["normal", "tag"]
+        __Tag1 = _Lit["block"]
+        __Tag2 = _Lit["escape"]
         tag: Tag
-        data: _typing.Any
+        data: _Any
 
-        @_typing.overload
+        @_overload
         @classmethod
-        def wrap(cls, tag: __Tag0, data: str) -> _typing.Self:
+        def wrap(cls, tag: __Tag0, data: str) -> _Self:
             ...
 
-        @_typing.overload
+        @_overload
         def unwrap(self, tag: __Tag0) -> str:
             ...
 
-        @_typing.overload
+        @_overload
         def mutate(self, tag: __Tag0, data: str) -> None:
             ...
 
-        @_typing.overload
+        @_overload
         @classmethod
-        def wrap(cls, tag: __Tag1, data: tuple[str, str]) -> _typing.Self:
+        def wrap(cls, tag: __Tag1, data: tuple[str, str]) -> _Self:
             ...
 
-        @_typing.overload
+        @_overload
         def unwrap(self, tag: __Tag1) -> tuple[str, str]:
             ...
 
-        @_typing.overload
+        @_overload
         def mutate(self, tag: __Tag1, data: tuple[str, str]) -> None:
             ...
 
-        @_typing.overload
+        @_overload
         @classmethod
-        def wrap(cls, tag: __Tag2, data: __Tag0 | __Tag1) -> _typing.Self:
+        def wrap(cls, tag: __Tag2, data: __Tag0 | __Tag1) -> _Self:
             ...
 
-        @_typing.overload
+        @_overload
         def unwrap(self, tag: __Tag2) -> __Tag0 | __Tag1:
             ...
 
-        @_typing.overload
+        @_overload
         def mutate(self, tag: __Tag2, data: __Tag0 | __Tag1) -> None:
             ...
 
         @classmethod
-        def wrap(cls, tag: Tag, data: _typing.Any):
+        def wrap(cls, tag: Tag, data: _Any):
             return cls(tag=tag, data=data)
 
         def unwrap(self, tag: Tag):
             return self.data
 
-        def mutate(self, tag: Tag, data: _typing.Any):
+        def mutate(self, tag: Tag, data: _Any):
             self.data = data
 
     @classmethod
-    def compiler(cls, code: str) -> _typing.Iterator[Block]:
+    def compiler(cls, code: str):
         stack = list[TextCode.__CompilerState]()
         stack.append(cls.__CompilerState.wrap("normal", ""))
         for index, char in enumerate(
@@ -239,34 +234,23 @@ class TextCode:
                 raise ValueError(f'Unexpected state "{state}": {code}')
 
     @classmethod
-    def compile(cls, text: str) -> _typing.Self:
+    def compile(cls, text: str):
         return cls(cls.compiler(text))
 
 
-def code_to_strs(code: TextCode, /, *, tag: str = _Tag.COMMON) -> _typing.Iterator[str]:
+def code_to_strs(code: TextCode, /, *, tag: str = _Tag.COMMON):
     return (block.text for block in code.blocks if block.common or block.tag == tag)
 
 
-def code_to_str(code: TextCode, /, *, tag: str = _Tag.COMMON) -> str:
+def code_to_str(code: TextCode, /, *, tag: str = _Tag.COMMON):
     return "".join(code_to_strs(code, tag=tag))
 
 
-def affix_code(
-    code: TextCode,
-    /,
-    *,
-    prefix: str = "",
-    suffix: str = "",
-) -> TextCode:
+def affix_code(code: TextCode, /, *, prefix: str = "", suffix: str = ""):
     return code.compile("".join((prefix, str(code), suffix)))
 
 
-def separate_code_by_tag(
-    code: TextCode,
-    /,
-    *,
-    tag: str,
-) -> _typing.Iterator[TextCode]:
+def separate_code_by_tag(code: TextCode, /, *, tag: str):
     source: str = str(code)
     cur: int | None = None
     index: int

@@ -1,17 +1,17 @@
 # -*- coding: UTF-8 -*-
-import enum as _enum
-import typing as _typing
+from enum import StrEnum as _StrEnum, unique as _unq
+from typing import ClassVar as _ClsVar, final as _fin
 
 
-@_typing.final
-@_enum.unique
-class Tag(_enum.StrEnum):
-    __slots__: _typing.ClassVar = ()
+@_fin
+@_unq
+class Tag(_StrEnum):
+    __slots__: _ClsVar = ()
 
-    CLOZE_SEPARATOR: _typing.ClassVar = "cloze sep"
-    COMMENT: _typing.ClassVar = "cmt"
-    COMMON: _typing.ClassVar = ""
-    MEMORIZE: _typing.ClassVar = "mem"
-    SEMANTICS: _typing.ClassVar = "sem"
-    SEPARATOR: _typing.ClassVar = "sep"
-    TEXT: _typing.ClassVar = "text"
+    CLOZE_SEPARATOR: _ClsVar = "cloze sep"
+    COMMENT: _ClsVar = "cmt"
+    COMMON: _ClsVar = ""
+    MEMORIZE: _ClsVar = "mem"
+    SEMANTICS: _ClsVar = "sem"
+    SEPARATOR: _ClsVar = "sep"
+    TEXT: _ClsVar = "text"

@@ -1,23 +1,19 @@
 # -*- coding: UTF-8 -*-
 from . import VERSION as _VER
-from .clear import main as _clear_main
-from .generate import main as _generate_main
-import argparse as _argparse
-import functools as _functools
-import sys as _sys
-import typing as _typing
+from .clear.main import __package__ as _clear_package, parser as _clear_parser
+from .generate.main import __package__ as _generate_package, parser as _generate_parser
+from argparse import ArgumentParser as _ArgParser
+from functools import partial as _partial
+from sys import modules as _mods
+from typing import Callable as _Call
 
 
-def parser(
-    parent: _typing.Callable[..., _argparse.ArgumentParser] | None = None,
-) -> _argparse.ArgumentParser:
-    prog0: str | None = _sys.modules[__name__].__package__
-    prog: str = prog0 if prog0 else __name__
+def parser(parent: _Call[..., _ArgParser] | None = None):
+    prog0 = _mods[__name__].__package__
+    prog = prog0 if prog0 else __name__
     del prog0
 
-    parser: _argparse.ArgumentParser = (
-        _argparse.ArgumentParser if parent is None else parent
-    )(
+    parser = (_ArgParser if parent is None else parent)(
         prog=f"python -m {prog}",
         description="tools for notes",
         add_help=True,
@@ -34,14 +30,10 @@ def parser(
     subparsers = parser.add_subparsers(
         required=True,
     )
-    _generate_main.parser(
-        _functools.partial(
-            subparsers.add_parser, _generate_main.__package__.replace(f"{prog}.", "")
-        )
+    _clear_parser(
+        _partial(subparsers.add_parser, _clear_package.replace(f"{prog}.", ""))
     )
-    _clear_main.parser(
-        _functools.partial(
-            subparsers.add_parser, _clear_main.__package__.replace(f"{prog}.", "")
-        )
+    _generate_parser(
+        _partial(subparsers.add_parser, _generate_package.replace(f"{prog}.", ""))
     )
     return parser

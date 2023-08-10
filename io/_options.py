@@ -1,20 +1,19 @@
 # -*- coding: UTF-8 -*-
-import dataclasses as _dataclasses
-import enum as _enum
-import typing as _typing
-
-from .. import util as _util
-
-
-@_typing.final
-@_enum.unique
-class ClearType(_enum.StrEnum):
-    CONTENT: _typing.ClassVar = "content"
-    FLASHCARD_STATE: _typing.ClassVar = "fc_state"
+from ..util import Compiler as _Compiler
+from dataclasses import dataclass as _dc
+from enum import StrEnum as _StrEnum, unique as _unq
+from typing import AbstractSet as _ASet, ClassVar as _ClsVar, final as _fin
 
 
-@_typing.final
-@_dataclasses.dataclass(
+@_fin
+@_unq
+class ClearType(_StrEnum):
+    CONTENT: _ClsVar = "content"
+    FLASHCARD_STATE: _ClsVar = "fc_state"
+
+
+@_fin
+@_dc(
     init=True,
     repr=True,
     eq=True,
@@ -26,14 +25,14 @@ class ClearType(_enum.StrEnum):
     slots=True,
 )
 class ClearOpts:
-    types: _typing.AbstractSet[ClearType]
+    types: _ASet[ClearType]
 
     def __post_init__(self):
         object.__setattr__(self, "types", frozenset(self.types))
 
 
-@_typing.final
-@_dataclasses.dataclass(
+@_fin
+@_dc(
     init=True,
     repr=True,
     eq=True,
@@ -47,4 +46,4 @@ class ClearOpts:
 class GenOpts:
     timestamp: bool
     init_flashcards: bool
-    compiler: _util.Compiler
+    compiler: _Compiler

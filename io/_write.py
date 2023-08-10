@@ -1,67 +1,72 @@
 # -*- coding: UTF-8 -*-
 from .. import (
-    FLASHCARD_STATES_REGEX as _FC_ST_RE,
     GENERATE_COMMENT_FORMAT as _GEN_CMT_FMT,
     GENERATE_COMMENT_REGEX as _GEN_CMT_RE,
-    util as _util,
+    FLASHCARD_STATES_REGEX as _FC_ST_RE,
 )
+from ..io import ClearOpts as _ClrOpts, ClearType as _ClrT, GenOpts as _GenOpts
+from ..util import abc_subclasshook_check as _abc_sch_chk, wrap_async as _wrap_a
 from .util import (
-    FileSection as _FSect,
     AnyTextIO as _ATxtIO,
+    FileSection as _FSect,
     Result as _Ret,
     lock_file as _lck_f,
 )
 from ._env import Environment as _Env
-from ._options import ClearOpts as _ClrOpts, ClearType as _ClrT, GenOpts as _GenOpts
-import abc as _abc
-import anyio as _anyio
-import asyncio as _asyncio
-import contextlib as _contextlib
-import datetime as _datetime
-import re as _re
-import types as _types
-import typing as _typing
+from ._options import GenOpts as _GenOpts
+from abc import ABCMeta as _ABCM, abstractmethod as _amethod
+from anyio import Path as _Path
+from asyncio import TaskGroup as _TskGrp, gather as _gather
+from contextlib import (
+    AbstractAsyncContextManager as _AACtxMgr,
+    asynccontextmanager as _actxmgr,
+    nullcontext as _nullctx,
+)
+from datetime import datetime as _datetime
+from re import compile as _re_comp
+from types import CodeType as _Code
+from typing import Any as _Any, ClassVar as _ClsVar, Iterable as _Iter
 
 
-class Writer(metaclass=_abc.ABCMeta):
-    __slots__: _typing.ClassVar = ()
+class Writer(metaclass=_ABCM):
+    __slots__: _ClsVar = ()
 
-    @_abc.abstractmethod
-    def write(self) -> _contextlib.AbstractAsyncContextManager[None]:
+    @_amethod
+    def write(self) -> _AACtxMgr[None]:
         raise NotImplementedError(self)
 
     @classmethod
-    def __subclasshook__(cls, subclass: type) -> bool | _types.NotImplementedType:
-        return _util.abc_subclasshook_check(
-            Writer, cls, subclass, names=(cls.write.__name__,)
-        )
+    def __subclasshook__(cls, subclass: type):
+        return _abc_sch_chk(Writer, cls, subclass, names=(cls.write.__name__,))
 
 
 @Writer.register
 class ClearWriter:
-    __slots__: _typing.ClassVar = ("__options", "__path")
-    __FLASHCARD_STATES_REGEX = _re.compile(r" ?" + _FC_ST_RE.pattern, _FC_ST_RE.flags)
+    __slots__: _ClsVar = ("__options", "__path")
+    __FLASHCARD_STATES_REGEX: _ClsVar = _re_comp(
+        r" ?" + _FC_ST_RE.pattern, _FC_ST_RE.flags
+    )
 
-    def __init__(self, path: _anyio.Path, *, options: _ClrOpts):
+    def __init__(self, path: _Path, *, options: _ClrOpts):
         self.__path = path
         self.__options = options
 
-    @_contextlib.asynccontextmanager
+    @_actxmgr
     async def write(self):
         if _ClrT.CONTENT in self.__options.types:
 
             async def process(io: _ATxtIO):
-                await _util.wrap_async(io.truncate())
+                await _wrap_a(io.truncate())
 
         elif _ClrT.FLASHCARD_STATE in self.__options.types:
 
             async def process(io: _ATxtIO):
-                data = await _util.wrap_async(io.read())
-                async with _asyncio.TaskGroup() as group:
-                    group.create_task(_util.wrap_async(io.seek(0)).__await__())
+                data = await _wrap_a(io.read())
+                async with _TskGrp() as group:
+                    group.create_task(_wrap_a(io.seek(0)).__await__())
                     data = self.__FLASHCARD_STATES_REGEX.sub("", data)
-                await _util.wrap_async(io.write(data))
-                await _util.wrap_async(io.truncate())
+                await _wrap_a(io.write(data))
+                await _wrap_a(io.truncate())
 
         else:
 
@@ -82,36 +87,36 @@ assert issubclass(ClearWriter, Writer)
 
 @Writer.register
 class PythonWriter:
-    __slots__: _typing.ClassVar = ("__code", "__env", "__init_codes", "__options")
+    __slots__: _ClsVar = ("__code", "__env", "__init_codes", "__options")
 
     def __init__(
         self,
-        code: _types.CodeType,
+        code: _Code,
         /,
         *,
-        init_codes: _typing.Iterable[_types.CodeType],
+        init_codes: _Iter[_Code],
         env: _Env,
         options: _GenOpts,
-    ) -> None:
+    ):
         self.__code = code
         self.__init_codes = tuple(init_codes)
         self.__env = env
         self.__options = options
 
-    def __repr__(self) -> str:
+    def __repr__(self):
         return f"{type(self).__qualname__}({self.__code!r}, env={self.__env!r}, options={self.__options!r})"
 
-    def __str__(self) -> str:
+    def __str__(self):
         return f"{type(self).__qualname__}({self.__code}, env={self.__env}, options={self.__options})"
 
-    @_contextlib.asynccontextmanager
+    @_actxmgr
     async def write(self):
-        def results0(result: _typing.Any):
+        def results0(result: _Any):
             if _Ret.isinstance(result):
                 yield result
                 return
-            if isinstance(result, _typing.Iterable):
-                result0: _typing.Iterable[_typing.Any] = result
+            if isinstance(result, _Iter):
+                result0: _Iter[_Any] = result
                 for item in result0:
                     if not _Ret.isinstance(item):
                         raise TypeError(item)
@@ -127,25 +132,21 @@ class PythonWriter:
             async def process(result: _Ret):
                 loc = result.location
                 path = loc.path
-                async with _contextlib.nullcontext() if path is None else _lck_f(path):
+                async with _nullctx() if path is None else _lck_f(path):
                     async with loc.open() as io:
-                        text = await _util.wrap_async(io.read())
+                        text = await _wrap_a(io.read())
                         timestamp = _GEN_CMT_RE.search(text)
                         if result.text != (
                             text[: timestamp.start()] + text[timestamp.end() :]
                             if timestamp
                             else text
                         ):
-                            async with _asyncio.TaskGroup() as group:
-                                group.create_task(
-                                    _util.wrap_async(io.seek(0)).__await__()
-                                )
+                            async with _TskGrp() as group:
+                                group.create_task(_wrap_a(io.seek(0)).__await__())
                                 data = "".join(
                                     (
                                         _GEN_CMT_FMT.format(
-                                            now=_datetime.datetime.now()
-                                            .astimezone()
-                                            .isoformat()
+                                            now=_datetime.now().astimezone().isoformat()
                                         )
                                         if self.__options.timestamp
                                         else text[timestamp.start() : timestamp.end()]
@@ -154,10 +155,10 @@ class PythonWriter:
                                         result.text,
                                     )
                                 )
-                            await _util.wrap_async(io.write(data))
-                            await _util.wrap_async(io.truncate())
+                            await _wrap_a(io.write(data))
+                            await _wrap_a(io.truncate())
 
-            await _asyncio.gather(*map(process, results))
+            await _gather(*map(process, results))
 
 
 assert issubclass(PythonWriter, Writer)

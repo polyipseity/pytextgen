@@ -6,35 +6,45 @@ from ... import (
 from ...util import *  # Intentional wildcard
 from ..util import *  # Intentional wildcard
 from .config import CONFIG as _CFG, FlashcardSeparatorType as _FcSepT
-import abc as _abc
-import dataclasses as _dataclasses
-import datetime as _datetime
-import re as _re
-import types as _types
-import typing as _typing
+from abc import ABCMeta as _ABCM, abstractmethod as _amethod
+from dataclasses import KW_ONLY as _KW_ONLY, dataclass as _dc, field as _field
+from datetime import date as _date
+from re import (
+    NOFLAG as _NOFLAG,
+    Pattern as _Pattern,
+    compile as _re_comp,
+    escape as _re_esc,
+)
+from typing import (
+    Any as _Any,
+    Callable as _Call,
+    ClassVar as _ClsVar,
+    Sequence as _Seq,
+    final as _fin,
+)
 
 
-def export_seq(*seq: _typing.Callable[..., _typing.Any] | type):
-    return _types.MappingProxyType({val.__name__: val for val in seq})
+def export_seq(*seq: _Call[..., _Any] | type):
+    return {val.__name__: val for val in seq}
 
 
-class FlashcardGroup(_typing.Sequence[str], metaclass=_abc.ABCMeta):
-    __slots__: _typing.ClassVar = ()
+class FlashcardGroup(_Seq[str], metaclass=_ABCM):
+    __slots__: _ClsVar = ()
 
-    @_abc.abstractmethod
+    @_amethod
     def __str__(self) -> str:
         raise NotImplementedError(self)
 
     @classmethod
-    def __subclasshook__(cls, subclass: type) -> bool | _types.NotImplementedType:
+    def __subclasshook__(cls, subclass: type):
         return abc_subclasshook_check(
             FlashcardGroup, cls, subclass, names=(cls.__str__.__name__,)
         )
 
 
-@_typing.final
+@_fin
 @FlashcardGroup.register
-@_dataclasses.dataclass(
+@_dc(
     init=True,
     repr=True,
     eq=True,
@@ -48,10 +58,10 @@ class FlashcardGroup(_typing.Sequence[str], metaclass=_abc.ABCMeta):
 class TwoSidedFlashcard:
     left: str
     right: str
-    _: _dataclasses.KW_ONLY
+    _: _KW_ONLY
     reversible: bool
 
-    def __str__(self) -> str:
+    def __str__(self):
         return _CFG.flashcard_separators[
             _FcSepT(
                 reversible=self.reversible,
@@ -59,10 +69,10 @@ class TwoSidedFlashcard:
             )
         ].join((self.left, self.right))
 
-    def __len__(self) -> int:
+    def __len__(self):
         return 2 if self.reversible else 1
 
-    def __getitem__(self, index: int) -> str:
+    def __getitem__(self, index: int):
         if self.reversible:
             if -2 > index or index >= 2:
                 raise IndexError(index)
@@ -74,9 +84,9 @@ class TwoSidedFlashcard:
 assert issubclass(TwoSidedFlashcard, FlashcardGroup)
 
 
-@_typing.final
+@_fin
 @FlashcardGroup.register
-@_dataclasses.dataclass(
+@_dc(
     init=True,
     repr=True,
     eq=True,
@@ -88,48 +98,40 @@ assert issubclass(TwoSidedFlashcard, FlashcardGroup)
     slots=True,
 )
 class ClozeFlashcardGroup:
-    __pattern_cache: _typing.ClassVar[
-        _typing.MutableMapping[tuple[str, str], _re.Pattern[str]]
-    ] = {}
+    __pattern_cache: _ClsVar = dict[tuple[str, str], _Pattern[str]]()
 
     context: str
-    _: _dataclasses.KW_ONLY
+    _: _KW_ONLY
     token: tuple[str, str] = _CFG.cloze_token
-    _clozes: _typing.Sequence[str] = _dataclasses.field(
-        init=False, repr=False, hash=False, compare=False
-    )
+    _clozes: _Seq[str] = _field(init=False, repr=False, hash=False, compare=False)
 
-    def __post_init__(self) -> None:
+    def __post_init__(self):
         try:
-            pattern: _re.Pattern[str] = self.__pattern_cache[self.token]
+            pattern = self.__pattern_cache[self.token]
         except KeyError:
-            e_token: tuple[str, str] = (
-                _re.escape(self.token[0]),
-                _re.escape(self.token[1]),
-            )
-            self.__pattern_cache[self.token] = pattern = _re.compile(
-                rf"{e_token[0]}((?:(?!{e_token[1]}).)+){e_token[1]}",
-                flags=_re.NOFLAG,
+            e_token = (_re_esc(self.token[0]), _re_esc(self.token[1]))
+            self.__pattern_cache[self.token] = pattern = _re_comp(
+                rf"{e_token[0]}((?:(?!{e_token[1]}).)+){e_token[1]}", _NOFLAG
             )
         object.__setattr__(
             self, "_clozes", tuple(match[1] for match in pattern.finditer(self.context))
         )
 
-    def __str__(self) -> str:
+    def __str__(self):
         return self.context
 
-    def __len__(self) -> int:
+    def __len__(self):
         return len(self._clozes)
 
-    def __getitem__(self, index: int) -> str:
+    def __getitem__(self, index: int):
         return self._clozes[index]
 
 
 assert issubclass(ClozeFlashcardGroup, FlashcardGroup)
 
 
-@_typing.final
-@_dataclasses.dataclass(
+@_fin
+@_dc(
     init=True,
     repr=True,
     eq=True,
@@ -141,35 +143,32 @@ assert issubclass(ClozeFlashcardGroup, FlashcardGroup)
     slots=True,
 )
 class FlashcardState:
-    FORMAT: _typing.ClassVar = "!{date},{interval},{ease}"
-    REGEX: _typing.ClassVar = _re.compile(
-        r"!(\d{4}-\d{2}-\d{2}),(\d+),(\d+)", flags=_re.NOFLAG
-    )
+    FORMAT: _ClsVar = "!{date},{interval},{ease}"
+    REGEX: _ClsVar = _re_comp(r"!(\d{4}-\d{2}-\d{2}),(\d+),(\d+)", _NOFLAG)
 
-    date: _datetime.date
+    date: _date
     interval: int
     ease: int
 
-    def __str__(self) -> str:
+    def __str__(self):
         return self.FORMAT.format(
             date=self.date, interval=self.interval, ease=self.ease
         )
 
     @classmethod
-    def compile_many(cls, text: str) -> _typing.Iterator[_typing.Self]:
-        match: _re.Match[str]
+    def compile_many(cls, text: str):
         for match in cls.REGEX.finditer(text):
             yield cls(
-                date=_datetime.date.fromisoformat(match[1]),
+                date=_date.fromisoformat(match[1]),
                 interval=int(match[2]),
                 ease=int(match[3]),
             )
 
     @classmethod
-    def compile(cls, text: str) -> _typing.Self:
-        rets: _typing.Iterator[_typing.Self] = cls.compile_many(text)
+    def compile(cls, text: str):
+        rets = cls.compile_many(text)
         try:
-            ret: _typing.Self = next(rets)
+            ret = next(rets)
         except StopIteration as ex:
             raise ValueError(f"No matches: {text}") from ex
         try:
@@ -180,28 +179,27 @@ class FlashcardState:
         return ret
 
 
-@_typing.final
+@_fin
 class FlashcardStateGroup(TypedTuple[FlashcardState], element_type=FlashcardState):
-    __slots__: _typing.ClassVar = ()
-    FORMAT: _typing.ClassVar = _FC_ST_FMT
-    REGEX: _typing.ClassVar = _FC_ST_RE
+    __slots__: _ClsVar = ()
+    FORMAT: _ClsVar = _FC_ST_FMT
+    REGEX: _ClsVar = _FC_ST_RE
 
-    def __str__(self) -> str:
+    def __str__(self):
         if self:
             return self.FORMAT.format(states="".join(map(str, self)))
         return ""
 
     @classmethod
-    def compile_many(cls, text: str) -> _typing.Iterator[_typing.Self]:
-        match: _re.Match[str]
+    def compile_many(cls, text: str):
         for match in cls.REGEX.finditer(text):
             yield cls(FlashcardState.compile_many(text[match.start() : match.end()]))
 
     @classmethod
-    def compile(cls, text: str) -> _typing.Self:
-        rets: _typing.Iterator[_typing.Self] = cls.compile_many(text)
+    def compile(cls, text: str):
+        rets = cls.compile_many(text)
         try:
-            ret: _typing.Self = next(rets)
+            ret = next(rets)
         except StopIteration as ex:
             raise ValueError(f"No matches: {text}") from ex
         try:
@@ -212,8 +210,8 @@ class FlashcardStateGroup(TypedTuple[FlashcardState], element_type=FlashcardStat
         return ret
 
 
-@_typing.final
-@_dataclasses.dataclass(
+@_fin
+@_dc(
     init=True,
     repr=True,
     eq=True,
@@ -228,5 +226,5 @@ class StatefulFlashcardGroup:
     flashcard: FlashcardGroup
     state: FlashcardStateGroup
 
-    def __str__(self) -> str:
+    def __str__(self):
         return " ".join((str(self.flashcard), str(self.state)))

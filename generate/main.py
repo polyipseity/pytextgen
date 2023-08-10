@@ -1,26 +1,39 @@
 # -*- coding: UTF-8 -*-
-from .. import LOGGER as _LOGGER, VERSION as _VER, io as _io, util as _util
-import anyio as _anyio
-import argparse as _argparse
-import asyncio as _asyncio
-import dataclasses as _dataclasses
-import enum as _enum
-import functools as _functools
-import itertools as _itertools
-import sys as _sys
-import typing as _typing
+from .. import LOGGER as _LOGGER, VERSION as _VER
+from ..io import GenOpts as _GenOpts, Reader as _Reader, Writer as _Writer
+from ..util import CompileCache as _CompCache
+from anyio import Path as _Path
+from argparse import (
+    ArgumentParser as _ArgParser,
+    Namespace as _NS,
+    ONE_OR_MORE as _ONE_OR_MORE,
+)
+from asyncio import gather as _gather
+from dataclasses import dataclass as _dc
+from enum import IntFlag as _IntFlg, auto as _auto, unique as _unq
+from functools import partial as _partial, reduce as _reduce, wraps as _wraps
+from itertools import chain as _chain
+from sys import exit as _exit, modules as _mods
+from typing import (
+    Callable as _Call,
+    ClassVar as _ClsVar,
+    Iterable as _Iter,
+    MutableSequence as _MSeq,
+    Sequence as _Seq,
+    final as _fin,
+)
 
 
-@_typing.final
-@_enum.unique
-class ExitCode(_enum.IntFlag):
-    READ_ERROR: _typing.ClassVar = _enum.auto()
-    VALIDATE_ERROR: _typing.ClassVar = _enum.auto()
-    WRITE_ERROR: _typing.ClassVar = _enum.auto()
+@_fin
+@_unq
+class ExitCode(_IntFlg):
+    READ_ERROR: _ClsVar = _auto()
+    VALIDATE_ERROR: _ClsVar = _auto()
+    WRITE_ERROR: _ClsVar = _auto()
 
 
-@_typing.final
-@_dataclasses.dataclass(
+@_fin
+@_dc(
     init=True,
     repr=True,
     eq=True,
@@ -32,26 +45,26 @@ class ExitCode(_enum.IntFlag):
     slots=True,
 )
 class Arguments:
-    inputs: _typing.Sequence[_anyio.Path]
-    options: _io.GenOpts
+    inputs: _Seq[_Path]
+    options: _GenOpts
 
     def __post_init__(self):
         object.__setattr__(self, "inputs", tuple(self.inputs))
 
 
 async def main(args: Arguments):
-    exit_code: ExitCode = ExitCode(0)
+    exit_code = ExitCode(0)
 
-    async def read(input: _anyio.Path):
+    async def read(input: _Path):
         try:
-            return (await _io.Reader.cached(path=input, options=args.options)).pipe()
+            return (await _Reader.cached(path=input, options=args.options)).pipe()
         except Exception:
             _LOGGER.exception(f"Exception reading file: {input}")
             return ExitCode.READ_ERROR
 
     def reduce_read_result(
-        left: tuple[_typing.MutableSequence[_typing.Iterable[_io.Writer]], ExitCode],
-        right: _typing.Iterable[_io.Writer] | ExitCode,
+        left: tuple[_MSeq[_Iter[_Writer]], ExitCode],
+        right: _Iter[_Writer] | ExitCode,
     ):
         seq, code = left
         if isinstance(right, ExitCode):
@@ -60,14 +73,14 @@ async def main(args: Arguments):
             seq.append(right)
         return (seq, code)
 
-    writers0, exit_code = _functools.reduce(
+    writers0, exit_code = _reduce(
         reduce_read_result,
-        await _asyncio.gather(*map(read, args.inputs)),
-        (list[_typing.Iterable[_io.Writer]](), exit_code),
+        await _gather(*map(read, args.inputs)),
+        (list[_Iter[_Writer]](), exit_code),
     )
-    writers = _itertools.chain.from_iterable(writers0)
+    writers = _chain.from_iterable(writers0)
 
-    async def write(writer: _io.Writer):
+    async def write(writer: _Writer):
         write = writer.write()
         try:
             await write.__aenter__()
@@ -81,24 +94,20 @@ async def main(args: Arguments):
             return ExitCode.WRITE_ERROR
         return ExitCode(0)
 
-    exit_code = _functools.reduce(
+    exit_code = _reduce(
         lambda left, right: left | right,
-        await _asyncio.gather(*map(write, writers)),
+        await _gather(*map(write, writers)),
         exit_code,
     )
-    _sys.exit(exit_code)
+    _exit(exit_code)
 
 
-def parser(
-    parent: _typing.Callable[..., _argparse.ArgumentParser] | None = None,
-) -> _argparse.ArgumentParser:
-    prog0: str | None = _sys.modules[__name__].__package__
-    prog: str = prog0 if prog0 else __name__
+def parser(parent: _Call[..., _ArgParser] | None = None):
+    prog0 = _mods[__name__].__package__
+    prog = prog0 if prog0 else __name__
     del prog0
 
-    parser: _argparse.ArgumentParser = (
-        _argparse.ArgumentParser if parent is None else parent
-    )(
+    parser = (_ArgParser if parent is None else parent)(
         prog=f"python -m {prog}",
         description="generate text from input",
         add_help=True,
@@ -148,8 +157,8 @@ def parser(
     code_cache_group.add_argument(
         "--code-cache",
         action="store",
-        default=_anyio.Path("./__pycache__/"),
-        type=_anyio.Path,
+        default=_Path("./__pycache__/"),
+        type=_Path,
         help="specify code cache (default: ./__pycache__/)",
         dest="code_cache",
     )
@@ -164,27 +173,24 @@ def parser(
     parser.add_argument(
         "inputs",
         action="store",
-        nargs=_argparse.ONE_OR_MORE,
-        type=_anyio.Path,
+        nargs=_ONE_OR_MORE,
+        type=_Path,
         help="sequence of input(s) to read",
     )
 
-    @_functools.wraps(main)
-    async def invoke(args: _argparse.Namespace):
-        async with _util.CompileCache(
+    @_wraps(main)
+    async def invoke(args: _NS):
+        async with _CompCache(
             folder=args.code_cache
             if args.code_cache is None
             else await args.code_cache.resolve()
         ) as cache:
             await main(
                 Arguments(
-                    inputs=await _asyncio.gather(
-                        *map(
-                            _functools.partial(_anyio.Path.resolve, strict=True),
-                            args.inputs,
-                        )
+                    inputs=await _gather(
+                        *map(_partial(_Path.resolve, strict=True), args.inputs)
                     ),
-                    options=_io.GenOpts(
+                    options=_GenOpts(
                         timestamp=args.timestamp,
                         init_flashcards=args.init_flashcards,
                         compiler=cache.compile,

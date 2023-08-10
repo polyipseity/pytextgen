@@ -1,65 +1,92 @@
 # -*- coding: UTF-8 -*-
 from . import LOGGER as _LOGGER, OPEN_TEXT_OPTIONS as _OPEN_TXT_OPTS
-import abc as _abc
-import anyio as _anyio
-import ast as _ast
-import asyncio as _asyncio
-from concurrent import futures as _concurrent_futures
-import contextlib as _contextlib
-import dataclasses as _dataclasses
-import functools as _functools
-import importlib as _importlib
-import inspect as _inspect
-import itertools as _itertools
-import json as _json
-import marshal as _marshal
-import operator as _operator
-import os as _os
-import re as _re
-import regex as _regex
-import sys as _sys
-import threading as _threading
-import time as _time
-import types as _types
-import typing as _typing
-import unicodedata as _unicodedata
-import uuid as _uuid
-from unittest import mock as _unittest_mock
-import weakref as _weakref
-
-if _typing.TYPE_CHECKING:
-    import _typeshed as _typeshed
-
-_T = _typing.TypeVar("_T")
-_T_co = _typing.TypeVar("_T_co", covariant=True)
-_T1_co = _typing.TypeVar("_T1_co", covariant=True)
-_ExtendsUnit = _typing.TypeVar("_ExtendsUnit", bound="Unit[_typing.Any]")
-_ExtendsModuleType = _typing.TypeVar("_ExtendsModuleType", bound=_types.ModuleType)
-_PUNCTUATIONS = filter(
-    lambda char: _unicodedata.category(char).startswith("P"),
-    map(chr, range(_sys.maxunicode + 1)),
+from abc import ABCMeta as _ABCM
+from anyio import Path as _Path
+from ast import (
+    AST as _AST,
+    Expression as _ASTExpr,
+    Interactive as _ASTInter,
+    Module as _ASTMod,
+    unparse as _unparse,
 )
-_PUNCTUATION_REGEX = _regex.compile(
+from asyncio import gather as _gather, get_running_loop as _run_loop
+from concurrent.futures import Executor as _Executor, ThreadPoolExecutor as _TPExecutor
+from contextlib import asynccontextmanager as _actxmgr
+from dataclasses import asdict as _asdict, dataclass as _dc
+from functools import cache as _cache, partial as _partial, wraps as _wraps
+from importlib import import_module as _import
+from inspect import isawaitable as _isawait
+from itertools import islice as _islice, starmap as _smap
+from json import JSONDecodeError as _JSONDecErr, dumps as _dumps, loads as _loads
+from marshal import dumps as _m_dumps, loads as _m_loads
+from operator import attrgetter as _attrgetter
+from os import PathLike as _PathL, remove as _rm
+from re import escape as _re_esc
+from regex import VERSION0 as _REX_VER0, compile as _rex_comp
+from sys import maxunicode as _maxunicode, modules as _mods
+from threading import Lock as _TLock
+from time import time as _time
+from types import (
+    CodeType as _Code,
+    ModuleType as _Mod,
+    TracebackType as _Tb,
+    coroutine as _coroutine,
+)
+from typing import (
+    Any as _Any,
+    Awaitable as _Await,
+    Callable as _Call,
+    Collection as _Collect,
+    ClassVar as _ClsVar,
+    Generic as _Genic,
+    Iterable as _Iter,
+    Iterator as _Itor,
+    Literal as _Lit,
+    Protocol as _Proto,
+    Self as _Self,
+    Sequence as _Seq,
+    TYPE_CHECKING as _TYPE_CHECKING,
+    TypeVar as _TVar,
+    TypedDict as _TDict,
+    cast as _cast,
+    final as _fin,
+    overload as _overload,
+)
+from unicodedata import category as _utf_cat
+from uuid import uuid4 as _uuid4
+from unittest import mock as _mock
+from weakref import WeakKeyDictionary as _WkKDict
+
+if _TYPE_CHECKING:
+    from _typeshed import ReadableBuffer as _ReadBuf
+
+_T = _TVar("_T")
+_T_co = _TVar("_T_co", covariant=True)
+_T1_co = _TVar("_T1_co", covariant=True)
+_ExtendsUnit = _TVar("_ExtendsUnit", bound="Unit[_Any]")
+_ExtendsModuleType = _TVar("_ExtendsModuleType", bound=_Mod)
+_PUNCTUATIONS = tuple(
+    char for char in map(chr, range(_maxunicode + 1)) if _utf_cat(char).startswith("P")
+)
+_PUNCTUATION_REGEX = _rex_comp(
     r"(?<={delims})(?<!^(?:{delims})+)(?!$|{delims})".format(
-        delims=r"|".join(map(_re.escape, _PUNCTUATIONS))
+        delims=r"|".join(map(_re_esc, _PUNCTUATIONS))
     ),
-    flags=_regex.VERSION0,
+    _REX_VER0,
 )
-_ASYNC_LOCK_THREAD_POOLS = _weakref.WeakKeyDictionary[
-    _threading.Lock, _typing.Callable[[], _concurrent_futures.Executor]
-]()
+_ASYNC_LOCK_THREAD_POOLS = _WkKDict[_TLock, _Call[[], _Executor]]()
 
 
-@_types.coroutine
-def wrap_async(value: _T | _typing.Awaitable[_T]):
-    if _inspect.isawaitable(value):
-        avalue: _typing.Awaitable[_T] = value
+@_coroutine
+def wrap_async(value: _T | _Await[_T]):
+    if _isawait(value):
+        avalue: _Await[_T] = value
         return avalue.__await__()
     else:
 
         def impl():
             yield
-            return _typing.cast(_T, value)
+            return _cast(_T, value)
 
         return impl()
 
@@ -68,16 +95,16 @@ def identity(var: _T) -> _T:
     return var
 
 
-def constant(var: _T) -> _typing.Callable[..., _T]:
-    def func(*_: _typing.Any) -> _T:
+def constant(var: _T) -> _Call[..., _T]:
+    def func(*_: _Any) -> _T:
         return var
 
     return func
 
 
-def ignore_args(func: _typing.Callable[[], _T]) -> _typing.Callable[..., _T]:
-    @_functools.wraps(func)
-    def func0(*_: _typing.Any) -> _T:
+def ignore_args(func: _Call[[], _T]) -> _Call[..., _T]:
+    @_wraps(func)
+    def func0(*_: _Any) -> _T:
         return func()
 
     return func0
@@ -87,27 +114,18 @@ def tuple1(var: _T) -> tuple[_T]:
     return (var,)
 
 
-def asyncify(
-    func: _typing.Callable[..., _T]
-) -> _typing.Callable[..., _typing.Awaitable[_T]]:
-    @_functools.wraps(func)
-    async def run(*args: _typing.Any, **kwargs: _typing.Any):
-        return await _asyncio.get_running_loop().run_in_executor(
-            None, _functools.partial(func, *args, **kwargs)
-        )
+def asyncify(func: _Call[..., _T]) -> _Call[..., _Await[_T]]:
+    @_wraps(func)
+    async def run(*args: _Any, **kwargs: _Any):
+        return await _run_loop().run_in_executor(None, _partial(func, *args, **kwargs))
 
     return run
 
 
-@_contextlib.asynccontextmanager
-async def async_lock(lock: _threading.Lock):
-    await _asyncio.get_running_loop().run_in_executor(
-        _ASYNC_LOCK_THREAD_POOLS.setdefault(
-            lock,
-            _functools.cache(
-                _functools.partial(_concurrent_futures.ThreadPoolExecutor, 1)
-            ),
-        )(),
+@_actxmgr
+async def async_lock(lock: _TLock):
+    await _run_loop().run_in_executor(
+        _ASYNC_LOCK_THREAD_POOLS.setdefault(lock, _cache(_partial(_TPExecutor, 1)))(),
         lock.acquire,
     )
     try:
@@ -116,10 +134,10 @@ async def async_lock(lock: _threading.Lock):
         lock.release()
 
 
-def deep_foreach_module(module: _types.ModuleType):
+def deep_foreach_module(module: _Mod):
     names = set[str]()
 
-    def impl(mod: _types.ModuleType) -> _typing.Iterator[_types.ModuleType]:
+    def impl(mod: _Mod) -> _Itor[_Mod]:
         name = mod.__name__
         if name in names:
             return
@@ -127,7 +145,7 @@ def deep_foreach_module(module: _types.ModuleType):
         yield mod
         for attr_name in dir(mod):
             attr = getattr(mod, attr_name)
-            if isinstance(attr, _types.ModuleType) and attr.__name__.startswith(name):
+            if isinstance(attr, _Mod) and attr.__name__.startswith(name):
                 yield from impl(attr)
 
     return impl(module)
@@ -135,27 +153,27 @@ def deep_foreach_module(module: _types.ModuleType):
 
 def copy_module(module: _ExtendsModuleType) -> _ExtendsModuleType:
     names = discover_module_names(module)
-    with _unittest_mock.patch.dict(
-        _sys.modules,
-        {key: val for key, val in _sys.modules.items() if key not in names},
+    with _mock.patch.dict(
+        _mods,
+        {key: val for key, val in _mods.items() if key not in names},
         clear=True,
     ):
-        return _importlib.import_module(module.__name__)
+        return _import(module.__name__)
 
 
-def discover_module_names(module: _types.ModuleType) -> _typing.Sequence[str]:
-    return tuple(map(_operator.attrgetter("__name__"), deep_foreach_module(module)))
+def discover_module_names(module: _Mod) -> _Seq[str]:
+    return tuple(map(_attrgetter("__name__"), deep_foreach_module(module)))
 
 
 def abc_subclasshook_check(
-    impl_cls: _abc.ABCMeta,
-    cls: _abc.ABCMeta,
+    impl_cls: _ABCM,
+    cls: _ABCM,
     subclass: type,
     /,
     *,
-    names: _typing.Collection[str],
-    typing: _typing.Literal["nominal", "structural"] = "nominal",
-) -> bool | _types.NotImplementedType:
+    names: _Collect[str],
+    typing: _Lit["nominal", "structural"] = "nominal",
+):
     if cls is impl_cls:
         if typing == "nominal":
             if any(
@@ -186,68 +204,68 @@ def abc_subclasshook_check(
     return NotImplemented
 
 
-@_typing.final
-class Unit(_typing.Generic[_T_co]):
-    __slots__: _typing.ClassVar = ("__value",)
+@_fin
+class Unit(_Genic[_T_co]):
+    __slots__: _ClsVar = ("__value",)
 
-    def __init__(self, value: _T_co) -> None:
+    def __init__(self, value: _T_co):
         self.__value: _T_co = value
 
-    def counit(self) -> _T_co:
+    def counit(self):
         return self.__value
 
-    def bind(self, func: _typing.Callable[[_T_co], _ExtendsUnit]) -> _ExtendsUnit:
+    def bind(self, func: _Call[[_T_co], _ExtendsUnit]):
         return func(self.counit())
 
-    def extend(self, func: _typing.Callable[[_typing.Self], _T1_co]) -> "Unit[_T1_co]":
+    def extend(self, func: _Call[[_Self], _T1_co]) -> "Unit[_T1_co]":
         return Unit(func(self))
 
-    def map(self, func: _typing.Callable[[_T_co], _T1_co]) -> "Unit[_T1_co]":
+    def map(self, func: _Call[[_T_co], _T1_co]) -> "Unit[_T1_co]":
         return Unit(func(self.counit()))
 
-    def join(self: "Unit[_ExtendsUnit]") -> _ExtendsUnit:
+    def join(self: "Unit[_ExtendsUnit]"):
         return self.counit()
 
-    def duplicate(self) -> "Unit[_typing.Self]":
+    def duplicate(self):
         return Unit(self)
 
 
-class TypedTuple(_typing.Generic[_T], tuple[_T, ...]):
-    __slots__: _typing.ClassVar = ()
-    element_type: type[_T]
+class TypedTuple(_Genic[_T], tuple[_T, ...]):
+    __slots__: _ClsVar = ()
+    element_type: _ClsVar
 
-    def __init_subclass__(cls, element_type: type[_T], **kwargs: _typing.Any) -> None:
+    def __init_subclass__(cls, element_type: type[_T], **kwargs: _Any):
         super().__init_subclass__(**kwargs)
         cls.element_type = element_type
 
-    @_typing.overload
-    def __new__(cls, iterable: _typing.Iterable[_T], /) -> _typing.Self:
+    @_overload
+    def __new__(cls, iterable: _Iter[_T], /) -> _Self:
         ...
 
-    @_typing.overload
-    def __new__(cls, *items: _T) -> _typing.Self:
+    @_overload
+    def __new__(cls, *items: _T) -> _Self:
         ...
 
-    def __new__(cls, *items: _typing.Iterable[_T] | _T) -> _typing.Self:
+    def __new__(cls, *items: _Iter[_T] | _T):
         if len(items) == 1 and not isinstance(items[0], cls.element_type):
-            return super().__new__(cls, _typing.cast(_typing.Iterable[_T], items[0]))
-        return super().__new__(cls, _typing.cast(_typing.Iterable[_T], items))
+            return super().__new__(cls, _cast(_Iter[_T], items[0]))
+        return super().__new__(cls, _cast(_Iter[_T], items))
 
-    def __repr__(self) -> str:
+    def __repr__(self):
         return type(self).__qualname__ + super().__repr__()
 
 
-@_typing.final
-class IteratorSequence(_typing.Generic[_T_co], _typing.Sequence[_T_co]):
-    __slots__: _typing.ClassVar = ("__cache", "__done", "__iterator", "__lock")
+@_fin
+class IteratorSequence(_Genic[_T_co], _Seq[_T_co]):
+    __slots__: _ClsVar = ("__cache", "__done", "__iterator", "__lock")
 
-    def __init__(self, iterator: _typing.Iterator[_T_co]) -> None:
-        self.__lock = _threading.Lock()
+    def __init__(self, iterator: _Itor[_T_co]):
+        self.__lock = _TLock()
         self.__iterator = iterator
         self.__cache = list[_T_co]()
         self.__done = False
 
-    def __cache_to(self, length: int | None) -> int:
+    def __cache_to(self, length: int | None):
         cur_len = len(self.__cache)
         if self.__done or (length is not None and cur_len >= length):
             return cur_len
@@ -259,62 +277,62 @@ class IteratorSequence(_typing.Generic[_T_co], _typing.Sequence[_T_co]):
         with self.__lock:
             extend = length - len(self.__cache)
             if extend > 0:
-                self.__cache.extend(_itertools.islice(self.__iterator, extend))
+                self.__cache.extend(_islice(self.__iterator, extend))
         new_len = len(self.__cache)
         if new_len < cur_len + extend:
             self.__done = True
         return new_len
 
-    @_typing.overload
+    @_overload
     def __getitem__(self, index: int) -> _T_co:
         ...
 
-    @_typing.overload
-    def __getitem__(self, index: slice) -> _typing.Self:
+    @_overload
+    def __getitem__(self, index: slice) -> _Self:
         ...
 
-    def __getitem__(self, index: int | slice) -> _T_co | _typing.Self:
+    def __getitem__(self, index: int | slice):
         if isinstance(index, int):
             available = self.__cache_to(index + 1)
             if index >= available:
                 raise IndexError(index)
             return self.__cache[index]
-        return type(self)(_itertools.islice(self, index.start, index.stop, index.step))
+        return type(self)(_islice(self, index.start, index.stop, index.step))
 
-    def __len__(self) -> int:
+    def __len__(self):
         return self.__cache_to(None)
 
 
-assert issubclass(IteratorSequence, _typing.Sequence)
+assert issubclass(IteratorSequence, _Seq)
 
 
-@_typing.final
-class Compiler(_typing.Protocol):
+@_fin
+class Compiler(_Proto):
     def __call__(
         self,
         source: """str
-        | _typeshed.ReadableBuffer
-        | _ast.Module
-        | _ast.Expression
-        | _ast.Interactive""",
-        filename: "str | _typeshed.ReadableBuffer | _os.PathLike[_typing.Any]",
+        | _ReadBuf
+        | _ASTMod
+        | _ASTExpr
+        | _ASTInter""",
+        filename: "str | _ReadBuf | _PathL[_Any]",
         mode: str,
         flags: int,
         dont_inherit: bool = ...,
         optimize: int = ...,
-    ) -> _types.CodeType:
+    ) -> _Code:
         ...
 
 
-@_typing.final
+@_fin
 class CompileCache:
-    __slots__: _typing.ClassVar = ("__cache", "__cache_names", "__folder")
-    __METADATA_FILENAME: _typing.ClassVar = "metadata.json"
-    __CACHE_NAME_FORMAT: _typing.ClassVar = "{}.pyc"
-    __TIMEOUT: _typing.ClassVar = 86400
+    __slots__: _ClsVar = ("__cache", "__cache_names", "__folder")
+    __METADATA_FILENAME: _ClsVar = "metadata.json"
+    __CACHE_NAME_FORMAT: _ClsVar = "{}.pyc"
+    __TIMEOUT: _ClsVar = 86400
 
-    @_typing.final
-    class MetadataKey(_typing.TypedDict):
+    @_fin
+    class MetadataKey(_TDict):
         source: str
         filename: str
         mode: str
@@ -322,18 +340,18 @@ class CompileCache:
         dont_inherit: bool
         optimize: int
 
-    @_typing.final
-    class MetadataValue(_typing.TypedDict):
+    @_fin
+    class MetadataValue(_TDict):
         cache_name: str
         access_time: int
 
-    @_typing.final
-    class MetadataEntry(_typing.TypedDict):
+    @_fin
+    class MetadataEntry(_TDict):
         key: "CompileCache.MetadataKey"
         value: "CompileCache.MetadataValue"
 
-    @_typing.final
-    @_dataclasses.dataclass(
+    @_fin
+    @_dc(
         init=True,
         repr=True,
         eq=True,
@@ -353,14 +371,14 @@ class CompileCache:
         optimize: int
 
         @classmethod
-        def from_metadata(cls, data: "CompileCache.MetadataKey") -> _typing.Self:
+        def from_metadata(cls, data: "CompileCache.MetadataKey"):
             return cls(**data)
 
-        def to_metadata(self) -> "CompileCache.MetadataKey":
-            return CompileCache.MetadataKey(**_dataclasses.asdict(self))
+        def to_metadata(self):
+            return CompileCache.MetadataKey(**_asdict(self))
 
-    @_typing.final
-    @_dataclasses.dataclass(
+    @_fin
+    @_dc(
         init=True,
         repr=True,
         eq=True,
@@ -373,24 +391,22 @@ class CompileCache:
     )
     class CacheEntry:
         value: "CompileCache.MetadataValue"
-        code: _types.CodeType
+        code: _Code
 
     @classmethod
-    def __time(cls) -> int:
-        return int(_time.time())
+    def __time(cls):
+        return int(_time())
 
-    def __gen_cache_name(self) -> str:
-        ret: str = self.__CACHE_NAME_FORMAT.format(str(_uuid.uuid4()))
+    def __gen_cache_name(self):
+        ret: str = self.__CACHE_NAME_FORMAT.format(str(_uuid4()))
         while ret in self.__cache_names:
-            ret = self.__CACHE_NAME_FORMAT.format(str(_uuid.uuid4()))
+            ret = self.__CACHE_NAME_FORMAT.format(str(_uuid4()))
         return ret
 
-    def __init__(self, *, folder: _anyio.Path | None):
+    def __init__(self, *, folder: _Path | None):
         self.__folder = folder
-        self.__cache: _typing.MutableMapping[
-            CompileCache.CacheKey, CompileCache.CacheEntry
-        ] = {}
-        self.__cache_names: _typing.MutableSet[str] = set()
+        self.__cache = dict[CompileCache.CacheKey, CompileCache.CacheEntry]()
+        self.__cache_names = set[str]()
 
     async def __aenter__(self):
         folder = self.__folder
@@ -398,7 +414,7 @@ class CompileCache:
             return self
         await folder.mkdir(parents=True, exist_ok=True)
 
-        async def read_metadata() -> _typing.Collection[CompileCache.MetadataEntry]:
+        async def read_metadata() -> _Collect[CompileCache.MetadataEntry]:
             metadata_path = folder / self.__METADATA_FILENAME
             if not await metadata_path.exists():
                 await metadata_path.write_text("[]", **_OPEN_TXT_OPTS)
@@ -406,8 +422,8 @@ class CompileCache:
                 mode="rt", **_OPEN_TXT_OPTS
             ) as metadata_file:
                 try:
-                    return _json.loads(await metadata_file.read())
-                except _json.JSONDecodeError:
+                    return _loads(await metadata_file.read())
+                except _JSONDecErr:
                     return []
 
         metadata = read_metadata()
@@ -427,7 +443,7 @@ class CompileCache:
                 return
             try:
                 try:
-                    code: _types.CodeType | None = _marshal.loads(await file.read())
+                    code: _Code | None = _m_loads(await file.read())
                     if code is None:
                         raise ValueError
                 except EOFError | ValueError | TypeError:
@@ -440,19 +456,19 @@ class CompileCache:
                 CompileCache.CacheKey.from_metadata(key)
             ] = CompileCache.CacheEntry(value=value, code=code)
 
-        await _asyncio.gather(*map(read_entry, await metadata))
+        await _gather(*map(read_entry, await metadata))
         return self
 
     async def __aexit__(
         self,
         exc_type: type[BaseException] | None,
         exc_value: BaseException | None,
-        traceback: _types.TracebackType | None,
+        traceback: _Tb | None,
     ):
         folder = self.__folder
         if folder is None:
             return
-        cur_time: int = self.__time()
+        cur_time = self.__time()
 
         async def save_cache(
             key: CompileCache.CacheKey,
@@ -461,7 +477,7 @@ class CompileCache:
             cache_path = folder / cache.value["cache_name"]
             if cur_time - cache.value["access_time"] >= self.__TIMEOUT:
                 try:
-                    await asyncify(_os.remove)(cache_path)
+                    await asyncify(_rm)(cache_path)
                 except FileNotFoundError:
                     pass
                 return
@@ -470,12 +486,12 @@ class CompileCache:
                 return ret
             async with await cache_path.open(mode="wb") as cache_file:
                 try:
-                    await cache_file.write(_marshal.dumps(cache.code))
+                    await cache_file.write(_m_dumps(cache.code))
                 except ValueError:
                     _LOGGER.exception(f"Cannot save cache with key: {key}")
                     await cache_file.aclose()
                     try:
-                        await asyncify(_os.remove)(cache_path)
+                        await asyncify(_rm)(cache_path)
                     except FileNotFoundError:
                         pass
                     return
@@ -485,16 +501,11 @@ class CompileCache:
             mode="wt", **_OPEN_TXT_OPTS
         ) as metadata_file:
             await metadata_file.write(
-                _json.dumps(
+                _dumps(
                     tuple(
                         filter(
                             lambda x: x is not None,
-                            await _asyncio.gather(
-                                *_itertools.starmap(
-                                    save_cache,
-                                    self.__cache.items(),
-                                )
-                            ),
+                            await _gather(*_smap(save_cache, self.__cache.items())),
                         )
                     ),
                     ensure_ascii=False,
@@ -506,17 +517,17 @@ class CompileCache:
     def compile(
         self,
         source: """str
-        | _typeshed.ReadableBuffer
-        | _ast.Module
-        | _ast.Expression
-        | _ast.Interactive""",
-        filename: "str | _typeshed.ReadableBuffer | _os.PathLike[_typing.Any]",
+        | _ReadBuf
+        | _ASTMod
+        | _ASTExpr
+        | _ASTInter""",
+        filename: "str | _ReadBuf | _PathL[_Any]",
         mode: str,
         flags: int = 0,
         dont_inherit: bool = False,
         optimize: int = -1,
-    ) -> _types.CodeType:
-        compile0 = _functools.partial(
+    ):
+        compile0 = _partial(
             compile,
             source=source,
             filename=filename,
@@ -528,10 +539,8 @@ class CompileCache:
         folder = self.__folder
         if folder is None:
             return compile0()
-        key: CompileCache.CacheKey = CompileCache.CacheKey(
-            source=_ast.unparse(source)
-            if isinstance(source, _ast.AST)
-            else repr(source),
+        key = CompileCache.CacheKey(
+            source=_unparse(source) if isinstance(source, _AST) else repr(source),
             filename=repr(filename),
             mode=mode,
             flags=flags,
@@ -539,10 +548,10 @@ class CompileCache:
             optimize=optimize,
         )
         try:
-            entry: CompileCache.CacheEntry = self.__cache[key]
+            entry = self.__cache[key]
             entry.value["access_time"] = self.__time()
         except KeyError:
-            cache_name: str = self.__gen_cache_name()
+            cache_name = self.__gen_cache_name()
             self.__cache_names.add(cache_name)
             self.__cache[key] = entry = CompileCache.CacheEntry(
                 value=CompileCache.MetadataValue(
@@ -552,12 +561,12 @@ class CompileCache:
             )
         return entry.code
 
-    def __repr__(self) -> str:
+    def __repr__(self):
         return f"{type(self).__qualname__}(folder={self.__folder!r})"
 
 
-def affix_lines(text: str, /, *, prefix: str = "", suffix: str = "") -> str:
-    def ret_gen() -> _typing.Iterator[str]:
+def affix_lines(text: str, /, *, prefix: str = "", suffix: str = ""):
+    def ret_gen():
         newline: str = ""
         for line in text.splitlines():
             yield newline
@@ -569,9 +578,9 @@ def affix_lines(text: str, /, *, prefix: str = "", suffix: str = "") -> str:
     return "".join(ret_gen())
 
 
-def strip_lines(text: str, /, *, chars: str | None = None) -> str:
+def strip_lines(text: str, /, *, chars: str | None = None):
     return "\n".join(line.strip(chars) for line in text.splitlines())
 
 
-def split_by_punctuations(text: str) -> _typing.Iterator[str]:
+def split_by_punctuations(text: str):
     return _PUNCTUATION_REGEX.splititer(text)

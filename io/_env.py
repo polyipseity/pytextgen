@@ -1,18 +1,30 @@
 # -*- coding: UTF-8 -*-
 from .. import UUID as _UUID
-import ast as _ast
-import contextlib as _contextlib
-import types as _types
-import typing as _typing
+from ast import AsyncFunctionDef as _ASTAFunDef, Module as _ASTMod, parse as _parse
+from contextlib import AbstractAsyncContextManager as _AACtxMgr, nullcontext as _nullctx
+from types import (
+    CellType as _Cell,
+    CodeType as _Code,
+    MappingProxyType as _FrozenMap,
+    SimpleNamespace as _SimpNS,
+)
+from typing import (
+    Any as _Any,
+    Callable as _Call,
+    ClassVar as _ClsVar,
+    Mapping as _Map,
+    cast as _cast,
+    final as _fin,
+)
 
 
-@_typing.final
+@_fin
 class Environment:
-    ENV_NAME: _typing.ClassVar = "__env__"
-    ENTRY: _typing.ClassVar = f"_{_UUID.replace('-', '_')}"
-    ENTRY_TEMPLATE: _typing.ClassVar = f"""async def {ENTRY}(): pass
+    ENV_NAME: _ClsVar = "__env__"
+    ENTRY: _ClsVar = f"_{_UUID.replace('-', '_')}"
+    ENTRY_TEMPLATE: _ClsVar = f"""async def {ENTRY}(): pass
 {ENV_NAME}.{ENTRY} = {ENTRY}"""
-    __slots__: _typing.ClassVar = (
+    __slots__: _ClsVar = (
         "__closure",
         "__context",
         "__env",
@@ -21,39 +33,34 @@ class Environment:
     )
 
     @classmethod
-    def transform_code(cls, ast: _ast.Module):
-        template = _ast.parse(
-            cls.ENTRY_TEMPLATE, "<string>", "exec", type_comments=True
-        )
+    def transform_code(cls, ast: _ASTMod):
+        template = _parse(cls.ENTRY_TEMPLATE, "<string>", "exec", type_comments=True)
         if ast.body:
-            _typing.cast(_ast.AsyncFunctionDef, template.body[0]).body = ast.body
+            _cast(_ASTAFunDef, template.body[0]).body = ast.body
         return template
 
     def __init__(
         self,
         *,
-        env: _typing.Mapping[str, _typing.Any] = {},
-        globals: _typing.Mapping[str, _typing.Any] = globals(),
-        locals: _typing.Mapping[str, object] = locals(),
-        closure: tuple[_types.CellType, ...] | None = None,
-        context: _typing.Callable[
-            [], _contextlib.AbstractAsyncContextManager[_typing.Any]
-        ]
-        | None = None,
-    ) -> None:
-        self.__env = _types.MappingProxyType(dict(env))
-        self.__globals = _types.MappingProxyType(dict(globals))
-        self.__locals = _types.MappingProxyType(dict(locals))
+        env: _Map[str, _Any] = {},
+        globals: _Map[str, _Any] = globals(),
+        locals: _Map[str, object] = locals(),
+        closure: tuple[_Cell, ...] | None = None,
+        context: _Call[[], _AACtxMgr[_Any]] | None = None,
+    ):
+        self.__env = _FrozenMap(dict(env))
+        self.__globals = _FrozenMap(dict(globals))
+        self.__locals = _FrozenMap(dict(locals))
         self.__closure = closure
-        self.__context = context if context else lambda: _contextlib.nullcontext()
+        self.__context = context if context else lambda: _nullctx()
         assert self.ENV_NAME not in self.globals
         assert self.ENV_NAME not in self.locals
 
-    def __repr__(self) -> str:
+    def __repr__(self):
         return f"{type(self).__qualname__}(env={self.__env!r}, globals={self.__globals!r}, locals={self.__locals!r})"
 
-    def __str__(self) -> str:
-        def filter(map: _typing.Mapping[str, _typing.Any]):
+    def __str__(self):
+        def filter(map: _Map[str, _Any]):
             return {
                 key: val
                 for key, val in map.items()
@@ -69,25 +76,23 @@ class Environment:
         )
 
     @property
-    def env(self) -> _typing.Mapping[str, _typing.Any]:
+    def env(self):
         return self.__env
 
     @property
-    def globals(self) -> _typing.Mapping[str, _typing.Any]:
+    def globals(self):
         return self.__globals
 
     @property
-    def locals(self) -> _typing.Mapping[str, object]:
+    def locals(self):
         return self.__locals
 
     @property
     def closure(self):
         return self.__closure
 
-    async def exec(
-        self, code: _types.CodeType, *init_codes: _types.CodeType
-    ) -> _typing.Any:
-        env = _types.SimpleNamespace(result=None, **self.env)
+    async def exec(self, code: _Code, *init_codes: _Code):
+        env = _SimpNS(result=None, **self.env)
         globals = {**self.globals, self.ENV_NAME: env}
         locals = (
             globals

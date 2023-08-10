@@ -1,8 +1,8 @@
 # -*- coding: UTF-8 -*-
-import asyncio as _asyncio
-import sys as _sys
-from . import main as _main
+from .main import parser as _parser
+from asyncio import run as _run
+from sys import argv as _argv
 
 if __name__ == "__main__":
-    entry = _main.parser().parse_args(_sys.argv[1:])
-    _asyncio.run(entry.invoke(entry))
+    entry = _parser().parse_args(_argv[1:])
+    _run(entry.invoke(entry))
