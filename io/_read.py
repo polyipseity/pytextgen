@@ -59,7 +59,7 @@ class Reader(metaclass=_abc.ABCMeta):
     async def new(cls, *, path: _anyio.Path, options: _GenOpts):
         _, ext = _os.path.splitext(path)
         ret = cls.REGISTRY[ext](path=path, options=options)
-        async with await _anyio.open_file(path, mode="rt", **_OPEN_TXT_OPTS) as io:
+        async with await path.open(mode="rt", **_OPEN_TXT_OPTS) as io:
             await ret.read(await io.read())
         return ret
 

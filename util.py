@@ -392,8 +392,8 @@ class CompileCache:
             metadata_path = folder / self.__METADATA_FILENAME
             if not await metadata_path.exists():
                 await metadata_path.write_text("[]", **_OPEN_TXT_OPTS)
-            async with await _anyio.open_file(
-                metadata_path, mode="rt", **_OPEN_TXT_OPTS
+            async with await metadata_path.open(
+                mode="rt", **_OPEN_TXT_OPTS
             ) as metadata_file:
                 try:
                     return _json.loads(await metadata_file.read())
@@ -411,7 +411,7 @@ class CompileCache:
                 return
             path = folder / cache_name
             try:
-                file = await _anyio.open_file(path, mode="rb")
+                file = await path.open(mode="rb")
             except OSError | ValueError:
                 _LOGGER.exception(f"Cannot open code cache: {path}")
                 return
@@ -458,7 +458,7 @@ class CompileCache:
             ret = CompileCache.MetadataEntry(key=key.to_metadata(), value=cache.value)
             if await cache_path.exists():
                 return ret
-            async with await _anyio.open_file(cache_path, mode="wb") as cache_file:
+            async with await cache_path.open(mode="wb") as cache_file:
                 try:
                     await cache_file.write(_marshal.dumps(cache.code))
                 except ValueError:
@@ -471,8 +471,8 @@ class CompileCache:
                     return
             return ret
 
-        async with await _anyio.open_file(
-            folder / self.__METADATA_FILENAME, mode="wt", **_OPEN_TXT_OPTS
+        async with await (folder / self.__METADATA_FILENAME).open(
+            mode="wt", **_OPEN_TXT_OPTS
         ) as metadata_file:
             await metadata_file.write(
                 _json.dumps(

@@ -90,9 +90,7 @@ class PathLocation:
 
     @_contextlib.asynccontextmanager
     async def open(self):
-        async with await _anyio.open_file(
-            self.path, mode="r+t", **_OPEN_TXT_OPTS
-        ) as file:
+        async with await self.path.open(mode="r+t", **_OPEN_TXT_OPTS) as file:
             yield file
 
 
@@ -170,7 +168,7 @@ class FileSection:
         async with (
             _FileSectionIO(self)
             if self.section
-            else await _anyio.open_file(self.path, mode="r+t", **_OPEN_TXT_OPTS)
+            else await self.path.open(mode="r+t", **_OPEN_TXT_OPTS)
         ) as file:
             yield file
 
@@ -227,9 +225,7 @@ class _FileSectionCache(dict[_anyio.Path, _typing.Awaitable[_FileSectionCacheDat
             try:
                 mod_time = (await _asyncstdlib.sync(_os.stat)(key)).st_mtime_ns
                 if mod_time != cache.mod_time:
-                    async with await _anyio.open_file(
-                        key, mode="rt", **_OPEN_TXT_OPTS
-                    ) as file:
+                    async with await key.open(mode="rt", **_OPEN_TXT_OPTS) as file:
                         text = await file.read()
                     sections = dict[str, tuple[slice, str]]()
                     read_to: int = 0
@@ -322,9 +318,7 @@ class _FileSectionIO(_io.StringIO):
             super().close()
 
     async def __aenter__(self):
-        self.__file = await _anyio.open_file(
-            self.__closure.path, mode="r+t", **_OPEN_TXT_OPTS
-        )
+        self.__file = await self.__closure.path.open(mode="r+t", **_OPEN_TXT_OPTS)
         try:
             self.__slice, self.__initial_value = (
                 await _FILE_SECTION_CACHE[self.__closure.path]
