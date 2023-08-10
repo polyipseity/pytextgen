@@ -264,7 +264,9 @@ class MarkdownReader:
                 )
             )
 
-            async def imports0():
+            async def imports0() -> _typing.AsyncIterator[
+                _typing.Iterator[_types.CodeType]
+            ]:
                 for imp in self.IMPORT.finditer(code):
                     reader = await Reader.cached(
                         path=self.path / imp[1], options=self.options

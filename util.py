@@ -265,11 +265,21 @@ class IteratorSequence(_typing.Generic[_T_co], _typing.Sequence[_T_co]):
             self.__done = True
         return new_len
 
+    @_typing.overload
     def __getitem__(self, index: int) -> _T_co:
-        available = self.__cache_to(index + 1)
-        if index >= available:
-            raise IndexError(index)
-        return self.__cache[index]
+        ...
+
+    @_typing.overload
+    def __getitem__(self, index: slice) -> _typing.Self:
+        ...
+
+    def __getitem__(self, index: int | slice) -> _T_co | _typing.Self:
+        if isinstance(index, int):
+            available = self.__cache_to(index + 1)
+            if index >= available:
+                raise IndexError(index)
+            return self.__cache[index]
+        return type(self)(_itertools.islice(self, index.start, index.stop, index.step))
 
     def __len__(self) -> int:
         return self.__cache_to(None)
