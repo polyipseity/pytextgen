@@ -56,6 +56,17 @@ class Reader(metaclass=_abc.ABCMeta):
     )
 
     @classmethod
+    def register2(cls, *extensions: str):
+        @_functools.wraps(cls.register)
+        def register(subclass: type):
+            ret = cls.register(subclass)
+            for ext in extensions:
+                cls.REGISTRY[ext] = subclass
+            return ret
+
+        return register
+
+    @classmethod
     async def new(cls, *, path: _anyio.Path, options: _GenOpts):
         _, ext = _os.path.splitext(path)
         ret = cls.REGISTRY[ext](path=path, options=options)
@@ -200,6 +211,8 @@ def _Python_env(
     )
 
 
+@CodeLibrary.register
+@Reader.register2(".md")
 class MarkdownReader:
     __slots__: _typing.ClassVar = ("__codes", "__library_codes", "__options", "__path")
 
@@ -338,8 +351,5 @@ class MarkdownReader:
         return tuple(ret_gen())
 
 
-Reader.register(MarkdownReader)
 assert issubclass(MarkdownReader, Reader)
-CodeLibrary.register(MarkdownReader)
 assert issubclass(MarkdownReader, CodeLibrary)
-Reader.REGISTRY[".md"] = MarkdownReader

@@ -33,6 +33,7 @@ class FlashcardGroup(_typing.Sequence[str], metaclass=_abc.ABCMeta):
 
 
 @_typing.final
+@FlashcardGroup.register
 @_dataclasses.dataclass(
     init=True,
     repr=True,
@@ -70,10 +71,11 @@ class TwoSidedFlashcard:
         return str(self)
 
 
-FlashcardGroup.register(TwoSidedFlashcard)
 assert issubclass(TwoSidedFlashcard, FlashcardGroup)
 
 
+@_typing.final
+@FlashcardGroup.register
 @_dataclasses.dataclass(
     init=True,
     repr=True,
@@ -123,7 +125,6 @@ class ClozeFlashcardGroup:
         return self._clozes[index]
 
 
-FlashcardGroup.register(ClozeFlashcardGroup)
 assert issubclass(ClozeFlashcardGroup, FlashcardGroup)
 
 

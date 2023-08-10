@@ -37,6 +37,7 @@ class Writer(metaclass=_abc.ABCMeta):
         )
 
 
+@Writer.register
 class ClearWriter:
     __slots__: _typing.ClassVar = ("__options", "__path")
     __FLASHCARD_STATES_REGEX = _re.compile(r" ?" + _FC_ST_RE.pattern, _FC_ST_RE.flags)
@@ -76,10 +77,10 @@ class ClearWriter:
                         await process(io)
 
 
-Writer.register(ClearWriter)
 assert issubclass(ClearWriter, Writer)
 
 
+@Writer.register
 class PythonWriter:
     __slots__: _typing.ClassVar = ("__code", "__env", "__init_codes", "__options")
 
@@ -159,5 +160,4 @@ class PythonWriter:
             await _asyncio.gather(*map(process, results))
 
 
-Writer.register(PythonWriter)
 assert issubclass(PythonWriter, Writer)

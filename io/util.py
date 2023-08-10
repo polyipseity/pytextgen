@@ -56,6 +56,7 @@ class Location(metaclass=_abc.ABCMeta):
 
 
 @_typing.final
+@Location.register
 class NullLocation:
     __slots__: _typing.ClassVar = ()
 
@@ -68,12 +69,12 @@ class NullLocation:
         return None
 
 
-Location.register(NullLocation)
 assert issubclass(NullLocation, Location)
 NULL_LOCATION = NullLocation()
 
 
 @_typing.final
+@Location.register
 @_dataclasses.dataclass(
     init=True,
     repr=True,
@@ -94,11 +95,11 @@ class PathLocation:
             yield file
 
 
-Location.register(PathLocation)
 assert issubclass(PathLocation, Location)
 
 
 @_typing.final
+@Location.register
 @_dataclasses.dataclass(
     init=True,
     repr=True,
@@ -339,7 +340,6 @@ class _FileSectionIO(_io.StringIO):
         await self.aclose()
 
 
-Location.register(FileSection)
 assert issubclass(FileSection, Location)
 
 
