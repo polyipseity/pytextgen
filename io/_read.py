@@ -7,7 +7,7 @@ from ..util import (
     deep_foreach_module as _deep_foreach_mod,
     ignore_args as _i_args,
 )
-from .util import FileSection as _FSect
+from .util import FileSection as _FSect, NULL_LOCATION as _NULL_LOC
 from .virenv.util import StatefulFlashcardGroup as _StFcGrp
 from ._env import Environment as _Env
 from ._options import GenOpts as _GenOpts
@@ -161,13 +161,15 @@ def _Python_env(
     if modifier is None:
         modifier = _i_args(_nullctx)
 
-    def cwf_sect(section: str):
-        return _FSect(path=reader.path, section=section)
+    def cwf_sect(section: str | None):
+        return (
+            _NULL_LOC if section is None else _FSect(path=reader.path, section=section)
+        )
 
-    def cwf_sects0(sections: _Iter[str]):
+    def cwf_sects0(sections: _Iter[str | None]):
         return (cwf_sect(sect) for sect in sections)
 
-    def cwf_sects(*sections: str):
+    def cwf_sects(*sections: str | None):
         return tuple(cwf_sects0(sections))
 
     vars = {
