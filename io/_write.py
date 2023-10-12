@@ -63,7 +63,7 @@ class ClearWriter:
             async def process(io: _ATxtIO):
                 data = await _wrap_a(io.read())
                 async with _TskGrp() as group:
-                    group.create_task(_wrap_a(io.seek(0)).__await__())
+                    group.create_task(_wrap_a(io.seek(0)))
                     data = self.__FLASHCARD_STATES_REGEX.sub("", data)
                 await _wrap_a(io.write(data))
                 await _wrap_a(io.truncate())
@@ -142,7 +142,7 @@ class PythonWriter:
                             else text
                         ):
                             async with _TskGrp() as group:
-                                group.create_task(_wrap_a(io.seek(0)).__await__())
+                                group.create_task(_wrap_a(io.seek(0)))
                                 data = "".join(
                                     (
                                         _GEN_CMT_FMT.format(

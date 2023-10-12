@@ -27,12 +27,7 @@ from regex import VERSION0 as _REX_VER0, compile as _rex_comp
 from sys import maxunicode as _maxunicode, modules as _mods
 from threading import Lock as _TLock
 from time import time as _time
-from types import (
-    CodeType as _Code,
-    ModuleType as _Mod,
-    TracebackType as _Tb,
-    coroutine as _coroutine,
-)
+from types import CodeType as _Code, ModuleType as _Mod, TracebackType as _Tb
 from typing import (
     Any as _Any,
     Awaitable as _Await,
@@ -78,18 +73,10 @@ _PUNCTUATION_REGEX = _rex_comp(
 _ASYNC_LOCK_THREAD_POOLS = _WkKDict[_TLock, _Call[[], _Executor]]()
 
 
-@_coroutine
-def wrap_async(value: _T | _Await[_T]):
+async def wrap_async(value: _T | _Await[_T]):
     if _isawait(value):
-        avalue: _Await[_T] = value
-        return avalue.__await__()
-    else:
-
-        def impl():
-            yield
-            return _cast(_T, value)
-
-        return impl()
+        return await value
+    return value
 
 
 def identity(var: _T) -> _T:
