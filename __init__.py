@@ -1,6 +1,5 @@
 # -*- coding: UTF-8 -*-
 from datetime import datetime as _dt
-from distutils.version import StrictVersion as _SVer
 from logging import INFO as _INFO, basicConfig as _basicConfig, getLogger as _getLogger
 from re import NOFLAG as _NOFLAG, compile as _re_comp
 from typing import Literal as _Lit, TypedDict as _TDict, final as _fin
@@ -23,7 +22,7 @@ class _OpenOptions(_TDict):
 
 # update `pyproject.toml`
 NAME = "pytextgen"
-VERSION = _SVer("6.3.1")
+VERSION = "6.3.1"
 
 FLASHCARD_EASE_DEFAULT = 250
 FLASHCARD_STATES_FORMAT = "<!--SR:{states}-->"
