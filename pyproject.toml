@@ -33,7 +33,7 @@ dependencies = [
 	"more-itertools>=9.1.0",
 	"regex>=2022.10.31",
 ]
-description = ""
+description = "Generate text using code."
 dynamic = ["version",]
 keywords = []
 license = {file = "LICENSE.txt"}
