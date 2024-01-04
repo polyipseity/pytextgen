@@ -174,13 +174,14 @@ def memorize(
     tag: str = _Tag.MEMORIZE,
     sep_tag: str | None = None,
     empty: bool = False,
+    ordered: bool = False,
 ):
     return (
         _Unit(code)
         .map(_partial(tagged_filter_sep, tag=tag, sep_tag=sep_tag, empty=empty))
         .map(func)
         .map(_partial(_atch_fc_s, states=states))
-        .map(_lsty_fc)
+        .map(_partial(_lsty_fc, ordered=ordered))
         .map(text)
         .counit()
     )
@@ -276,6 +277,7 @@ def semantics_seq_map(
     sep_tags: tuple[str | None, str | None] | str | None = None,
     empty: tuple[bool, bool] | bool = False,
     reversible: bool = False,
+    ordered: bool = False,
 ):
     if not isinstance(tags, tuple):
         tags = (tags, tags)
@@ -298,7 +300,7 @@ def semantics_seq_map(
         .map(lambda strss: zip(*strss, strict=True))
         .map(_partial(_sem_seq_map, reversible=reversible))
         .map(_partial(_atch_fc_s, states=states))
-        .map(_lsty_fc)
+        .map(_partial(_lsty_fc, ordered=ordered))
         .map(text)
         .counit()
     )

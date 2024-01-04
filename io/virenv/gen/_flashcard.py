@@ -30,13 +30,23 @@ def attach_flashcard_states(flashcards: _Iter[_FcGrp], /, *, states: _Iter[_FcSt
 
 def listify_flashcards(
     flashcards: _Iter[_StFcGrp],
+    /,
+    *,
+    ordered: bool = False,
 ):
     def ret_gen():
         newline = ""
-        for index, flashcard in enumerate(flashcards):
+        if ordered:
+            for index, flashcard in enumerate(flashcards):
+                yield newline
+                yield str(index + 1)
+                yield ". "
+                yield str(flashcard)
+                newline = "\n"
+            return
+        for flashcard in flashcards:
             yield newline
-            yield str(index + 1)
-            yield ". "
+            yield "- "
             yield str(flashcard)
             newline = "\n"
 
