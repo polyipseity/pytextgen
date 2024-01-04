@@ -394,6 +394,7 @@ def map_to_code(
             yield name_token[0]
             yield name
             yield name_token[1]
+            yield "\n"
             newline = "\n"
         for key, value in map.items():
             yield newline
