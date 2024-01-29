@@ -433,12 +433,21 @@ def rows_to_table(
     *,
     names: _Iter[str | tuple[str, _Lit["default", "left", "right", "center"]]],
     values: _Call[[_T], _Iter[_Any]],
+    escape: bool = True,
 ):
+    if escape:
+
+        def escaper(var: str):
+            return var.replace("|", "\\|")
+
+    else:
+        escaper = _id
+
     names0 = _IterSeq(iter(names))
     lf = "\n"
-    return f"""| {' | '.join(name if isinstance(name, str) else name[0] for name in names0)} |
+    return f"""| {' | '.join(escaper(name) if isinstance(name, str) else name[0] for name in names0)} |
 |{'|'.join(_TABLE_ALIGNS['default' if isinstance(name, str) else name[1]] for name in names0)}|
-{lf.join(f'| {" | ".join(map(str, values(row)))} |' for row in rows)}"""
+{lf.join(f'| {" | ".join(map(escaper, map(str, values(row))))} |' for row in rows)}"""
 
 
 def two_columns_to_code(
