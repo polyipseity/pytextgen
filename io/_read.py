@@ -1,10 +1,5 @@
 # -*- coding: UTF-8 -*-
-from .. import (
-    FLASHCARD_EASE_DEFAULT as _FC_EASE_DEF,
-    NAME as _NAME,
-    OPEN_TEXT_OPTIONS as _OPEN_TXT_OPTS,
-    UUID as _UUID,
-)
+from .. import NAME as _NAME, OPEN_TEXT_OPTIONS as _OPEN_TXT_OPTS
 from ..util import (
     abc_subclasshook_check as _abc_sch_chk,
     async_lock as _a_lock,
@@ -35,7 +30,6 @@ from contextlib import (
     nullcontext as _nullctx,
 )
 from dataclasses import replace as _dc_repl
-from datetime import date as _date
 from functools import cache as _cache, partial as _partial, wraps as _wraps
 from importlib import import_module as _import
 from itertools import chain as _chain, repeat as _repeat
@@ -148,8 +142,7 @@ class CodeLibrary(metaclass=_ABCM):
 
     @property
     @_amethod
-    def codes(self) -> _Collect[_Seq[_Code]]:
-        ...
+    def codes(self) -> _Collect[_Seq[_Code]]: ...
 
     @classmethod
     def __subclasshook__(cls, subclass: type):
@@ -158,11 +151,13 @@ class CodeLibrary(metaclass=_ABCM):
 
 def _Python_env(
     reader: Reader,
-    modifier: _Call[
-        [_Mod, _Map[str, _Mod]],
-        _ACtxMgr[_Any],
-    ]
-    | None = None,
+    modifier: (
+        _Call[
+            [_Mod, _Map[str, _Mod]],
+            _ACtxMgr[_Any],
+        ]
+        | None
+    ) = None,
 ):
     if modifier is None:
         modifier = _i_args(_nullctx)
@@ -232,7 +227,7 @@ def _Python_env(
 class MarkdownReader:
     __slots__: _ClsVar = ("__codes", "__library_codes", "__options", "__path")
 
-    START: _ClsVar = _re_comp(rf"```Python\n# {_UUID} generate (data|module)", _NOFLAG)
+    START: _ClsVar = _re_comp(rf"```Python\n# {_NAME} generate (data|module)", _NOFLAG)
     STOP: _ClsVar = _re_comp(r"```", _NOFLAG)
     IMPORT: _ClsVar = _re_comp(r"# import (.+)$", _MULTILINE)
 

@@ -1,5 +1,5 @@
 # -*- coding: UTF-8 -*-
-from .. import OPEN_TEXT_OPTIONS as _OPEN_TXT_OPTS, UUID as _UUID
+from .. import NAME as _NAME, OPEN_TEXT_OPTIONS as _OPEN_TXT_OPTS
 from ..util import (
     abc_subclasshook_check as _abc_sch_chk,
     async_lock as _a_lock,
@@ -147,19 +147,19 @@ class FileSection:
 
     SECTION_FORMATS: _ClsVar = {
         "": SectionFormat(
-            start_regex=_re_comp(rf"\[{_UUID},generate,([^,\]]*?)\]", _NOFLAG),
-            end_regex=_re_comp(rf"\[{_UUID},end\]", _NOFLAG),
-            start=f"[{_UUID},generate,{{section}}]",
-            stop=f"[{_UUID},end]",
+            start_regex=_re_comp(rf"\[{_NAME},generate,([^,\]]*?)\]", _NOFLAG),
+            end_regex=_re_comp(rf"\[{_NAME},end\]", _NOFLAG),
+            start=f"[{_NAME},generate,{{section}}]",
+            stop=f"[{_NAME},end]",
             data=lambda match: match[1],
         ),
         ".md": SectionFormat(
             start_regex=_re_comp(
-                rf"""<!--{_UUID} generate section=(["'])(.*?)\1-->""", _DOTALL
+                rf"""<!--{_NAME} generate section=(["'])(.*?)\1-->""", _DOTALL
             ),
-            end_regex=_re_comp(rf"<!--/{_UUID}-->", _NOFLAG),
-            start=f'<!--{_UUID} generate section="{{section}}"-->',
-            stop=f"<!--/{_UUID}-->",
+            end_regex=_re_comp(rf"<!--/{_NAME}-->", _NOFLAG),
+            start=f'<!--{_NAME} generate section="{{section}}"-->',
+            stop=f"<!--/{_NAME}-->",
             data=lambda match: match[2],
         ),
     }
