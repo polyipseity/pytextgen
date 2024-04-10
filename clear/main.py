@@ -11,7 +11,7 @@ from asyncio import gather as _gather
 from dataclasses import dataclass as _dc
 from enum import IntFlag as _IntFlg, auto as _auto, unique as _unq
 from functools import partial as _partial, reduce as _reduce, wraps as _wraps
-from sys import exit as _exit, modules as _mods
+from sys import exit as _exit
 from typing import (
     AbstractSet as _ASet,
     Callable as _Call,
@@ -70,9 +70,7 @@ async def main(args: Arguments):
 
 
 def parser(parent: _Call[..., _ArgParser] | None = None):
-    prog0 = _mods[__name__].__package__
-    prog = prog0 if prog0 else __name__
-    del prog0
+    prog = __package__ or __name__
 
     parser = (_ArgParser if parent is None else parent)(
         prog=f"python -m {prog}",

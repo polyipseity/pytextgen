@@ -1,17 +1,22 @@
 # -*- coding: UTF-8 -*-
 from . import VERSION as _VER
-from .clear.main import __package__ as _clear_package, parser as _clear_parser
-from .generate.main import __package__ as _generate_package, parser as _generate_parser
+from .clear.main import (
+    __name__ as _clear_name,
+    __package__ as _clear_package,
+    parser as _clear_parser,
+)
+from .generate.main import (
+    __name__ as _generate_name,
+    __package__ as _generate_package,
+    parser as _generate_parser,
+)
 from argparse import ArgumentParser as _ArgParser
 from functools import partial as _partial
-from sys import modules as _mods
 from typing import Callable as _Call
 
 
 def parser(parent: _Call[..., _ArgParser] | None = None):
-    prog0 = _mods[__name__].__package__
-    prog = prog0 if prog0 else __name__
-    del prog0
+    prog = __package__ or __name__
 
     parser = (_ArgParser if parent is None else parent)(
         prog=f"python -m {prog}",
@@ -31,9 +36,15 @@ def parser(parent: _Call[..., _ArgParser] | None = None):
         required=True,
     )
     _clear_parser(
-        _partial(subparsers.add_parser, _clear_package.replace(f"{prog}.", ""))
+        _partial(
+            subparsers.add_parser,
+            (_clear_package or _clear_name).replace(f"{prog}.", ""),
+        )
     )
     _generate_parser(
-        _partial(subparsers.add_parser, _generate_package.replace(f"{prog}.", ""))
+        _partial(
+            subparsers.add_parser,
+            (_generate_package or _generate_name).replace(f"{prog}.", ""),
+        )
     )
     return parser

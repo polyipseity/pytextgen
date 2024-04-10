@@ -13,7 +13,7 @@ from dataclasses import dataclass as _dc
 from enum import IntFlag as _IntFlg, auto as _auto, unique as _unq
 from functools import partial as _partial, reduce as _reduce, wraps as _wraps
 from itertools import chain as _chain
-from sys import exit as _exit, modules as _mods
+from sys import exit as _exit
 from typing import (
     Callable as _Call,
     ClassVar as _ClsVar,
@@ -103,9 +103,7 @@ async def main(args: Arguments):
 
 
 def parser(parent: _Call[..., _ArgParser] | None = None):
-    prog0 = _mods[__name__].__package__
-    prog = prog0 if prog0 else __name__
-    del prog0
+    prog = __package__ or __name__
 
     parser = (_ArgParser if parent is None else parent)(
         prog=f"python -m {prog}",
@@ -181,9 +179,11 @@ def parser(parent: _Call[..., _ArgParser] | None = None):
     @_wraps(main)
     async def invoke(args: _NS):
         async with _CompCache(
-            folder=args.code_cache
-            if args.code_cache is None
-            else await args.code_cache.resolve()
+            folder=(
+                args.code_cache
+                if args.code_cache is None
+                else await args.code_cache.resolve()
+            )
         ) as cache:
             await main(
                 Arguments(
