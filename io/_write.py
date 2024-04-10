@@ -16,7 +16,7 @@ from ._env import Environment as _Env
 from ._options import GenOpts as _GenOpts
 from abc import ABCMeta as _ABCM, abstractmethod as _amethod
 from anyio import Path as _Path
-from asyncio import TaskGroup as _TskGrp, gather as _gather
+from asyncio import create_task, gather as _gather
 from contextlib import (
     AbstractAsyncContextManager as _AACtxMgr,
     asynccontextmanager as _actxmgr,
@@ -61,12 +61,15 @@ class ClearWriter:
         elif _ClrT.FLASHCARD_STATE in self.__options.types:
 
             async def process(io: _ATxtIO):
-                data = await _wrap_a(io.read())
-                async with _TskGrp() as group:
-                    group.create_task(_wrap_a(io.seek(0)))
-                    data = self.__FLASHCARD_STATES_REGEX.sub("", data)
-                await _wrap_a(io.write(data))
-                await _wrap_a(io.truncate())
+                read = await _wrap_a(io.read())
+                seek = create_task(_wrap_a(io.seek(0)))
+                try:
+                    if (text := self.__FLASHCARD_STATES_REGEX.sub("", read)) != read:
+                        await seek
+                        await _wrap_a(io.write(text))
+                        await _wrap_a(io.truncate())
+                finally:
+                    seek.cancel()
 
         else:
 
@@ -134,29 +137,27 @@ class PythonWriter:
                 path = loc.path
                 async with _nullctx() if path is None else _lck_f(path):
                     async with loc.open() as io:
-                        text = await _wrap_a(io.read())
-                        timestamp = _GEN_CMT_RE.search(text)
-                        if result.text != (
-                            text[: timestamp.start()] + text[timestamp.end() :]
-                            if timestamp
-                            else text
-                        ):
-                            async with _TskGrp() as group:
-                                group.create_task(_wrap_a(io.seek(0)))
-                                data = "".join(
-                                    (
-                                        _GEN_CMT_FMT.format(
-                                            now=_datetime.now().astimezone().isoformat()
-                                        )
-                                        if self.__options.timestamp
-                                        else text[timestamp.start() : timestamp.end()]
-                                        if timestamp
-                                        else "",
-                                        result.text,
+                        read = await _wrap_a(io.read())
+                        seek = create_task(_wrap_a(io.seek(0)))
+                        try:
+                            timestamp = _GEN_CMT_RE.search(read)
+                            if result.text != (
+                                read[: timestamp.start()] + read[timestamp.end() :]
+                                if timestamp
+                                else read
+                            ):
+                                text = (
+                                    _GEN_CMT_FMT.format(
+                                        now=_datetime.now().astimezone().isoformat()
                                     )
-                                )
-                            await _wrap_a(io.write(data))
-                            await _wrap_a(io.truncate())
+                                    if self.__options.timestamp
+                                    else timestamp[0] if timestamp else ""
+                                ) + result.text
+                                await seek
+                                await _wrap_a(io.write(text))
+                                await _wrap_a(io.truncate())
+                        finally:
+                            seek.cancel()
 
             await _gather(*map(process, results))
 

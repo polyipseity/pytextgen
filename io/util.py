@@ -7,7 +7,7 @@ from ..util import (
 )
 from abc import ABCMeta as _ABCM, abstractmethod as _amethod
 from anyio import AsyncFile as _AFile, Path as _Path
-from asyncio import TaskGroup as _TskGrp
+from asyncio import TaskGroup, create_task
 from asyncstdlib import sync as _sync
 from collections import defaultdict as _defdict
 from contextlib import (
@@ -295,19 +295,23 @@ class _FileSectionIO(_StrIO):
     async def aclose(self):
         try:
             try:
-                self.seek(0)
-                data = self.read()
-                if data == self.__initial_value:
-                    return
-                await self.__file.seek(0)
-                text = await self.__file.read()
-                async with _TskGrp() as group:
-                    group.create_task(self.__file.seek(0))
-                    write = (
-                        f"{text[: self.__slice.start]}{data}{text[self.__slice.stop :]}"
-                    )
-                await self.__file.write(write)
-                await self.__file.truncate()
+
+                async def reader():
+                    await self.__file.seek(0)
+                    return await self.__file.read()
+
+                read_task = create_task(reader())
+                try:
+                    self.seek(0)
+                    if (text := self.read()) != self.__initial_value:
+                        read = await read_task
+                        async with TaskGroup() as tg:
+                            _ = tg.create_task(self.__file.seek(0))
+                            text = f"{read[: self.__slice.start]}{text}{read[self.__slice.stop :]}"
+                        await self.__file.write(text)
+                        await self.__file.truncate()
+                finally:
+                    read_task.cancel()
             finally:
                 await self.__file.aclose()
         finally:

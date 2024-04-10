@@ -73,7 +73,15 @@ _PUNCTUATION_REGEX = _rex_comp(
 _ASYNC_LOCK_THREAD_POOLS = _WkKDict[_TLock, _Call[[], _Executor]]()
 
 
-async def wrap_async(value: _T | _Await[_T]):
+@_overload
+async def wrap_async(value: _Await[_T]) -> _T: ...
+
+
+@_overload
+async def wrap_async(value: _Await[_T] | _T) -> _T: ...
+
+
+async def wrap_async(value: _Await[_T] | _T):
     if _isawait(value):
         return await value
     return value
@@ -219,12 +227,10 @@ class TypedTuple(_Genic[_T], tuple[_T, ...]):
         cls.element_type = element_type
 
     @_overload
-    def __new__(cls, iterable: _Iter[_T], /) -> _Self:
-        ...
+    def __new__(cls, iterable: _Iter[_T], /) -> _Self: ...
 
     @_overload
-    def __new__(cls, *items: _T) -> _Self:
-        ...
+    def __new__(cls, *items: _T) -> _Self: ...
 
     def __new__(cls, *items: _Iter[_T] | _T):
         if len(items) == 1 and not isinstance(items[0], cls.element_type):
@@ -264,12 +270,10 @@ class IteratorSequence(_Genic[_T_co], _Seq[_T_co]):
         return new_len
 
     @_overload
-    def __getitem__(self, index: int) -> _T_co:
-        ...
+    def __getitem__(self, index: int) -> _T_co: ...
 
     @_overload
-    def __getitem__(self, index: slice) -> _Self:
-        ...
+    def __getitem__(self, index: slice) -> _Self: ...
 
     def __getitem__(self, index: int | slice):
         if isinstance(index, int):
@@ -300,8 +304,7 @@ class Compiler(_Proto):
         flags: int,
         dont_inherit: bool = ...,
         optimize: int = ...,
-    ) -> _Code:
-        ...
+    ) -> _Code: ...
 
 
 @_fin
@@ -432,9 +435,9 @@ class CompileCache:
             finally:
                 await file.aclose()
             self.__cache_names.add(cache_name)
-            self.__cache[
-                CompileCache.CacheKey.from_metadata(key)
-            ] = CompileCache.CacheEntry(value=value, code=code)
+            self.__cache[CompileCache.CacheKey.from_metadata(key)] = (
+                CompileCache.CacheEntry(value=value, code=code)
+            )
 
         await _gather(*map(read_entry, await metadata))
         return self
