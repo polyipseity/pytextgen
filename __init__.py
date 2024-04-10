@@ -1,6 +1,6 @@
 # -*- coding: UTF-8 -*-
 from datetime import datetime as _dt
-from logging import INFO as _INFO, basicConfig as _basicConfig, getLogger as _getLogger
+from logging import getLogger as _getLogger
 from re import NOFLAG as _NOFLAG, compile as _re_comp
 from typing import Literal as _Lit, TypedDict as _TDict, final as _fin
 
@@ -35,7 +35,7 @@ GENERATE_COMMENT_REGEX = _re_comp(
 assert GENERATE_COMMENT_REGEX.search(
     GENERATE_COMMENT_FORMAT.format(now=_dt.now().astimezone().isoformat())
 )
-_basicConfig(level=_INFO)
+
 LOGGER = _getLogger(NAME)
 OPEN_TEXT_OPTIONS = _OpenOptions(
     encoding="UTF-8",
