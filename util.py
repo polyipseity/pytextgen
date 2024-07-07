@@ -1,4 +1,5 @@
 # -*- coding: UTF-8 -*-
+from importlib.util import MAGIC_NUMBER
 from . import LOGGER as _LOGGER, OPEN_TEXT_OPTIONS as _OPEN_TXT_OPTS
 from abc import ABCMeta as _ABCM
 from anyio import Path as _Path
@@ -12,7 +13,7 @@ from ast import (
 from asyncio import gather as _gather, get_running_loop as _run_loop
 from asyncstdlib import sync as _sync
 from concurrent.futures import Executor as _Executor, ThreadPoolExecutor as _TPExecutor
-from contextlib import asynccontextmanager as _actxmgr
+from contextlib import asynccontextmanager as _actxmgr, suppress
 from dataclasses import asdict as _asdict, dataclass as _dc
 from functools import cache as _cache, partial as _partial, wraps as _wraps
 from importlib import import_module as _import
@@ -318,6 +319,7 @@ class CompileCache:
     class MetadataKey(_TDict):
         source: str
         filename: str
+        magic_number: int
         mode: str
         flags: int
         dont_inherit: bool
@@ -348,6 +350,7 @@ class CompileCache:
     class CacheKey:
         source: str
         filename: str
+        magic_number: int
         mode: str
         flags: int
         dont_inherit: bool
@@ -417,27 +420,33 @@ class CompileCache:
                 value: CompileCache.MetadataValue = entry["value"]
                 cache_name: str = value["cache_name"]
             except KeyError:
+                _LOGGER.exception(f"Cannot read entry: {entry}")
                 return
             path = folder / cache_name
             try:
-                file = await path.open(mode="rb")
-            except OSError | ValueError:
-                _LOGGER.exception(f"Cannot open code cache: {path}")
+                key2 = CompileCache.CacheKey.from_metadata(key)
+            except TypeError:
+                _LOGGER.exception(f"Cannot parse key: {key}")
+                with suppress(FileNotFoundError, OSError):
+                    await _sync(_rm)(path)
                 return
             try:
+                file = await path.open(mode="rb")
+            except (OSError, ValueError):
+                _LOGGER.exception(f"Cannot open code cache: {path}")
+                with suppress(FileNotFoundError, OSError):
+                    await _sync(_rm)(path)
+                return
+            async with file:
                 try:
                     code: _Code | None = _m_loads(await file.read())
                     if code is None:
                         raise ValueError
-                except EOFError | ValueError | TypeError:
+                except (EOFError, ValueError, TypeError):
                     _LOGGER.exception(f"Cannot load code cache: {path}")
                     return
-            finally:
-                await file.aclose()
             self.__cache_names.add(cache_name)
-            self.__cache[CompileCache.CacheKey.from_metadata(key)] = (
-                CompileCache.CacheEntry(value=value, code=code)
-            )
+            self.__cache[key2] = CompileCache.CacheEntry(value=value, code=code)
 
         await _gather(*map(read_entry, await metadata))
         return self
@@ -459,10 +468,8 @@ class CompileCache:
         ):
             cache_path = folder / cache.value["cache_name"]
             if cur_time - cache.value["access_time"] >= self.__TIMEOUT:
-                try:
+                with suppress(FileNotFoundError, OSError):
                     await _sync(_rm)(cache_path)
-                except FileNotFoundError:
-                    pass
                 return
             ret = CompileCache.MetadataEntry(key=key.to_metadata(), value=cache.value)
             if await cache_path.exists():
@@ -525,6 +532,7 @@ class CompileCache:
         key = CompileCache.CacheKey(
             source=_unparse(source) if isinstance(source, _AST) else repr(source),
             filename=repr(filename),
+            magic_number=int.from_bytes(MAGIC_NUMBER),
             mode=mode,
             flags=flags,
             dont_inherit=dont_inherit,
