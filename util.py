@@ -1,5 +1,6 @@
 # -*- coding: UTF-8 -*-
 from importlib.util import MAGIC_NUMBER
+from aioshutil import sync_to_async
 from . import LOGGER as _LOGGER, OPEN_TEXT_OPTIONS as _OPEN_TXT_OPTS
 from abc import ABCMeta as _ABCM
 from anyio import Path as _Path
@@ -11,7 +12,6 @@ from ast import (
     unparse as _unparse,
 )
 from asyncio import gather as _gather, get_running_loop as _run_loop
-from asyncstdlib import sync as _sync
 from concurrent.futures import Executor as _Executor, ThreadPoolExecutor as _TPExecutor
 from contextlib import asynccontextmanager as _actxmgr, suppress
 from dataclasses import asdict as _asdict, dataclass as _dc
@@ -72,6 +72,7 @@ _PUNCTUATION_REGEX = _rex_comp(
     _REX_VER0,
 )
 _ASYNC_LOCK_THREAD_POOLS = _WkKDict[_TLock, _Call[[], _Executor]]()
+_rm_a = sync_to_async(_rm)
 
 
 @_overload
@@ -428,14 +429,14 @@ class CompileCache:
             except TypeError:
                 _LOGGER.exception(f"Cannot parse key: {key}")
                 with suppress(FileNotFoundError, OSError):
-                    await _sync(_rm)(path)
+                    await _rm_a(path)
                 return
             try:
                 file = await path.open(mode="rb")
             except (OSError, ValueError):
                 _LOGGER.exception(f"Cannot open code cache: {path}")
                 with suppress(FileNotFoundError, OSError):
-                    await _sync(_rm)(path)
+                    await _rm_a(path)
                 return
             async with file:
                 try:
@@ -469,7 +470,7 @@ class CompileCache:
             cache_path = folder / cache.value["cache_name"]
             if cur_time - cache.value["access_time"] >= self.__TIMEOUT:
                 with suppress(FileNotFoundError, OSError):
-                    await _sync(_rm)(cache_path)
+                    await _rm_a(cache_path)
                 return
             ret = CompileCache.MetadataEntry(key=key.to_metadata(), value=cache.value)
             if await cache_path.exists():
@@ -481,7 +482,7 @@ class CompileCache:
                     _LOGGER.exception(f"Cannot save cache with key: {key}")
                     await cache_file.aclose()
                     try:
-                        await _sync(_rm)(cache_path)
+                        await _rm_a(cache_path)
                     except FileNotFoundError:
                         pass
                     return

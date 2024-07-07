@@ -1,4 +1,5 @@
 # -*- coding: UTF-8 -*-
+from aioshutil import sync_to_async
 from .. import NAME as _NAME, OPEN_TEXT_OPTIONS as _OPEN_TXT_OPTS
 from ..util import (
     abc_subclasshook_check as _abc_sch_chk,
@@ -8,7 +9,6 @@ from ..util import (
 from abc import ABCMeta as _ABCM, abstractmethod as _amethod
 from anyio import AsyncFile as _AFile, Path as _Path
 from asyncio import TaskGroup, create_task
-from asyncstdlib import sync as _sync
 from collections import defaultdict as _defdict
 from contextlib import (
     AbstractAsyncContextManager as _AACtxMgr,
@@ -44,6 +44,7 @@ from weakref import WeakKeyDictionary as _WkKDict
 
 AnyTextIO = _TxtIO | _AFile[str]
 _FILE_LOCKS = _defdict[_Path, _TLock](_TLock)
+_stat_a = sync_to_async(_stat)
 
 
 @_actxmgr
@@ -225,7 +226,7 @@ class _FileSectionCache(dict[_Path, _Await[_FileSectionCacheData]]):
             except KeyError:
                 cache = _FileSectionCacheData.EMPTY
             try:
-                mod_time = (await _sync(_stat)(key)).st_mtime_ns
+                mod_time = (await _stat_a(key)).st_mtime_ns
                 if mod_time != cache.mod_time:
                     async with await key.open(mode="rt", **_OPEN_TXT_OPTS) as file:
                         text = await file.read()
