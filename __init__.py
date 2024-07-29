@@ -1,4 +1,3 @@
-# -*- coding: UTF-8 -*-
 from datetime import datetime as _dt
 from logging import getLogger as _getLogger
 from re import NOFLAG as _NOFLAG, compile as _re_comp

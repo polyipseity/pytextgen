@@ -1,4 +1,3 @@
-# -*- coding: UTF-8 -*-
 from .. import UUID as _UUID
 from ast import AsyncFunctionDef as _ASTAFunDef, Module as _ASTMod, parse as _parse
 from contextlib import AbstractAsyncContextManager as _AACtxMgr, nullcontext as _nullctx

@@ -1,4 +1,3 @@
-# -*- coding: UTF-8 -*-
 from logging import INFO, basicConfig
 from .main import parser as _parser
 from asyncio import run as _run

@@ -1,4 +1,3 @@
-# -*- coding: UTF-8 -*-
 from ..util import Compiler as _Compiler
 from dataclasses import dataclass as _dc
 from enum import StrEnum as _StrEnum, unique as _unq

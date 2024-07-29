@@ -1,4 +1,3 @@
-# -*- coding: UTF-8 -*-
 from . import VERSION as _VER
 from .clear.main import (
     __name__ as _clear_name,

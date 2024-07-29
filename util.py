@@ -1,4 +1,3 @@
-# -*- coding: UTF-8 -*-
 from importlib.util import MAGIC_NUMBER
 from aioshutil import sync_to_async
 from . import LOGGER as _LOGGER, OPEN_TEXT_OPTIONS as _OPEN_TXT_OPTS

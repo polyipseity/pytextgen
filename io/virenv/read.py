@@ -1,4 +1,3 @@
-# -*- coding: UTF-8 -*-
 from .util import (
     FlashcardStateGroup as _FcStGrp,
     Location as _Loc,

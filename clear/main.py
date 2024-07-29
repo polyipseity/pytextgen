@@ -1,4 +1,3 @@
-# -*- coding: UTF-8 -*-
 from .. import LOGGER as _LOGGER, VERSION as _VER
 from ..io import ClearOpts as _ClrOpts, ClearType as _ClrT, ClearWriter as _ClrWriter
 from anyio import Path as _Path

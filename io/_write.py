@@ -1,4 +1,3 @@
-# -*- coding: UTF-8 -*-
 from .. import (
     GENERATE_COMMENT_FORMAT as _GEN_CMT_FMT,
     GENERATE_COMMENT_REGEX as _GEN_CMT_RE,

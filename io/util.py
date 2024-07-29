@@ -1,4 +1,3 @@
-# -*- coding: UTF-8 -*-
 from aioshutil import sync_to_async
 from .. import NAME as _NAME, OPEN_TEXT_OPTIONS as _OPEN_TXT_OPTS
 from ..util import (

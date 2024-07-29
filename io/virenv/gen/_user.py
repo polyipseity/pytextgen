@@ -1,4 +1,3 @@
-# -*- coding: UTF-8 -*-
 from ..config import CONFIG as _CFG
 from ..util import (
     FlashcardGroup as _FcGrp,

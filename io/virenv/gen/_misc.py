@@ -1,4 +1,3 @@
-# -*- coding: UTF-8 -*-
 from enum import StrEnum as _StrEnum, unique as _unq
 from typing import ClassVar as _ClsVar, final as _fin
 

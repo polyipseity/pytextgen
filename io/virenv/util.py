@@ -1,4 +1,3 @@
-# -*- coding: UTF-8 -*-
 from ... import (
     FLASHCARD_STATES_FORMAT as _FC_ST_FMT,
     FLASHCARD_STATES_REGEX as _FC_ST_RE,

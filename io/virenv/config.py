@@ -1,4 +1,3 @@
-# -*- coding: UTF-8 -*-
 from dataclasses import dataclass as _dc, field as _field
 from typing import (
     Callable as _Call,

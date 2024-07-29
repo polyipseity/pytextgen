@@ -1,4 +1,3 @@
-# -*- coding: UTF-8 -*-
 from .. import NAME as _NAME, OPEN_TEXT_OPTIONS as _OPEN_TXT_OPTS
 from ..util import (
     abc_subclasshook_check as _abc_sch_chk,
