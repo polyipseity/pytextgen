@@ -65,13 +65,13 @@ class FlashcardSeparatorType:
     slots=True,
 )
 class Configuration:
-    cloze_token: tuple[str, str] = ("{{", "}}")
+    cloze_token: tuple[str, str] = (R"{@{", R"}@}")
     flashcard_separators: _MMap[FlashcardSeparatorType, str] = _field(
         default_factory=lambda: {
-            FlashcardSeparatorType.parse(""): "::",
-            FlashcardSeparatorType.parse("r"): ":::",
-            FlashcardSeparatorType.parse("m"): "??",
-            FlashcardSeparatorType.parse("rm"): "???",
+            FlashcardSeparatorType.parse(""): R":@:",
+            FlashcardSeparatorType.parse("r"): R"::@::",
+            FlashcardSeparatorType.parse("m"): R"?@?",
+            FlashcardSeparatorType.parse("rm"): R"??@??",
         },
     )
 
