@@ -202,9 +202,7 @@ def memorize_two_sided(
             offsets=(
                 _const(offsets)
                 if isinstance(offsets, int)
-                else offsets.__getitem__
-                if isinstance(offsets, _Seq)
-                else offsets
+                else offsets.__getitem__ if isinstance(offsets, _Seq) else offsets
             ),
             reversible=reversible,
             hinter=hinter,
@@ -231,9 +229,7 @@ def memorize_linked_seq(
                 (
                     _const(hinted)
                     if isinstance(hinted, bool)
-                    else hinted.__getitem__
-                    if isinstance(hinted, _Seq)
-                    else hinted
+                    else hinted.__getitem__ if isinstance(hinted, _Seq) else hinted
                 ),
                 sanitizer=sanitizer,
             ),
@@ -257,9 +253,7 @@ def memorize_indexed_seq(
             indices=(
                 indices.__add__
                 if isinstance(indices, int)
-                else indices.__getitem__
-                if isinstance(indices, _Seq)
-                else indices
+                else indices.__getitem__ if isinstance(indices, _Seq) else indices
             ),
             reversible=reversible,
         ),
@@ -339,13 +333,15 @@ def markdown_sanitizer(text: str):
         return ("".join(ret_gen()), frozenset(tags))
 
     text, tags = get_and_del_tags(text)
-    distingusher = "\0" * (len(max(tags, key=len, default="")) + 1)
+    distinguisher = "\0" * (len(max(tags, key=len, default="")) + 1)
     for regex in _MARKDOWN_REGEXES:
         text = regex.regex.sub(
             _HTML_TAG_REGEX.sub(
-                lambda m: f"<{m[1][:-1]}{distingusher}/>"
-                if m[1].endswith("/")
-                else f"<{m[1]}{distingusher}>",
+                lambda m: (
+                    f"<{m[1][:-1]}{distinguisher}/>"
+                    if m[1].endswith("/")
+                    else f"<{m[1]}{distinguisher}>"
+                ),
                 regex.desugared,
             ),
             text,
@@ -442,11 +438,55 @@ def rows_to_table(
     else:
         escaper = _id
 
-    names0 = _IterSeq(iter(names))
-    lf = "\n"
-    return f"""| {' | '.join(escaper(name) if isinstance(name, str) else name[0] for name in names0)} |
-|{'|'.join(_TABLE_ALIGNS['default' if isinstance(name, str) else name[1]] for name in names0)}|
-{lf.join(f'| {" | ".join(map(escaper, map(str, values(row))))} |' for row in rows)}"""
+    # Prepare headers as a lazily-cached sequence of (escaped_name, align) tuples
+    headers = _IterSeq(
+        (
+            (escaper(str(name)), "default")
+            if isinstance(name, str)
+            else (escaper(str(name[0])), name[1])
+        )
+        for name in names
+    )
+
+    # Create a lazily-cached sequence of processed rows (escaped strings) to avoid upfront materialization
+    rows_seq = _IterSeq(
+        (_IterSeq(escaper(str(c)) for c in values(row)) for row in rows)
+    )
+
+    # Compute column widths functionally (no mutation). For each column compute max length
+    widths = _IterSeq(
+        max(
+            _chain(
+                (3, len(h)),
+                (len(r[i]) if i < len(r) else 0 for r in rows_seq),
+            ),
+        )
+        for i, (h, _) in enumerate(headers)
+    )
+
+    def make_align_token(align: str, width: int) -> str:
+        # Build an alignment token with length at least 3 and equal to the column width
+        target_len = max(3, width)
+        if align == "left":
+            # ":---"
+            return f":{'-' * (target_len - 1)}"
+        if align == "right":
+            return f"{'-' * (target_len - 1)}:"
+        if align == "center":
+            return f":{'-' * (target_len - 2)}:"
+        # default
+        return f"{'-' * target_len}"
+
+    # Build lines with padded cells using zip for clarity (no explicit index variable)
+    header_line = f"| {' | '.join(h.ljust(w) for (h, _), w in zip(headers, widths))} |"
+    align_line = f"| {' | '.join(make_align_token(a, w) for (_, a), w in zip(headers, widths))} |"
+    # Assemble rows by reading the cached rows from rows_seq (padding/truncating as needed)
+    row_lines = (
+        f"| {' | '.join((r[i] if i < len(r) else '').ljust(w) for i, w in enumerate(widths))} |"
+        for r in rows_seq
+    )
+
+    return "\n".join(_chain((header_line, align_line), row_lines))
 
 
 def two_columns_to_code(
