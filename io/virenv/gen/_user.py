@@ -48,6 +48,12 @@ from typing import (
     TypeVar as _TVar,
     final as _fin,
 )
+from unicodedata import normalize as _normalize
+
+try:
+    from wcwidth import wcswidth as _wcswidth
+except Exception:
+    _wcswidth = None
 
 _T = _TVar("_T")
 
@@ -429,6 +435,8 @@ def rows_to_table(
     names: _Iter[str | tuple[str, _Lit["default", "left", "right", "center"]]],
     values: _Call[[_T], _Iter[_Any]],
     escape: bool = True,
+    use_compiled_len: bool = False,  # compile TextCode and use its length
+    use_visible_len: bool = False,  # use advanced visible width counting (wcwidth, CJK, diacritics)
 ):
     if escape:
 
@@ -438,30 +446,44 @@ def rows_to_table(
     else:
         escaper = _id
 
-    # Prepare headers as a lazily-cached sequence of (escaped_name, align) tuples
-    headers = _IterSeq(
-        (
-            (escaper(str(name)), "default")
-            if isinstance(name, str)
-            else (escaper(str(name[0])), name[1])
-        )
-        for name in names
-    )
+    # Prepare headers as a lazily-cached sequence of (escaped_name, align, visible_len) tuples
+    def _header_gen():
+        for name in names:
+            if isinstance(name, str):
+                hs, align = escaper(str(name)), "default"
+            else:
+                hs, align = escaper(str(name[0])), name[1]
+            hv = _compute_display_length(hs, use_compiled_len, use_visible_len)
+            yield (hs, align, hv)
 
-    # Create a lazily-cached sequence of processed rows (escaped strings) to avoid upfront materialization
-    rows_seq = _IterSeq(
-        (_IterSeq(escaper(str(c)) for c in values(row)) for row in rows)
-    )
+    headers = _IterSeq(_header_gen())
 
-    # Compute column widths functionally (no mutation). For each column compute max length
-    widths = _IterSeq(
+    # Create a lazily-cached sequence of processed rows (escaped strings with visible lengths)
+    def _rows_gen():
+        for row in rows:
+
+            def _cells():
+                for c in values(row):
+                    cs = escaper(str(c))
+                    cv = _compute_display_length(cs, use_compiled_len, use_visible_len)
+                    yield (cs, cv)
+
+            yield _IterSeq(_cells())
+
+    rows_seq = _IterSeq(_rows_gen())
+
+    # Compute column widths based on stored visible lengths (no further compilation)
+    widths = tuple(
         max(
-            _chain(
-                (3, len(h)),
-                (len(r[i]) if i < len(r) else 0 for r in rows_seq),
+            3,
+            max(
+                _chain(
+                    (hv,),
+                    (r[i][1] if i < len(r) else 0 for r in rows_seq),
+                )
             ),
         )
-        for i, (h, _) in enumerate(headers)
+        for i, (_, _, hv) in enumerate(headers)
     )
 
     def make_align_token(align: str, width: int) -> str:
@@ -477,12 +499,18 @@ def rows_to_table(
         # default
         return f"{'-' * target_len}"
 
+    # Helper: pad a string to a visible width (use precomputed visible length)
+    def pad_visible(s: str, vis: int, width: int) -> str:
+        if vis >= width:
+            return s
+        return s + (" " * (width - vis))
+
     # Build lines with padded cells using zip for clarity (no explicit index variable)
-    header_line = f"| {' | '.join(h.ljust(w) for (h, _), w in zip(headers, widths))} |"
-    align_line = f"| {' | '.join(make_align_token(a, w) for (_, a), w in zip(headers, widths))} |"
+    header_line = f"| {' | '.join(pad_visible(h, hv, w) for (h, _, hv), w in zip(headers, widths))} |"
+    align_line = f"| {' | '.join(make_align_token(a, w) for (_, a, _), w in zip(headers, widths))} |"
     # Assemble rows by reading the cached rows from rows_seq (padding/truncating as needed)
     row_lines = (
-        f"| {' | '.join((r[i] if i < len(r) else '').ljust(w) for i, w in enumerate(widths))} |"
+        f"| {' | '.join(pad_visible((r[i][0] if i < len(r) else ''), (r[i][1] if i < len(r) else 0), w) for i, w in enumerate(widths))} |"
         for r in rows_seq
     )
 
@@ -502,3 +530,47 @@ def two_columns_to_code(
             for item in _chain.from_iterable((left(row), right(row)) for row in rows)
         )
     )
+
+
+def _visible_display_width(text: str) -> int:
+    """Return number of terminal columns required to display `text`.
+
+    Prefer `wcwidth.wcswidth` when available for correct handling of CJK and
+    combining marks; otherwise fall back to the simple length of the
+    normalized string. Installing `wcwidth` is recommended for accurate
+    visible widths.
+    """
+    s = _normalize("NFC", text)
+    if _wcswidth is not None and (w := _wcswidth(s)) >= 0:
+        return w
+    return len(s)
+
+
+def _compute_display_length(s: str, use_compiled: bool, use_visible: bool) -> int:
+    """Compute the display length for string ``s`` according to flags.
+
+    The returned value is the number of columns ``s`` will occupy when
+    rendered. Behavior depends on the flags passed:
+
+    - If ``use_compiled`` is True, the function first attempts to compile
+      ``s`` as a ``_TextCode`` fragment and convert it to a string via
+      ``_c2s``. If compilation raises ``ValueError``, the original ``s``
+      is used unchanged.
+    - If ``use_visible`` is True, the function measures the *visible*
+      display width using :func:`_visible_display_width`. That helper
+      normalizes text to NFC and prefers ``wcwidth.wcswidth`` when
+      available, which gives correct column counts for CJK characters
+      and combining diacritics.
+    - If ``use_visible`` is False, the function returns ``len(s)`` of the
+      selected string (compiled or raw).
+
+    Returns:
+        int: number of display columns (or ``len`` of the string when
+        ``use_visible`` is False).
+    """
+    if use_compiled:
+        try:
+            s = _c2s(_TextCode.compile(s))
+        except ValueError:
+            pass
+    return _visible_display_width(s) if use_visible else len(s)
