@@ -1,16 +1,11 @@
-from aioshutil import sync_to_async
-from .. import NAME as _NAME, OPEN_TEXT_OPTIONS as _OPEN_TXT_OPTS
-from ..util import (
-    abc_subclasshook_check as _abc_sch_chk,
-    async_lock as _a_lock,
-    wrap_async as _wrap_a,
-)
-from abc import ABCMeta as _ABCM, abstractmethod as _amethod
-from anyio import AsyncFile as _AFile, Path as _Path
+from abc import ABCMeta as _ABCM
+from abc import abstractmethod as _amethod
 from asyncio import TaskGroup, create_task
 from collections import defaultdict as _defdict
 from contextlib import (
     AbstractAsyncContextManager as _AACtxMgr,
+)
+from contextlib import (
     asynccontextmanager as _actxmgr,
 )
 from dataclasses import dataclass as _dc
@@ -21,25 +16,66 @@ from os import stat as _stat
 from os.path import splitext as _splitext
 from re import (
     DOTALL as _DOTALL,
-    Match as _Match,
+)
+from re import (
     NOFLAG as _NOFLAG,
+)
+from re import (
+    Match as _Match,
+)
+from re import (
     Pattern as _Pattern,
+)
+from re import (
     compile as _re_comp,
 )
 from threading import Lock as _TLock
-from types import MappingProxyType as _FrozenMap, TracebackType as _Tb
+from types import MappingProxyType as _FrozenMap
+from types import TracebackType as _Tb
 from typing import (
     Any as _Any,
+)
+from typing import (
     Awaitable as _Await,
+)
+from typing import (
     Callable as _Call,
+)
+from typing import (
     ClassVar as _ClsVar,
+)
+from typing import (
     Mapping as _Map,
+)
+from typing import (
     Self as _Self,
+)
+from typing import (
     TextIO as _TxtIO,
+)
+from typing import (
     TypeGuard as _TGuard,
+)
+from typing import (
     final as _fin,
 )
 from weakref import WeakKeyDictionary as _WkKDict
+
+from aioshutil import sync_to_async
+from anyio import AsyncFile as _AFile
+from anyio import Path as _Path
+
+from .. import NAME as _NAME
+from .. import OPEN_TEXT_OPTIONS as _OPEN_TXT_OPTS
+from ..util import (
+    abc_subclasshook_check as _abc_sch_chk,
+)
+from ..util import (
+    async_lock as _a_lock,
+)
+from ..util import (
+    wrap_async as _wrap_a,
+)
 
 AnyTextIO = _TxtIO | _AFile[str]
 _FILE_LOCKS = _defdict[_Path, _TLock](_TLock)

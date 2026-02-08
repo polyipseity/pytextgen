@@ -1,26 +1,47 @@
-from ... import (
-    FLASHCARD_STATES_FORMAT as _FC_ST_FMT,
-    FLASHCARD_STATES_REGEX as _FC_ST_RE,
-)
-from ...util import *  # Intentional wildcard
-from ..util import *  # Intentional wildcard
-from .config import CONFIG as _CFG, FlashcardSeparatorType as _FcSepT
-from abc import ABCMeta as _ABCM, abstractmethod as _amethod
-from dataclasses import KW_ONLY as _KW_ONLY, dataclass as _dc, field as _field
+from abc import ABCMeta as _ABCM
+from abc import abstractmethod as _amethod
+from dataclasses import KW_ONLY as _KW_ONLY
+from dataclasses import dataclass as _dc
+from dataclasses import field as _field
 from datetime import date as _date
 from re import (
     NOFLAG as _NOFLAG,
+)
+from re import (
     Pattern as _Pattern,
+)
+from re import (
     compile as _re_comp,
+)
+from re import (
     escape as _re_esc,
 )
 from typing import (
     Any as _Any,
+)
+from typing import (
     Callable as _Call,
+)
+from typing import (
     ClassVar as _ClsVar,
+)
+from typing import (
     Sequence as _Seq,
+)
+from typing import (
     final as _fin,
 )
+
+from ... import (
+    FLASHCARD_STATES_FORMAT as _FC_ST_FMT,
+)
+from ... import (
+    FLASHCARD_STATES_REGEX as _FC_ST_RE,
+)
+from ...util import *  # Intentional wildcard
+from ..util import *  # Intentional wildcard
+from .config import CONFIG as _CFG
+from .config import FlashcardSeparatorType as _FcSepT
 
 
 def export_seq(*seq: _Call[..., _Any] | type):

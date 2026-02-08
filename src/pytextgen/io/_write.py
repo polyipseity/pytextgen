@@ -1,30 +1,53 @@
-from .. import (
-    GENERATE_COMMENT_FORMAT as _GEN_CMT_FMT,
-    GENERATE_COMMENT_REGEX as _GEN_CMT_RE,
-    FLASHCARD_STATES_REGEX as _FC_ST_RE,
-)
-from ..io import ClearOpts as _ClrOpts, ClearType as _ClrT, GenOpts as _GenOpts
-from ..util import abc_subclasshook_check as _abc_sch_chk, wrap_async as _wrap_a
-from .util import (
-    AnyTextIO as _ATxtIO,
-    FileSection as _FSect,
-    Result as _Ret,
-    lock_file as _lck_f,
-)
-from ._env import Environment as _Env
-from ._options import GenOpts as _GenOpts
-from abc import ABCMeta as _ABCM, abstractmethod as _amethod
-from anyio import Path as _Path
-from asyncio import create_task, gather as _gather
+from abc import ABCMeta as _ABCM
+from abc import abstractmethod as _amethod
+from asyncio import create_task
+from asyncio import gather as _gather
 from contextlib import (
     AbstractAsyncContextManager as _AACtxMgr,
+)
+from contextlib import (
     asynccontextmanager as _actxmgr,
+)
+from contextlib import (
     nullcontext as _nullctx,
 )
 from datetime import datetime as _datetime
 from re import compile as _re_comp
 from types import CodeType as _Code
-from typing import Any as _Any, ClassVar as _ClsVar, Iterable as _Iter
+from typing import Any as _Any
+from typing import ClassVar as _ClsVar
+from typing import Iterable as _Iter
+
+from anyio import Path as _Path
+
+from .. import (
+    FLASHCARD_STATES_REGEX as _FC_ST_RE,
+)
+from .. import (
+    GENERATE_COMMENT_FORMAT as _GEN_CMT_FMT,
+)
+from .. import (
+    GENERATE_COMMENT_REGEX as _GEN_CMT_RE,
+)
+from ..io import ClearOpts as _ClrOpts
+from ..io import ClearType as _ClrT
+from ..io import GenOpts as _GenOpts
+from ..util import abc_subclasshook_check as _abc_sch_chk
+from ..util import wrap_async as _wrap_a
+from ._env import Environment as _Env
+from ._options import GenOpts as _GenOpts
+from .util import (
+    AnyTextIO as _ATxtIO,
+)
+from .util import (
+    FileSection as _FSect,
+)
+from .util import (
+    Result as _Ret,
+)
+from .util import (
+    lock_file as _lck_f,
+)
 
 
 class Writer(metaclass=_ABCM):
@@ -150,7 +173,9 @@ class PythonWriter:
                                         now=_datetime.now().astimezone().isoformat()
                                     )
                                     if self.__options.timestamp
-                                    else timestamp[0] if timestamp else ""
+                                    else timestamp[0]
+                                    if timestamp
+                                    else ""
                                 ) + result.text
                                 await seek
                                 await _wrap_a(io.write(text))

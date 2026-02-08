@@ -1,7 +1,8 @@
-from logging import INFO, basicConfig
-from .main import parser as _parser
 from asyncio import run as _run
+from logging import INFO, basicConfig
 from sys import argv as _argv
+
+from .main import parser as _parser
 
 if __name__ == "__main__":
     basicConfig(level=INFO)

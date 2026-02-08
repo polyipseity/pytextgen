@@ -1,18 +1,36 @@
-from ..util import constant as _const
-from ._misc import Tag as _Tag
 from collections import defaultdict as _defdict
-from dataclasses import KW_ONLY as _KW_ONLY, dataclass as _dc
-from re import NOFLAG as _NOFLAG, compile as _re_comp, escape as _re_esc
+from dataclasses import KW_ONLY as _KW_ONLY
+from dataclasses import dataclass as _dc
+from re import NOFLAG as _NOFLAG
+from re import compile as _re_comp
+from re import escape as _re_esc
 from typing import (
     Any as _Any,
+)
+from typing import (
     ClassVar as _ClsVar,
+)
+from typing import (
     Iterable as _Iter,
+)
+from typing import (
     Literal as _Lit,
+)
+from typing import (
     MutableSequence as _MSeq,
+)
+from typing import (
     Self as _Self,
+)
+from typing import (
     final as _fin,
+)
+from typing import (
     overload as _overload,
 )
+
+from ..util import constant as _const
+from ._misc import Tag as _Tag
 
 
 @_fin

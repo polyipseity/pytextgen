@@ -1,10 +1,21 @@
-from dataclasses import dataclass as _dc, field as _field
+from dataclasses import dataclass as _dc
+from dataclasses import field as _field
 from typing import (
     Callable as _Call,
+)
+from typing import (
     ClassVar as _ClsVar,
+)
+from typing import (
     Mapping as _Map,
+)
+from typing import (
     MutableMapping as _MMap,
+)
+from typing import (
     Self as _Self,
+)
+from typing import (
     final as _fin,
 )
 

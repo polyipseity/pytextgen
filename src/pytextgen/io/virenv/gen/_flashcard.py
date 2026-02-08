@@ -1,24 +1,53 @@
+from dataclasses import dataclass as _dc
+from itertools import chain as _chain
+from itertools import cycle as _cycle
+from itertools import repeat as _repeat
+from typing import (
+    Any as _Any,
+)
+from typing import (
+    Callable as _Call,
+)
+from typing import (
+    Iterable as _Iter,
+)
+from typing import (
+    Iterator as _Itor,
+)
+from typing import (
+    final as _fin,
+)
+
 from ..config import CONFIG as _CFG
 from ..util import (
     ClozeFlashcardGroup as _CzFcGrp,
-    FlashcardGroup as _FcGrp,
-    FlashcardStateGroup as _FcStGrp,
-    IteratorSequence as _IterSeq,
-    StatefulFlashcardGroup as _StFcGrp,
-    TwoSidedFlashcard as _2SidedFc,
-    constant as _const,
-    identity as _id,
-    ignore_args as _ig_args,
-    split_by_punctuations as _spt_by_puncts,
 )
-from dataclasses import dataclass as _dc
-from itertools import chain as _chain, cycle as _cycle, repeat as _repeat
-from typing import (
-    Any as _Any,
-    Callable as _Call,
-    Iterable as _Iter,
-    Iterator as _Itor,
-    final as _fin,
+from ..util import (
+    FlashcardGroup as _FcGrp,
+)
+from ..util import (
+    FlashcardStateGroup as _FcStGrp,
+)
+from ..util import (
+    IteratorSequence as _IterSeq,
+)
+from ..util import (
+    StatefulFlashcardGroup as _StFcGrp,
+)
+from ..util import (
+    TwoSidedFlashcard as _2SidedFc,
+)
+from ..util import (
+    constant as _const,
+)
+from ..util import (
+    identity as _id,
+)
+from ..util import (
+    ignore_args as _ig_args,
+)
+from ..util import (
+    split_by_punctuations as _spt_by_puncts,
 )
 
 

@@ -1,7 +1,10 @@
 from datetime import datetime as _dt
 from logging import getLogger as _getLogger
-from re import NOFLAG as _NOFLAG, compile as _re_comp
-from typing import Literal as _Lit, TypedDict as _TDict, final as _fin
+from re import NOFLAG as _NOFLAG
+from re import compile as _re_comp
+from typing import Literal as _Lit
+from typing import TypedDict as _TDict
+from typing import final as _fin
 
 
 @_fin

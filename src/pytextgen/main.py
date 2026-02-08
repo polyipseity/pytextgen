@@ -1,17 +1,26 @@
+from argparse import ArgumentParser as _ArgParser
+from functools import partial as _partial
+from typing import Callable as _Call
+
 from . import VERSION as _VER
 from .clear.main import (
     __name__ as _clear_name,
+)
+from .clear.main import (
     __package__ as _clear_package,
+)
+from .clear.main import (
     parser as _clear_parser,
 )
 from .generate.main import (
     __name__ as _generate_name,
+)
+from .generate.main import (
     __package__ as _generate_package,
+)
+from .generate.main import (
     parser as _generate_parser,
 )
-from argparse import ArgumentParser as _ArgParser
-from functools import partial as _partial
-from typing import Callable as _Call
 
 
 def parser(parent: _Call[..., _ArgParser] | None = None):

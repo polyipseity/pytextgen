@@ -135,6 +135,3 @@ If you add an instructions file, link to it from this `AGENTS.md`.
 - Be conservative: when uncertain, ask a question rather than making assumptions.
 - When making behavioral changes, include tests and update docs/instructions appropriately.
 - Use the Todo List Tool for multi-step tasks and keep the plan concise and actionable.
-
-
-

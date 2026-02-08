@@ -1,57 +1,117 @@
-from importlib.util import MAGIC_NUMBER
-from aioshutil import sync_to_async
-from . import LOGGER as _LOGGER, OPEN_TEXT_OPTIONS as _OPEN_TXT_OPTS
 from abc import ABCMeta as _ABCM
-from anyio import Path as _Path
 from ast import (
     AST as _AST,
+)
+from ast import (
     Expression as _ASTExpr,
+)
+from ast import (
     Interactive as _ASTInter,
+)
+from ast import (
     Module as _ASTMod,
+)
+from ast import (
     unparse as _unparse,
 )
-from asyncio import gather as _gather, get_running_loop as _run_loop
-from concurrent.futures import Executor as _Executor, ThreadPoolExecutor as _TPExecutor
-from contextlib import asynccontextmanager as _actxmgr, suppress
-from dataclasses import asdict as _asdict, dataclass as _dc
-from functools import cache as _cache, partial as _partial, wraps as _wraps
+from asyncio import gather as _gather
+from asyncio import get_running_loop as _run_loop
+from concurrent.futures import Executor as _Executor
+from concurrent.futures import ThreadPoolExecutor as _TPExecutor
+from contextlib import asynccontextmanager as _actxmgr
+from contextlib import suppress
+from dataclasses import asdict as _asdict
+from dataclasses import dataclass as _dc
+from functools import cache as _cache
+from functools import partial as _partial
+from functools import wraps as _wraps
 from importlib import import_module as _import
+from importlib.util import MAGIC_NUMBER
 from inspect import isawaitable as _isawait
-from itertools import islice as _islice, starmap as _smap
-from json import JSONDecodeError as _JSONDecErr, dumps as _dumps, loads as _loads
-from marshal import dumps as _m_dumps, loads as _m_loads
+from itertools import islice as _islice
+from itertools import starmap as _smap
+from json import JSONDecodeError as _JSONDecErr
+from json import dumps as _dumps
+from json import loads as _loads
+from marshal import dumps as _m_dumps
+from marshal import loads as _m_loads
 from operator import attrgetter as _attrgetter
-from os import PathLike as _PathL, remove as _rm
+from os import PathLike as _PathL
+from os import remove as _rm
 from re import escape as _re_esc
-from regex import VERSION0 as _REX_VER0, compile as _rex_comp
-from sys import maxunicode as _maxunicode, modules as _mods
+from sys import maxunicode as _maxunicode
+from sys import modules as _mods
 from threading import Lock as _TLock
 from time import time as _time
-from types import CodeType as _Code, ModuleType as _Mod, TracebackType as _Tb
+from types import CodeType as _Code
+from types import ModuleType as _Mod
+from types import TracebackType as _Tb
+from typing import (
+    TYPE_CHECKING as _TYPE_CHECKING,
+)
 from typing import (
     Any as _Any,
+)
+from typing import (
     Awaitable as _Await,
+)
+from typing import (
     Callable as _Call,
-    Collection as _Collect,
+)
+from typing import (
     ClassVar as _ClsVar,
+)
+from typing import (
+    Collection as _Collect,
+)
+from typing import (
     Generic as _Genic,
+)
+from typing import (
     Iterable as _Iter,
+)
+from typing import (
     Iterator as _Itor,
+)
+from typing import (
     Literal as _Lit,
+)
+from typing import (
     Protocol as _Proto,
+)
+from typing import (
     Self as _Self,
+)
+from typing import (
     Sequence as _Seq,
-    TYPE_CHECKING as _TYPE_CHECKING,
-    TypeVar as _TVar,
+)
+from typing import (
     TypedDict as _TDict,
+)
+from typing import (
+    TypeVar as _TVar,
+)
+from typing import (
     cast as _cast,
+)
+from typing import (
     final as _fin,
+)
+from typing import (
     overload as _overload,
 )
 from unicodedata import category as _utf_cat
-from uuid import uuid4 as _uuid4
 from unittest import mock as _mock
+from uuid import uuid4 as _uuid4
 from weakref import WeakKeyDictionary as _WkKDict
+
+from aioshutil import sync_to_async
+from anyio import Path as _Path
+from regex import VERSION0 as _REX_VER0
+from regex import compile as _rex_comp
+
+from . import LOGGER as _LOGGER
+from . import OPEN_TEXT_OPTIONS as _OPEN_TXT_OPTS
 
 if _TYPE_CHECKING:
     from _typeshed import ReadableBuffer as _ReadBuf

@@ -1,54 +1,113 @@
-from ..config import CONFIG as _CFG
-from ..util import (
-    FlashcardGroup as _FcGrp,
-    FlashcardStateGroup as _FcStGrp,
-    IteratorSequence as _IterSeq,
-    Unit as _Unit,
-    affix_lines as _afx_ls,
-    constant as _const,
-    identity as _id,
-    strip_lines as _strp_ls,
-)
-from ._flashcard import (
-    attach_flashcard_states as _atch_fc_s,
-    cloze_texts as _cz_txts,
-    listify_flashcards as _lsty_fc,
-    memorize_indexed_seq0 as _mem_idx_seq,
-    memorize_linked_seq0 as _mem_lkd_seq,
-    memorize_two_sided0 as _mem_2s,
-    punctuation_hinter as _punct_htr,
-    semantics_seq_map0 as _sem_seq_map,
-)
-from ._misc import Tag as _Tag
-from ._text_code import (
-    TextCode as _TextCode,
-    code_to_str as _c2s,
-    code_to_strs as _c2ss,
-    separate_code_by_tag as _sep_c_by_t,
-)
 from dataclasses import dataclass as _dc
 from functools import partial as _partial
 from html import unescape as _unescape
 from itertools import chain as _chain
 from re import (
     DOTALL as _DOTALL,
-    Match as _Match,
+)
+from re import (
     NOFLAG as _NOFLAG,
+)
+from re import (
+    Match as _Match,
+)
+from re import (
     Pattern as _Pattern,
+)
+from re import (
     compile as _re_comp,
 )
 from typing import (
     Any as _Any,
+)
+from typing import (
     Callable as _Call,
+)
+from typing import (
     Iterable as _Iter,
+)
+from typing import (
     Iterator as _Itor,
+)
+from typing import (
     Literal as _Lit,
+)
+from typing import (
     Mapping as _Map,
+)
+from typing import (
     Sequence as _Seq,
+)
+from typing import (
     TypeVar as _TVar,
+)
+from typing import (
     final as _fin,
 )
 from unicodedata import normalize as _normalize
+
+from ..config import CONFIG as _CFG
+from ..util import (
+    FlashcardGroup as _FcGrp,
+)
+from ..util import (
+    FlashcardStateGroup as _FcStGrp,
+)
+from ..util import (
+    IteratorSequence as _IterSeq,
+)
+from ..util import (
+    Unit as _Unit,
+)
+from ..util import (
+    affix_lines as _afx_ls,
+)
+from ..util import (
+    constant as _const,
+)
+from ..util import (
+    identity as _id,
+)
+from ..util import (
+    strip_lines as _strp_ls,
+)
+from ._flashcard import (
+    attach_flashcard_states as _atch_fc_s,
+)
+from ._flashcard import (
+    cloze_texts as _cz_txts,
+)
+from ._flashcard import (
+    listify_flashcards as _lsty_fc,
+)
+from ._flashcard import (
+    memorize_indexed_seq0 as _mem_idx_seq,
+)
+from ._flashcard import (
+    memorize_linked_seq0 as _mem_lkd_seq,
+)
+from ._flashcard import (
+    memorize_two_sided0 as _mem_2s,
+)
+from ._flashcard import (
+    punctuation_hinter as _punct_htr,
+)
+from ._flashcard import (
+    semantics_seq_map0 as _sem_seq_map,
+)
+from ._misc import Tag as _Tag
+from ._text_code import (
+    TextCode as _TextCode,
+)
+from ._text_code import (
+    code_to_str as _c2s,
+)
+from ._text_code import (
+    code_to_strs as _c2ss,
+)
+from ._text_code import (
+    separate_code_by_tag as _sep_c_by_t,
+)
 
 try:
     from wcwidth import wcswidth as _wcswidth
@@ -208,7 +267,9 @@ def memorize_two_sided(
             offsets=(
                 _const(offsets)
                 if isinstance(offsets, int)
-                else offsets.__getitem__ if isinstance(offsets, _Seq) else offsets
+                else offsets.__getitem__
+                if isinstance(offsets, _Seq)
+                else offsets
             ),
             reversible=reversible,
             hinter=hinter,
@@ -235,7 +296,9 @@ def memorize_linked_seq(
                 (
                     _const(hinted)
                     if isinstance(hinted, bool)
-                    else hinted.__getitem__ if isinstance(hinted, _Seq) else hinted
+                    else hinted.__getitem__
+                    if isinstance(hinted, _Seq)
+                    else hinted
                 ),
                 sanitizer=sanitizer,
             ),
@@ -259,7 +322,9 @@ def memorize_indexed_seq(
             indices=(
                 indices.__add__
                 if isinstance(indices, int)
-                else indices.__getitem__ if isinstance(indices, _Seq) else indices
+                else indices.__getitem__
+                if isinstance(indices, _Seq)
+                else indices
             ),
             reversible=reversible,
         ),

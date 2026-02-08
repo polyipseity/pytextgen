@@ -1,57 +1,107 @@
-from .. import NAME as _NAME, OPEN_TEXT_OPTIONS as _OPEN_TXT_OPTS
-from ..util import (
-    abc_subclasshook_check as _abc_sch_chk,
-    async_lock as _a_lock,
-    copy_module as _cpy_mod,
-    deep_foreach_module as _deep_foreach_mod,
-    ignore_args as _i_args,
-)
-from .util import FileSection as _FSect, NULL_LOCATION as _NULL_LOC
-from .virenv.util import StatefulFlashcardGroup as _StFcGrp
-from ._env import Environment as _Env
-from ._options import GenOpts as _GenOpts
-from ._write import PythonWriter as _PyWriter, Writer as _Writer
-from abc import ABCMeta as _ABCM, abstractmethod as _amethod
-from anyio import Path as _Path
+from abc import ABCMeta as _ABCM
+from abc import abstractmethod as _amethod
 from ast import parse as _parse
 from asyncio import (
     AbstractEventLoop as _AEvtLoop,
+)
+from asyncio import (
     Lock as _ALock,
+)
+from asyncio import (
     get_running_loop as _run_loop,
 )
-from asyncstdlib import tuple as _atuple, chain as _achain
 from builtins import __dict__ as _builtins_dict
 from collections import defaultdict as _defdict
 from contextlib import (
     AbstractContextManager as _ACtxMgr,
+)
+from contextlib import (
     asynccontextmanager as _actxmgr,
+)
+from contextlib import (
     contextmanager as _ctxmgr,
+)
+from contextlib import (
     nullcontext as _nullctx,
 )
 from dataclasses import replace as _dc_repl
-from functools import cache as _cache, partial as _partial, wraps as _wraps
+from functools import cache as _cache
+from functools import partial as _partial
+from functools import wraps as _wraps
 from importlib import import_module as _import
-from itertools import chain as _chain, repeat as _repeat
-from more_itertools import unique_everseen as _unq_eseen
+from itertools import chain as _chain
+from itertools import repeat as _repeat
 from os.path import splitext as _splitext
-from re import MULTILINE as _MULTILINE, NOFLAG as _NOFLAG, compile as _re_comp
+from re import MULTILINE as _MULTILINE
+from re import NOFLAG as _NOFLAG
+from re import compile as _re_comp
 from sys import modules as _mods
 from threading import Lock as _TLock
-from types import CodeType as _Code, MappingProxyType as _FrozenMap, ModuleType as _Mod
+from types import CodeType as _Code
+from types import MappingProxyType as _FrozenMap
+from types import ModuleType as _Mod
 from typing import (
     Any as _Any,
+)
+from typing import (
     AsyncIterator as _AItor,
+)
+from typing import (
     Callable as _Call,
-    Collection as _Collect,
+)
+from typing import (
     ClassVar as _ClsVar,
+)
+from typing import (
+    Collection as _Collect,
+)
+from typing import (
     Iterable as _Iter,
+)
+from typing import (
     Iterator as _Itor,
+)
+from typing import (
     Mapping as _Map,
+)
+from typing import (
     Self as _Self,
+)
+from typing import (
     Sequence as _Seq,
 )
 from unittest import mock as _mock
 from weakref import WeakKeyDictionary as _WkKDict
+
+from anyio import Path as _Path
+from asyncstdlib import chain as _achain
+from asyncstdlib import tuple as _atuple
+from more_itertools import unique_everseen as _unq_eseen
+
+from .. import NAME as _NAME
+from .. import OPEN_TEXT_OPTIONS as _OPEN_TXT_OPTS
+from ..util import (
+    abc_subclasshook_check as _abc_sch_chk,
+)
+from ..util import (
+    async_lock as _a_lock,
+)
+from ..util import (
+    copy_module as _cpy_mod,
+)
+from ..util import (
+    deep_foreach_module as _deep_foreach_mod,
+)
+from ..util import (
+    ignore_args as _i_args,
+)
+from ._env import Environment as _Env
+from ._options import GenOpts as _GenOpts
+from ._write import PythonWriter as _PyWriter
+from ._write import Writer as _Writer
+from .util import NULL_LOCATION as _NULL_LOC
+from .util import FileSection as _FSect
+from .virenv.util import StatefulFlashcardGroup as _StFcGrp
 
 _PYTHON_ENV_BUILTINS_EXCLUDE = frozenset[str](
     # constants: https://docs.python.org/library/constants.html
