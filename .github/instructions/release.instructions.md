@@ -10,16 +10,18 @@ This document describes a minimal, reproducible release process for `pytextgen`.
 ## Versioning
 
 - Use semantic versioning (MAJOR.MINOR.PATCH).
-- Update the canonical version in `pytextgen/__init__.py` only.
+- Keep the canonical version in `pyproject.toml` (primary); also update `src/pytextgen/__init__.py` to keep in sync.
+
+**Note:** We use the `uv_build` backend. Dynamic metadata (for example, using setuptools to read the version from `__init__.py`) is not supported by `uv_build`. Use a static `version` in `pyproject.toml` and ensure `src/pytextgen/__init__.py` matches.
 
 ## Release checklist
 
-1. Update `pytextgen/__init__.py` with the new version string (for example, `1.2.3`). Commit only this file in the release commit.
+1. Update `pyproject.toml` with the new `version` and update `src/pytextgen/__init__.py` with a matching version string (for example, `1.2.3`). Commit both files together in the release commit.
 
 2. Commit using the version string as the commit message and sign the commit with GPG:
 
 ```powershell
-git add pytextgen/__init__.py
+git add pyproject.toml src/pytextgen/__init__.py
 git commit -S -m "1.2.3"
 ```
 

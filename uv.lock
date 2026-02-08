@@ -286,6 +286,7 @@ wheels = [
 
 [[package]]
 name = "pytextgen"
+version = "6.10.0"
 source = { editable = "." }
 dependencies = [
     { name = "anyio" },

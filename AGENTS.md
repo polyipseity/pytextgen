@@ -84,18 +84,19 @@ If you add an instructions file, link to it from this `AGENTS.md`.
 
 ## Release checklist (semantic versioning)
 
-1. Update the version in `pytextgen/__init__.py` only.
-2. Commit the version bump as a single, signed commit with the bare version as the message (e.g., `1.2.3`).
+1. Update the version in `pyproject.toml` (primary) and keep `src/pytextgen/__init__.py` in sync. Ensure both files match and commit them together as a single signed commit with the bare version as the message (e.g., `1.2.3`).
 
     ```powershell
-    git add pytextgen/__init__.py
+    git add pyproject.toml src/pytextgen/__init__.py
     git commit -S -m "1.2.3"
     git tag -s -a v1.2.3 -m "v1.2.3"
     git push origin HEAD
     git push origin --tags
     ```
 
-3. Keep releases minimal and focused; add release notes in a separate commit if needed.
+2. Keep releases minimal and focused; add release notes in a separate commit if needed.
+
+**Note:** We use the `uv_build` backend. Dynamic metadata (for example, reading the version from `__init__.py` via setuptools dynamic config) is not supported by `uv_build`; prefer a static `version` in `pyproject.toml` and keep `src/pytextgen/__init__.py` synced.
 
 ---
 

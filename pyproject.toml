@@ -1,6 +1,6 @@
 [build-system]
-requires = ["setuptools>=81.0.0", "wheel>=0.46.0"]
-build-backend = "setuptools.build_meta"
+requires = ["uv_build"]
+build-backend = "uv_build"
 
 # update `__init__.py`
 [project]
@@ -35,12 +35,12 @@ dependencies = [
 	"wcwidth>=0.4.0",
 ]
 description = "Generate text using code."
-dynamic = ["version",]
 keywords = []
 license = {file = "LICENSE.txt"}
 name = "pytextgen"
 readme = "README.md"
 requires-python = ">=3.12.0"
+version = "6.10.0"
 
 [project.urls]
 repository = "https://github.com/polyipseity/pytextgen.git"
@@ -83,12 +83,6 @@ line-length = 88
 # Enable Pylint-derived rule that disallows imports outside module top-level
 # (import-outside-top-level / PLC0415). Ruff 0.12.0+ provides this rule.
 extend-select = ["I", "PLC0415"]
-
-[tool.setuptools.dynamic]
-version = {attr = "pytextgen.VERSION"}
-
-[tool.setuptools.packages.find]
-where = ["src"]
 
 [tool.uv]
 required-version = ">=0.10.0,<0.11.0"
