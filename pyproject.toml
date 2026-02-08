@@ -45,8 +45,8 @@ requires-python = ">=3.11.0"
 [project.urls]
 repository = "https://github.com/polyipseity/pytextgen.git"
 
-[tool.setuptools]
-package-dir = {pytextgen = "."}
-
 [tool.setuptools.dynamic]
-version = {attr = "VERSION"}
+version = {attr = "pytextgen.VERSION"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
