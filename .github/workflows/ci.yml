@@ -40,4 +40,4 @@ jobs:
           uv run --locked pyright
           uv run --locked ruff check
           uv run --locked ruff format
-          uv build --locked
+          uv build
