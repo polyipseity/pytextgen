@@ -33,7 +33,7 @@ jobs:
 
       - name: Run tests
         run: |
-          uv run --locked pytest -q
+          uv run --locked pytest
 
       - name: Build project
         run: |
