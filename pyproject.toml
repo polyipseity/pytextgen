@@ -89,3 +89,6 @@ version = {attr = "pytextgen.VERSION"}
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.uv]
+required-version = ">=0.10.0,<0.11.0"
