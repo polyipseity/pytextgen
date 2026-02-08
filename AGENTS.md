@@ -86,8 +86,10 @@ If you add an instructions file, link to it from this `AGENTS.md`.
 
 1. Update the version in `pyproject.toml` (primary) and keep `src/pytextgen/__init__.py` in sync. Ensure both files match and commit them together as a single signed commit with the bare version as the message (e.g., `1.2.3`).
 
+    **Important:** After changing the version, run `uv sync --dev` locally to update `uv.lock` and dev extras. If `uv.lock` changes, commit it (for example: `git add uv.lock && git commit -m "chore: update uv.lock"`). In CI prefer `uv sync --locked --all-extras --dev` to validate the locked environment.
+
     ```powershell
-    git add pyproject.toml src/pytextgen/__init__.py
+    git add pyproject.toml uv.lock src/pytextgen/__init__.py
     git commit -S -m "1.2.3"
     git tag -s -a v1.2.3 -m "v1.2.3"
     git push origin HEAD
