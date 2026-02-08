@@ -1,0 +1,36 @@
+# Pre-commit configuration for common checks and Python formatting.
+# Mirrors the project's conventions: enable the recommended hooks from pre-commit-hooks and use Ruff
+# for Python formatting and linting. Adjust or opt-out of any hooks as needed per team preference.
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-case-conflict
+      - id: check-executables-have-shebangs
+      - id: check-illegal-windows-names
+      - id: check-merge-conflict
+      - id: check-shebang-scripts-are-executable
+      - id: check-symlinks
+      - id: destroyed-symlinks
+      - id: detect-private-key
+      - id: end-of-file-fixer
+      - id: fix-byte-order-marker
+      - id: name-tests-test
+        args: ["--pytest-test-first"]
+      - id: trailing-whitespace
+        # Preserve markdown hard line breaks (common in docs)
+        args: ["--markdown-linebreak-ext=md,mdoc,mdown,mdx,mkd,mkdn,markdown,rmd"]
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.0
+    hooks:
+      # Run the linter.
+      - id: ruff-check
+        args: [ --fix ]
+      # Run the formatter.
+      - id: ruff-format
+
+# Notes:
+# - These hooks are a recommended baseline. If a particular hook is undesired (for example, forbidding
+#   submodules in a repository that intentionally uses them), remove or configure that hook.
+# - Keep pre-commit pinned (rev) to an explicit release to ensure reproducible behaviour.

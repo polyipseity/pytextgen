@@ -1,0 +1,17 @@
+{
+  "exclude": ["**/node_modules", "**/__pycache__", "**/.*", ".venv"],
+  "executionEnvironments": [
+    {
+      "extraPaths": ["."],
+      "reportPrivateUsage": "none",
+      "root": "tests"
+    },
+    {
+      "root": "."
+    }
+  ],
+  "pythonVersion": "3.12",
+  "typeCheckingMode": "strict",
+  "venv": ".venv",
+  "venvPath": "."
+}

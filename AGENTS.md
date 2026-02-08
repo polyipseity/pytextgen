@@ -1,173 +1,140 @@
+<!-- markdownlint-disable MD013 MD036 -->
+
 # pytextgen AGENTS
 
-Treat this folder as the project root. This document describes repository conventions, developer workflow, and release steps for the pytextgen submodule.
+**IMPORTANT: This documentation must not contain confidential information.** Use non-confidential placeholders for examples (UUIDs, example amounts, names).
 
-## Purpose
+## 🚩 Agent Workflow Reminders
 
-pytextgen is a utility for generating programmatic content blocks in Markdown notes. This AGENTS.md is intended for maintainers and contributors working inside this submodule.
+**Read relevant skill/instructions before acting.** When asked to perform a skill, read the corresponding SKILL or INSTRUCTIONS file in full before making changes.
 
-## Repository layout (top-level view)
+**Use the Todo List Tool for multi-step tasks.** Plan steps, mark one step `in-progress`, complete it, then continue. Keep the todo list short and explicit.
 
-- `__init__.py` — package version and package metadata (update this when releasing).
-- `pyproject.toml` (canonical) — use `[dependency-groups].dev` for development extras; `requirements.txt` is deprecated in favor of `pyproject.toml`.
-- `tests/` — unit tests (pytest by default, if present).
-- `docs/` or `README.md` — usage and examples (if present).
+**Ask instead of guessing.** If requirements are ambiguous, pause and ask a clarifying question rather than assuming behavior.
 
-Adjust the list above to match this submodule; paths below assume this folder is the repo root.
+## Project Overview
 
-## Dependencies
+pytextgen is a focused utility for generating programmatic content blocks in Markdown and related formats. It is a small, well-scoped Python package with the following priorities:
 
-- Declare project dependencies in `pyproject.toml` (this is the authoritative source).
-- If `requirements.txt` exists in this repository it is a compatibility/delegation helper and should not be treated as the authoritative dependency list — it delegates to `setup.py`/packaging and does not itself store the canonical dependencies.
+- Clear, well-typed public APIs
+- Reproducible dev environments via `uv` and PEP 722 dependency groups
+- Fast, deterministic linting and formatting via `ruff`
+- Comprehensive tests using `pytest` and coverage reports
 
-## Quick start (development)
+## Documentation Structure
 
-1. Create and activate a Python virtual environment (Windows example):
+Store long-form guidance in `.github/instructions/` or `docs/` when appropriate. Recommended instruction pages include (examples):
 
-    ```powershell
-    python -m venv .venv
-    .\.venv\Scripts\Activate.ps1
-    ```
+- `developer-workflows.instructions.md` — Development process, how to run checks, and CI expectations.
+- `formatting.instructions.md` — How to run and configure formatters and linters locally.
+- `testing.instructions.md` — Test structure, how to write tests, and async testing guidance.
+- `release.instructions.md` — Step-by-step release guidance, tagging, and signing.
 
-2. Install development dependencies (recommended):
+If you add an instructions file, link to it from this `AGENTS.md`.
 
-    ```powershell
-    # Using PEP 722 dependency groups (preferred)
-    # Add dev extras to `pyproject.toml` (under [dependency-groups].dev), then install:
-    uv sync
+## Agent Code Conventions (important) 🔧
 
-    # or, if using older tooling, install the editable package with extras
-    # (not recommended; prefer `uv sync`)
-    ```
+- **Top-level imports only.** Avoid runtime or inline imports. Ruff enforces `import-outside-top-level` (PLC0415).
+- **Use os.PathLike for file identifiers.** Accept `os.PathLike` and use `os.fspath(path_like)` when a string path is needed.
+- **Timezone-aware datetimes.** Use `datetime.now(timezone.utc)` (avoid `datetime.utcnow()`).
+- **Type hints:** Prefer PEP 585 types (`dict`, `list`) and `X | Y` unions (PEP 604). Use `Self` where appropriate. Aim for `typeCheckingMode: "strict"` compatibility in `pyrightconfig.json`.
+- **Docstrings & annotations:** Public modules, functions, classes, and tests must include module-level docstrings and complete type annotations.
+- **__all__ usage:** Export control via `__all__` is mandatory; tests should use `__all__ = ()`.
+- **Async tests:** Prefer `async def` tests with `@pytest.mark.asyncio` and `await` usage. Do not use `asyncio.run` within pytest tests.
 
-3. Run tests (if tests exist):
+## Formatting & tooling note 💡
 
-    ```powershell
-    uv run --locked pytest -q
-    ```
-
-## Formatting & linting
-
-- Recommended tools: `ruff`, `flake8`, `mypy` (use if configuration files are present).
-- To run formatters locally:
+- **Ruff** is the canonical formatter/linter. Do not add `black` or `isort`. Use:
 
     ```powershell
-    # Ensure ruff is in dev extras and run via uv for reproducibility
     uv run --locked ruff check --fix .
     uv run --locked ruff format .
     ```
 
-## Pre-commit hooks
+- Use `uv` and commit `uv.lock` to ensure reproducible installs.
 
-Use `pre-commit` to install hooks locally if a `.pre-commit-config.yaml` exists:
+## Pre-commit hooks and local checks ✅
 
-```powershell
-# Add pre-commit to dev extras, then:
-uv sync
-pre-commit install
-pre-commit run --all-files
-```
+- Install `pre-commit` as a dev extra and run:
 
-## Branching & pull request workflow
+    ```powershell
+    uv sync
+    pre-commit install
+    pre-commit run --all-files
+    ```
 
-- Work on feature branches named `feat/description` or `fix/short-description`.
-- Use Conventional Commits for commit messages (type(scope): description).
-- Ensure tests and linters pass before opening a PR. Include a concise summary and list of changes in the PR description.
+- The repository provides a `.pre-commit-config.yaml` with the recommended checks from `pre-commit-hooks`, `ruff`, and a `pytest` hook run on push.
+
+---
+
+## Tests & CI expectations 🔬
+
+- CI runs linters and tests on PRs. Follow `.github/workflows/ci.yml` for exact steps.
+- Tests should mirror the `src/` structure in `tests/`. Prefer one test file per source file unless splitting is justified.
+- Use `pytest` and include coverage (`pytest-cov`) reporting. Make sure slow or flaky tests are marked appropriately and documented.
+
+---
+
+## Branching & commit conventions
+
+- Use feature branches (`feat/description`) and `fix/short-description` for bugfixes.
+- Follow Conventional Commits for commit messages (type(scope): description). Make sure commit bodies are wrapped to 100 characters or fewer.
+
+---
 
 ## Release checklist (semantic versioning)
 
-When publishing a new release, follow these steps and keep the release commit minimal:
-
-1. Update the version string in `__init__.py` to the new semantic version (e.g. `1.2.3`). Edit only this file in the release commit.
-
-2. Commit the change with the commit message equal to the bare version string (no prefix). The commit must be GPG-signed.
+1. Update the version in `pytextgen/__init__.py` only.
+2. Commit the version bump as a single, signed commit with the bare version as the message (e.g., `1.2.3`).
 
     ```powershell
-    git add __init__.py
+    git add pytextgen/__init__.py
     git commit -S -m "1.2.3"
-    ```
-
-3. Create a signed, annotated tag with the `v` prefix matching the version:
-
-    ```powershell
     git tag -s -a v1.2.3 -m "v1.2.3"
-    ```
-
-4. Push the commit and tags to the remote:
-
-    ```powershell
     git push origin HEAD
     git push origin --tags
     ```
 
-Notes:
+3. Keep releases minimal and focused; add release notes in a separate commit if needed.
 
-- Keep the release commit atomic (only version bump). Use separate Conventional Commit changes for other work.
-- The tag must be signed to support reproducible release verification.
+---
 
-## Changelog and release notes
+## CI & Packaging
 
-- Maintain a `CHANGELOG.md` or use an automated changelog generator based on Conventional Commits.
-- If you add release notes, do so in a separate commit (e.g., `chore(release): add release notes for 1.2.3`).
+- CI should reproduce local dev installs via `uv sync --locked --all-extras --dev`.
+- Use `uv run --locked -m build` to build source distributions and wheels locally.
+- Publish via `twine` using credentials stored in CI secrets; never commit credentials to the repo.
 
-## CI expectations
+---
 
-- CI should run tests, linters, and formatting checks on PRs. If a CI workflow file exists, follow its requirements.
+## Security & secrets
 
-## Packaging & publishing (optional)
+- Avoid placing secrets in the repo. Use `SECURITY.md` if present to describe responsible disclosure.
+- Use `detect-private-key` and `detect-aws-credentials` pre-commit hooks to catch accidental leaks.
 
-- To build artifacts locally:
+---
 
-    ```powershell
-    # Add build to dev extras and run via uv
-    uv run --locked -m build
-    ```
+## Troubleshooting & Maintainers
 
-- To publish to PyPI, use `twine` and keep credentials out of the repo (use CI secrets):
+- Missing GPG key: ensure your GPG key is available and `gpg` is in PATH. Configure `user.signingkey` in Git.
+- Failed tests: run `uv run --locked pytest -q` locally and inspect failing traces.
 
-    ```powershell
-    # Add twine to dev extras and run via uv
-    uv run --locked -m twine upload dist/*
-    ```
+**Maintainers:** add contact details (email or GitHub handles) here.
 
-## Security and reporting
+---
 
-- Report security issues privately to the maintainers. If there's a `SECURITY.md`, follow its instructions.
+## VS Code & Editor Setup
 
-## Contributor guidelines
+- Use `.editorconfig` for sensible defaults (UTF-8, final newline, trim trailing whitespace).
+- Keep `pyrightconfig.json` with `typeCheckingMode: "strict"` to match repository expectations.
 
-- Follow the Conventional Commits convention, add tests for new behavior, and include short documentation/examples.
+---
 
-## GPG and signed commits/tags
+## Final notes
 
-- This project requires signed release commits and annotated tags. To sign commits and tags, configure your GPG key and set `user.signingkey` in git config.
+- Be conservative: when uncertain, ask a question rather than making assumptions.
+- When making behavioral changes, include tests and update docs/instructions appropriately.
+- Use the Todo List Tool for multi-step tasks and keep the plan concise and actionable.
 
-    Example commit verification:
 
-    ```powershell
-    git verify-commit HEAD
-    git verify-tag v1.2.3
-    ```
 
-## Using this submodule from the parent repo
-
-- When you update the submodule in the parent repository, update the submodule pointer and commit in the parent repo:
-
-    ```powershell
-    git submodule update --remote --merge
-    git add .
-    git commit -m "chore(submodules): update pytextgen to v1.2.3"
-    ```
-
-## Badges & metadata
-
-- Optionally add CI, PyPI, and coverage badges to the top of `README.md` for quick status visibility.
-
-## Troubleshooting
-
-- Missing GPG key: ensure your key is available to Git and that `gpg` is in PATH.
-- Failed tests: run `pytest -q` locally; ensure dependencies are installed in the venv.
-
-## Maintainers
-
-- List of maintainers or contact details (add e-mail or GitHub handles here).
