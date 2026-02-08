@@ -16,7 +16,7 @@ Follow these steps to create a reproducible development environment (Windows exa
 2. Install dependencies deterministically using `uv` (recommended):
 
    ```powershell
-   uv sync --dev  # use --locked only in CI
+   uv sync --all-extras --dev  # use `--locked --all-extras --dev` only in CI
    ```
 
 3. Run tests and format/lint via `uv`:

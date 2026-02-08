@@ -32,7 +32,7 @@ uv run ruff format .
 - The repository provides a `prek.toml` (preferred) and still supports `.pre-commit-config.yaml` for compatibility. Install and run locally:
 
 ```powershell
-uv sync --dev
+uv sync --all-extras --dev
 prek install
 prek run --all-files
 ```

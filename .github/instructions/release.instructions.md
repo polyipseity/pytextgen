@@ -18,7 +18,7 @@ This document describes a minimal, reproducible release process for `pytextgen`.
 
 1. Update `pyproject.toml` with the new `version` and update `src/pytextgen/__init__.py` with a matching version string (for example, `1.2.3`). Commit both files together in the release commit.
 
-1a. After changing the version, run `uv sync --dev` locally to update `uv.lock` and development extras. If `uv.lock` changes, commit it together with the release commit. In CI use `uv sync --locked --all-extras --dev` to validate the locked environment.
+1a. After changing the version, run `uv sync --all-extras --dev` locally to update `uv.lock` and development extras. If `uv.lock` changes, commit it together with the release commit. In CI use `uv sync --locked --all-extras --dev` to validate the locked environment.
 
 2. Commit using the version string as the commit message and sign the commit with GPG:
 

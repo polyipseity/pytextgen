@@ -15,7 +15,7 @@ Local development quick start:
 2. Install development extras (use `uv`):
 
     ```powershell
-    uv sync --dev
+    uv sync --all-extras --dev
     ```
 
 3. Run formatting, linters and tests before committing:
@@ -29,7 +29,7 @@ Local development quick start:
 Script & CI conventions:
 
 - Prefer `uv run` for invoking tools when a `pnpm` wrapper is not used.
-- CI workflows should install dependencies deterministically (`uv sync --locked`).
+- CI workflows should install dependencies deterministically (`uv sync --locked --all-extras --dev`).
 - Ensure tests and ruff checks run on PRs; `AGENTS.md` lists the CI expectations.
 
 Commit conventions:
