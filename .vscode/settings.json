@@ -1,0 +1,7 @@
+{
+  "chat.tools.terminal.autoApprove": {
+    "/^uv run pyright(?:\\s+(?:--?[\\w-]+(?:=[^\\s]+)?|[^\\s]+))*\\s*$/": {
+      "approve": true
+    }
+  }
+}
