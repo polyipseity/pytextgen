@@ -8,7 +8,7 @@ Pre-commit hooks (local):
   then run:
 
     ```powershell
-    uv sync --locked --dev
+    uv sync --dev
     pre-commit install
     pre-commit run --all-files
     ```
@@ -21,8 +21,8 @@ Formatting & linting:
 - Use Ruff as the single formatting/linting tool. Format via:
 
     ```powershell
-    uv run --locked ruff check --fix .
-    uv run --locked ruff format .
+    uv run ruff check --fix .
+    uv run ruff format .
     ```
 
 Testing:
@@ -30,7 +30,7 @@ Testing:
 - Run tests locally with `pytest` via `uv`:
 
     ```powershell
-    uv run --locked pytest -q
+    uv run pytest -q
     ```
 
 - When adding new behavior, add tests that reflect the intended usage. Keep

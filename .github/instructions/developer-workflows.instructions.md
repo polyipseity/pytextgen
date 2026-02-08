@@ -15,15 +15,15 @@ Local development quick start:
 2. Install development extras (use `uv`):
 
     ```powershell
-    uv sync --locked --dev
+    uv sync --dev
     ```
 
 3. Run formatting, linters and tests before committing:
 
     ```powershell
-    uv run --locked ruff check --fix .
+    uv run ruff check --fix .
     pre-commit run --all-files
-    uv run --locked pytest -q
+    uv run pytest -q
     ```
 
 Script & CI conventions:

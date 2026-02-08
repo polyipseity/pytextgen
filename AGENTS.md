@@ -47,8 +47,8 @@ If you add an instructions file, link to it from this `AGENTS.md`.
 - **Ruff** is the canonical formatter/linter. Do not add `black` or `isort`. Use:
 
     ```powershell
-    uv run --locked ruff check --fix .
-    uv run --locked ruff format .
+    uv run ruff check --fix .
+    uv run ruff format .
     ```
 
 - Use `uv` and commit `uv.lock` to ensure reproducible installs.
@@ -102,7 +102,7 @@ If you add an instructions file, link to it from this `AGENTS.md`.
 ## CI & Packaging
 
 - CI should reproduce local dev installs via `uv sync --locked --all-extras --dev`.
-- Use `uv run --locked -m build` to build source distributions and wheels locally.
+- Use `uv run -m build` to build source distributions and wheels locally.
 - Publish via `twine` using credentials stored in CI secrets; never commit credentials to the repo.
 
 ---
@@ -117,7 +117,7 @@ If you add an instructions file, link to it from this `AGENTS.md`.
 ## Troubleshooting & Maintainers
 
 - Missing GPG key: ensure your GPG key is available and `gpg` is in PATH. Configure `user.signingkey` in Git.
-- Failed tests: run `uv run --locked pytest -q` locally and inspect failing traces.
+- Failed tests: run `uv run pytest -q` locally and inspect failing traces.
 
 **Maintainers:** add contact details (email or GitHub handles) here.
 

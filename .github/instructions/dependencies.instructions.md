@@ -23,7 +23,7 @@ Creating an environment:
 2. Install dependencies:
 
     ```powershell
-    uv sync --locked --dev
+    uv sync --dev
     ```
 
 Notes for CI:

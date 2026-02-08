@@ -17,8 +17,8 @@ This repository uses a small, consistent set of tooling for formatting and linti
 - Format repository (auto-fix where possible):
 
 ```powershell
-uv run --locked ruff check --fix .
-uv run --locked ruff format .
+uv run ruff check --fix .
+uv run ruff format .
 ```
 
 - Run static type checks (pyright/Pylance): ensure `pyrightconfig.json` uses `typeCheckingMode: "strict"` for CI parity.

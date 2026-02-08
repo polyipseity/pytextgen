@@ -39,8 +39,8 @@ git push origin --tags
 5. Build artifacts and publish (CI can handle packaging and publishing; use a manual flow only when needed):
 
 ```powershell
-uv run --locked -m build
-uv run --locked -m twine upload dist/*
+uv run -m build
+uv run -m twine upload dist/*
 ```
 
 ## Release notes

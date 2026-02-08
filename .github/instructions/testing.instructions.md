@@ -22,9 +22,9 @@ Tests use `pytest` and `pytest-asyncio` for async test support. Test configurati
 ## Running tests locally
 
 ```powershell
-uv run --locked pytest -q
+uv run pytest -q
 # With coverage
-uv run --locked pytest --cov=./ --cov-report=term-missing
+uv run pytest --cov=./ --cov-report=term-missing
 ```
 
 ## CI expectations
