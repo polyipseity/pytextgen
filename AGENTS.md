@@ -53,17 +53,17 @@ If you add an instructions file, link to it from this `AGENTS.md`.
 
 - Use `uv` and commit `uv.lock` to ensure reproducible installs.
 
-## Pre-commit hooks and local checks ✅
+## Pre-commit-style hooks (prek) and local checks ✅
 
-- Install `pre-commit` as a dev extra and run:
+- Install `prek` as a dev extra and run:
 
     ```powershell
-    uv sync
-    pre-commit install
-    pre-commit run --all-files
+    uv sync --dev
+    prek install
+    prek run --all-files
     ```
 
-- The repository provides a `.pre-commit-config.yaml` with the recommended checks from `pre-commit-hooks`, `ruff`, and a `pytest` hook run on push.
+- The repository provides a `prek.toml` (preferred) and still supports `.pre-commit-config.yaml` for compatibility. Recommended checks include `pre-commit-hooks`, `ruff`, and a `pytest` hook run on push.
 
 ---
 
@@ -110,7 +110,7 @@ If you add an instructions file, link to it from this `AGENTS.md`.
 ## Security & secrets
 
 - Avoid placing secrets in the repo. Use `SECURITY.md` if present to describe responsible disclosure.
-- Use `detect-private-key` and `detect-aws-credentials` pre-commit hooks to catch accidental leaks.
+- Use `detect-private-key` and `detect-aws-credentials` hooks (via `prek`) to catch accidental leaks. Add or adjust hooks in `prek.toml` or `.pre-commit-config.yaml` for compatibility.
 
 ---
 

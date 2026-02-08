@@ -9,7 +9,7 @@ Repository layout (top-level view):
 - `src/pytextgen/` — package sources.
 - `pyproject.toml` — canonical dependency and build metadata.
 - `.github/` — workflows, instructions, and agent skills.
-- `.pre-commit-config.yaml` — pre-commit hooks for local checks.
+- `prek.toml` — pre-commit-style hooks configuration for local checks (preferred). The repository continues to include `.pre-commit-config.yaml` for compatibility.
 - `tests/` — unit tests using `pytest`.
 - `docs/` or `README.md` — user-facing documentation and examples.
 

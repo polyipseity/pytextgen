@@ -27,17 +27,56 @@ uv run ruff format .
 
 - Use the editor's Ruff/pyright integration where available. Keep the editor settings consistent with `.editorconfig` and `pyrightconfig.json`.
 
-## Pre-commit and lint-staged
+## Pre-commit-style hooks (prek)
 
-- The repository provides `.pre-commit-config.yaml` with recommended `pre-commit-hooks` hooks and a Ruff hook that attempts to fix problems automatically. Install and run locally:
+- The repository provides a `prek.toml` (preferred) and still supports `.pre-commit-config.yaml` for compatibility. Install and run locally:
 
 ```powershell
-uv sync
-pre-commit install
-pre-commit run --all-files
+uv sync --dev
+prek install
+prek run --all-files
 ```
 
-- When a hook is too strict for the repo's needs (for example `forbid-submodules` in a repo that uses submodules intentionally), adjust the `.pre-commit-config.yaml` accordingly.
+- To run a single hook: `prek run <hook-id>` (for example `prek run check-yaml`). You can target specific files with `--files` or run against the whole repo with `--all-files`.
+
+- When a hook is too strict for the repo's needs (for example `forbid-submodules` in a repo that uses submodules intentionally), adjust `prek.toml` or `.pre-commit-config.yaml` accordingly.
+
+### New to pre-commit-style workflows? 💡
+Follow this short example to get started with `prek`:
+
+1. Create a configuration
+
+   - Add a `prek.toml` to the repository root. Example snippet:
+
+     ```toml
+     [[repos]]
+     repo = "https://github.com/pre-commit/pre-commit-hooks"
+     rev = "v6.0.0"
+     hooks = [ { id = "check-yaml" }, { id = "end-of-file-fixer" } ]
+     ```
+
+   Note: `prek` can read `.pre-commit-config.yaml` if you already have one, but `prek.toml` is the native config format.
+
+2. Run hooks on demand
+
+```powershell
+prek run
+```
+
+- Run a single hook: `prek run <hook-id>` (e.g., `prek run check-yaml`).
+- Target specific files with `--files` or run across the whole repository with `--all-files`.
+
+3. Wire hooks into git automatically
+
+```powershell
+prek install
+```
+
+- `prek install` configures the repository to run `prek run` automatically on commits. Undo with `prek uninstall`.
+
+4. Go further
+
+- Explore the `prek` docs and the underlying hook repositories for advanced configuration and language-specific installers.
 
 ## Markdown & other formats
 

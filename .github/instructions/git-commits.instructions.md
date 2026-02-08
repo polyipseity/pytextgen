@@ -27,7 +27,7 @@ Signed release commits & tags:
 
 Pre-commit & validation:
 
-- Run `pre-commit run --all-files` locally before pushing changes.
+- Run `prek run --all-files` locally before pushing changes.
 - Ensure tests and linters pass; CI will re-run these and block the PR if they fail.
 
 Agent & automation notes:

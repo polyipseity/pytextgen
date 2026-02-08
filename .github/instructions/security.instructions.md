@@ -24,5 +24,5 @@ Reporting security issues:
 
 Credential scanning:
 
-- Use pre-commit hooks (detect-aws-credentials, detect-private-key) to catch
-  accidental commits of credentials prior to pushing.
+- Use prek hooks (detect-aws-credentials, detect-private-key) to catch
+  accidental commits of credentials prior to pushing. Add or adjust hooks in `prek.toml` or keep `.pre-commit-config.yaml` for compatibility.
