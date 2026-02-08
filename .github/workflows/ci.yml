@@ -36,6 +36,7 @@ jobs:
 
       - name: Build project
         run: |
+          uv run --locked pyright
           uv run --locked ruff check
           uv run --locked ruff format
           uv run --locked -m build
