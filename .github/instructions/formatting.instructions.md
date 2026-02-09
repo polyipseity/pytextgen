@@ -17,8 +17,8 @@ This repository uses a small, consistent set of tooling for formatting and linti
 - Format repository (auto-fix where possible):
 
 ```powershell
-uv run ruff check --fix .
-uv run ruff format .
+uv run ruff check --fix
+uv run ruff format
 ```
 
 - Run static type checks (pyright/Pylance): ensure `pyrightconfig.json` uses `typeCheckingMode: "strict"` for CI parity.
@@ -42,6 +42,7 @@ prek run --all-files
 - When a hook is too strict for the repo's needs (for example `forbid-submodules` in a repo that uses submodules intentionally), adjust `prek.toml` or `.pre-commit-config.yaml` accordingly.
 
 ### New to pre-commit-style workflows? 💡
+
 Follow this short example to get started with `prek`:
 
 1. Create a configuration
@@ -80,7 +81,25 @@ prek install
 
 ## Markdown & other formats
 
-- `markdownlint-cli2` is used for `.md` files via lint-staged and CI. Use the project's `.markdownlint.jsonc` configuration for rules and fixes.
+- `rumdl` (high-performance Rust linter/formatter) is the canonical Markdown tool for this repository. It is fast and supports linting and formatting via `rumdl check` and `rumdl fmt`. It auto-discovers existing `markdownlint` configurations (for compatibility) and can import them into the `pyproject.toml` with `rumdl import --pyproject .markdownlint.json`.
+
+- Install & run locally (preferred, via `uv` dev extras):
+
+```powershell
+# Ensure dev extras are installed (rumdl is provided from dev extras in pyproject.toml)
+uv sync --all-extras --dev
+
+# Lint (fails on violations):
+uv run --locked rumdl check
+
+# Auto-fix and report remaining violations:
+uv run --locked rumdl check --fix
+
+# Format quietly (exits 0 on success):
+uv run --locked rumdl fmt
+```
+
+- Use `rumdl` instead of `markdownlint-cli2` for `.md` files. Keep `.markdownlint.jsonc` if you need to preserve the original rules; use `rumdl import --pyproject` to convert an existing markdownlint config into the `[tool.rumdl]` section of `pyproject.toml`.
 - `prettier` or other JS formatters are only used if this repository contains files that benefit from them; avoid introducing conflicting formatters for Python files.
 
 ## Notes
@@ -88,4 +107,4 @@ prek install
 - Always run formatters and linters before committing to avoid CI failures.
 - For large formatting changes, prefer small, focused commits and run the test suite locally after formatting to catch regressions.
 
-Agent note: Agents should not add new formatters (for Python) or change the line-length policy. The canonical tool is Ruff; run `uv run ruff check --fix .` and `uv run ruff format .` before committing. For type checks run `uv run pyright` and include the results in the PR description.
+Agent note: Agents should not add new formatters (for Python) or change the line-length policy. The canonical tool is Ruff; run `uv run ruff check --fix` and `uv run ruff format` before committing. For type checks run `uv run pyright` and include the results in the PR description.

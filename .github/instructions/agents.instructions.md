@@ -16,8 +16,8 @@ Quick start (commands you will run every time):
 
 2. Format, lint, and type-check
 
-   - uv run ruff check --fix .
-   - uv run ruff format .
+   - uv run ruff check --fix
+   - uv run ruff format
    - uv run pyright
 
 3. Hooks and tests
@@ -65,7 +65,7 @@ Workflow tools for agents
 
 Optional PR template snippet (paste into PR description):
 
-```
+```text
 What I changed:
 - <brief summary>
 

@@ -56,6 +56,7 @@ dev = [
   "pytest-cov>=7.0.0",
   "pytest-xdist>=3.8.0",
   "ruff>=0.15.0",
+  "rumdl>=0.1.15",
 ]
 
 [tool.pyright]
@@ -84,6 +85,12 @@ line-length = 88
 # Enable Pylint-derived rule that disallows imports outside module top-level
 # (import-outside-top-level / PLC0415). Ruff 0.12.0+ provides this rule.
 extend-select = ["I", "PLC0415"]
+
+# rumdl (Markdown linter/formatter) configuration - prefer storing in pyproject
+# so tools discover it when running from subdirectories.
+[tool.rumdl]
+include = ["**/*.md", "**/*.mdoc", "**/*.mdown", "**/*.mdx", "**/*.mkd", "**/*.mkdn", "**/*.markdown", "**/*.rmd"]
+respect-gitignore = true
 
 [tool.uv]
 required-version = ">=0.10.0,<0.11.0"

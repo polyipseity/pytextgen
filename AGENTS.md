@@ -39,17 +39,19 @@ If you add an instructions file, link to it from this `AGENTS.md`.
 - **Timezone-aware datetimes.** Use `datetime.now(timezone.utc)` (avoid `datetime.utcnow()`).
 - **Type hints:** Prefer PEP 585 types (`dict`, `list`) and `X | Y` unions (PEP 604). Use `Self` where appropriate. Aim for `typeCheckingMode: "strict"` compatibility in `pyrightconfig.json`.
 - **Docstrings & annotations:** Public modules, functions, classes, and tests must include module-level docstrings and complete type annotations.
-- **__all__ usage:** Export control via `__all__` is mandatory; tests should use `__all__ = ()`.
+- **`__all__` usage:** Export control via `__all__` is mandatory; tests should use `__all__ = ()`.
 - **Async tests:** Prefer `async def` tests with `@pytest.mark.asyncio` and `await` usage. Do not use `asyncio.run` within pytest tests.
 
 ## Formatting & tooling note 💡
 
-- **Ruff** is the canonical formatter/linter. Do not add `black` or `isort`. Use:
+- **Ruff** is the canonical formatter/linter for Python. Do not add `black` or `isort`. Use:
 
     ```powershell
-    uv run ruff check --fix .
-    uv run ruff format .
+    uv run ruff check --fix
+    uv run ruff format
     ```
+
+- For Markdown we use **rumdl** (fast Rust-based linter & formatter). Install via dev extras (add `rumdl` to `[dependency-groups].dev` in `pyproject.toml` and run `uv sync --all-extras --dev`) and run `uv run --locked rumdl check` to lint and `uv run --locked rumdl fmt` to format. `rumdl` auto-discovers `.markdownlint.jsonc` and supports `rumdl import --pyproject` to convert existing configs into the `[tool.rumdl]` section of `pyproject.toml`.
 
 - Use `uv` and commit `uv.lock` to ensure reproducible installs.
 
@@ -63,7 +65,9 @@ If you add an instructions file, link to it from this `AGENTS.md`.
     prek run --all-files
     ```
 
-- The repository provides a `prek.toml` (preferred) and still supports `.pre-commit-config.yaml` for compatibility. Recommended checks include `pre-commit-hooks`, `ruff`, and a `pytest` hook run on push.
+- The repository provides a `prek.toml` (preferred) and still supports `.pre-commit-config.yaml` for compatibility. Recommended checks include `pre-commit-hooks`, `ruff`, `rumdl` (Markdown), and a `pytest` hook run on push.
+
+- `rumdl` provides an official pre-commit hook repository (`rvben/rumdl-pre-commit`) exposing `rumdl` and `rumdl-fmt` hooks; `prek` will install this automatically when present in `prek.toml`.
 
 ---
 
@@ -141,7 +145,7 @@ Quick checklist (run before committing or opening a PR):
 
 - Read `.github/instructions/*` (especially `developer-workflows.instructions.md` and `agents.instructions.md`).
 - Sync the environment: `uv sync --all-extras --dev` and install hooks: `prek install`.
-- Format & lint: `uv run ruff check --fix .` and `uv run ruff format .`.
+- Format & lint: `uv run ruff check --fix` and `uv run ruff format`.
 - Run pre-commit hooks: `prek run --all-files` (or `pre-commit run --all-files` if using pre-commit).
 - Type check: `uv run pyright` (or run your editor's pyright integration configured by `pyrightconfig.json`).
 - Run tests: `uv run pytest` (use `--cov` when verifying coverage changes).

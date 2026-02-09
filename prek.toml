@@ -28,6 +28,17 @@ hooks = [
   { id = "trailing-whitespace", args = ["--markdown-linebreak-ext=md,mdoc,mdown,mdx,mkd,mkdn,markdown,rmd"] },
 ]
 
+# Markdown linting using rumdl (high-performance Rust linter). These hooks
+# use the official pre-commit bridge which installs rumdl into an isolated
+# environment automatically. Keep `.markdownlint.jsonc` for compatibility;
+# rumdl auto-discovers and can import markdownlint configs via `rumdl import`.
+[[repos]]
+repo = "https://github.com/rvben/rumdl-pre-commit"
+rev = "v0.1.15"
+hooks = [
+  { id = "rumdl-fmt" },
+]
+
 [[repos]]
 repo = "https://github.com/RobertCraigie/pyright-python"
 rev = "v1.1.408"

@@ -21,8 +21,8 @@ Formatting & linting:
 - Use Ruff as the single formatting/linting tool. Format via:
 
     ```powershell
-    uv run ruff check --fix .
-    uv run ruff format .
+    uv run ruff check --fix
+    uv run ruff format
     ```
 
 Testing:

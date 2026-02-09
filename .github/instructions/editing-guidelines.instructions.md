@@ -14,7 +14,7 @@ Markdown:
 
 - Use consistent heading levels, and add short summaries at the top of docs.
 - Prefer fenced code blocks and explicit language markers.
-- Use `.markdownlint.jsonc` if present for repository enforcement.
+- Use `.markdownlint.jsonc` if present for compatibility, but prefer `rumdl` for Markdown linting and formatting. Add `rumdl` to `[dependency-groups].dev` in `pyproject.toml` and run `uv sync --all-extras --dev` to install it into the project `.venv`; then use `uv run --locked rumdl check`, `uv run --locked rumdl check --fix`, or `uv run --locked rumdl fmt`.
 
 Python style & typing:
 
