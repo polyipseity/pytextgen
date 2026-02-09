@@ -37,6 +37,8 @@ from ..io import ClearOpts as _ClrOpts
 from ..io import ClearType as _ClrT
 from ..io import ClearWriter as _ClrWriter
 
+__all__ = ("ExitCode", "Arguments", "main", "parser")
+
 
 @_fin
 @_unq

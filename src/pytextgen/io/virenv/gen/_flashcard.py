@@ -50,6 +50,17 @@ from ..util import (
     split_by_punctuations as _spt_by_puncts,
 )
 
+__all__ = (
+    "attach_flashcard_states",
+    "listify_flashcards",
+    "memorize_two_sided0",
+    "memorize_linked_seq0",
+    "memorize_indexed_seq0",
+    "semantics_seq_map0",
+    "punctuation_hinter",
+    "cloze_texts",
+)
+
 
 def attach_flashcard_states(flashcards: _Iter[_FcGrp], /, *, states: _Iter[_FcStGrp]):
     for fc, st in zip(flashcards, _chain(states, _repeat(_FcStGrp()))):

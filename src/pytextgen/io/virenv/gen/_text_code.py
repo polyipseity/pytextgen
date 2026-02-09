@@ -32,6 +32,14 @@ from typing import (
 from ..util import constant as _const
 from ._misc import Tag as _Tag
 
+__all__ = (
+    "TextCode",
+    "code_to_strs",
+    "code_to_str",
+    "affix_code",
+    "separate_code_by_tag",
+)
+
 
 @_fin
 class TextCode:

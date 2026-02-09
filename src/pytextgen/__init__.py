@@ -6,6 +6,19 @@ from typing import Literal as _Lit
 from typing import TypedDict as _TDict
 from typing import final as _fin
 
+__all__ = (
+    "NAME",
+    "VERSION",
+    "FLASHCARD_EASE_DEFAULT",
+    "FLASHCARD_STATES_FORMAT",
+    "FLASHCARD_STATES_REGEX",
+    "GENERATE_COMMENT_FORMAT",
+    "GENERATE_COMMENT_REGEX",
+    "LOGGER",
+    "OPEN_TEXT_OPTIONS",
+    "UUID",
+)
+
 
 @_fin
 class _OpenOptions(_TDict):

@@ -19,6 +19,8 @@ from typing import (
     final as _fin,
 )
 
+__all__ = ("FlashcardSeparatorType", "Configuration", "CONFIG")
+
 
 @_fin
 @_dc(

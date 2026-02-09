@@ -77,6 +77,17 @@ from ..util import (
     wrap_async as _wrap_a,
 )
 
+__all__ = (
+    "AnyTextIO",
+    "lock_file",
+    "Location",
+    "NullLocation",
+    "NULL_LOCATION",
+    "PathLocation",
+    "FileSection",
+    "Result",
+)
+
 AnyTextIO = _TxtIO | _AFile[str]
 _FILE_LOCKS = _defdict[_Path, _TLock](_TLock)
 _stat_a = sync_to_async(_stat)

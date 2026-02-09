@@ -39,8 +39,35 @@ Checklist before opening a PR ✅
 Repo-specific patterns & examples (do not assume standard patterns):
 
 - Top-level imports only: avoid runtime imports inside functions. See `src/pytextgen/util.py` for the prevalent pattern of aliasing imports with a leading underscore (for example: `from typing import Self as _Self`).
-- Export control: Public modules that export a surface must define `__all__`; tests must set `__all__ = ()`.
-- Typing & dataclasses: Prefer PEP-585/604 annotations (`list[int]`, `str | None`). Many dataclasses use `@dataclass(..., slots=True, frozen=True)`.
+- Export control: Public modules that export a surface must define an explicit `__all__` tuple (not a list); test modules must set `__all__ = ()`.
+
+  Export-control policy (detailed):
+
+  - Format and placement: Add a module-level `__all__` tuple placed near the top of the module immediately after imports (the first top-level statements after imports).
+  - Use a tuple literal and the exact symbol names (strings) that the module intends to export. Example:
+
+    ```python
+    # imports...
+
+    __all__ = (
+        "PublicClass",
+        "public_function",
+    )
+    ```
+
+  - What to include: Only include names that are part of the module's public API:
+    - Public classes, functions, constants, and names intended for `from module import *`.
+    - Do not include private names (names that start with `_`).
+    - Re-exported symbols (for example, `from .submodule import Thing`) should be explicitly listed in `__all__` of the parent module.
+  - Package `__init__.py`: When a package exposes a public surface via the package import (for example `import package`), set `__all__` in `__init__.py` to the names that should be available at package level (module names or specific symbols). Use tuples there as well.
+  - Tests: Test modules must set `__all__ = ()` to make it explicit they export nothing.
+
+  Rationale and checks:
+
+  - Why: Explicit `__all__` makes public surface area explicit for users and tools, reduces accidental exports, and aids static analysis and packaging.
+  - Verification: After adding or changing `__all__`, run your local checks (`uv run ruff check --fix`, `uv run pyright`, `uv run pytest`). When adding re-exports, ensure `pyright` and tests still import and reference symbols correctly.
+  - Examples and automated checks: Prefer small tests which import the module and assert the presence of promised attributes and absence of private ones when appropriate.
+- Typing & dataclasses: Prefer PEP-585/604 annotations (`list[int]`, `str | None`). Many dataclasses use `@dataclass(..., slots=True, frozen=True)`. Do not use `from __future__ import annotations` anywhere in this repository; postponed evaluation of annotations is disallowed. Use explicit forward references or runtime-compatible patterns when necessary.
 - Async-first code: Many helpers are `async` (use `@pytest.mark.asyncio` for tests). Examples: `CompileCache` context manager in `src/pytextgen/util.py`.
 - Formatting toolchain: Ruff is the canonical formatter and linter—do not add `black` or `isort`.
 - Version bumps: Update `pyproject.toml` and `src/pytextgen/__init__.py` together. Run the version parity test (`tests/pytextgen/test___init__.py`) and `uv sync --all-extras --dev` so `uv.lock` is updated.

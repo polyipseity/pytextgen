@@ -46,6 +46,13 @@ Agent & automation rules:
   and the test suite.
 - Agents must ask clarifying questions if intent is ambiguous rather than
   guessing when correctness matters.
+- Agents must not add `from __future__ import annotations` to new or existing
+  modules; postponed evaluation of annotations is disallowed in this repository.
+- Export policy for agents: when modifying public surfaces (adding or removing
+  exported symbols), update `__all__` tuples accordingly. Place `__all__` as a
+  tuple literal immediately after imports and keep tests explicit with
+  `__all__ = ()`. Run formatting, type checks, and tests after changes and add
+  or update tests that validate the exposed API where appropriate.
 - See `.github/instructions/agents.instructions.md` for an AI agent runbook with
   concrete commands, repo-specific patterns (imports, `__all__`, version bump
   workflow), and a pre-PR checklist to follow.

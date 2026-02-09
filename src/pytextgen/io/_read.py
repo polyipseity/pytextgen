@@ -105,6 +105,8 @@ from .util import NULL_LOCATION as _NULL_LOC
 from .util import FileSection as _FSect
 from .virenv.util import StatefulFlashcardGroup as _StFcGrp
 
+__all__ = ("Reader", "CodeLibrary", "MarkdownReader")
+
 _PYTHON_ENV_BUILTINS_EXCLUDE = frozenset[str](
     # constants: https://docs.python.org/library/constants.html
     # functions: https://docs.python.org/library/functions.html

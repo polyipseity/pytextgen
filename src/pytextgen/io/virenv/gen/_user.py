@@ -116,6 +116,26 @@ except Exception:
 
 _T = _TVar("_T")
 
+__all__ = (
+    "text",
+    "quote",
+    "quotette",
+    "quote_text",
+    "cloze_text",
+    "tagged_filter_sep",
+    "memorize",
+    "memorize_two_sided",
+    "memorize_linked_seq",
+    "memorize_indexed_seq",
+    "semantics_seq_map",
+    "markdown_sanitizer",
+    "seq_to_code",
+    "map_to_code",
+    "maps_to_code",
+    "rows_to_table",
+    "two_columns_to_code",
+)
+
 _SECTION_TEXT_FORMAT = "\n\n{}\n\n"
 _TABLE_ALIGNS: _Map[_Lit["default", "left", "right", "center"], str] = {
     "default": "-",

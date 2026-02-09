@@ -36,6 +36,8 @@ from typing import (
 
 from .. import UUID as _UUID
 
+__all__ = ("Environment",)
+
 
 @_fin
 class Environment:

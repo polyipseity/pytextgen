@@ -37,9 +37,16 @@ If you add an instructions file, link to it from this `AGENTS.md`.
 - **Top-level imports only.** Avoid runtime or inline imports. Ruff enforces `import-outside-top-level` (PLC0415).
 - **Use os.PathLike for file identifiers.** Accept `os.PathLike` and use `os.fspath(path_like)` when a string path is needed.
 - **Timezone-aware datetimes.** Use `datetime.now(timezone.utc)` (avoid `datetime.utcnow()`).
-- **Type hints:** Prefer PEP 585 types (`dict`, `list`) and `X | Y` unions (PEP 604). Use `Self` where appropriate. Aim for `typeCheckingMode: "strict"` compatibility in `pyrightconfig.json`.
+- **Type hints:** Prefer PEP 585 types (`dict`, `list`) and `X | Y` unions (PEP 604). Use `Self` where appropriate. Aim for `typeCheckingMode: "strict"` compatibility in `pyrightconfig.json`. Do not use `from __future__ import annotations` in this repository; postponed evaluation of annotations is not permitted.
 - **Docstrings & annotations:** Public modules, functions, classes, and tests must include module-level docstrings and complete type annotations.
 - **`__all__` usage:** Export control via `__all__` is mandatory; tests should use `__all__ = ()`.
+
+  Detailed rules:
+
+  - Place `__all__` as a tuple literal immediately after imports at the top of the module.
+  - Only include public symbols (classes, functions, constants) or package-level module names; do not include names starting with `_`.
+  - For packages, `__init__.py` should list the public submodules or re-exported names intentionally exposed at package import time.
+  - When changing public symbols, update `__all__`, update docs, and add or update tests that verify exports. Run `uv run ruff check --fix`, `uv run pyright`, and `uv run pytest` locally before opening a PR.
 - **Async tests:** Prefer `async def` tests with `@pytest.mark.asyncio` and `await` usage. Do not use `asyncio.run` within pytest tests.
 
 ## Formatting & tooling note 💡

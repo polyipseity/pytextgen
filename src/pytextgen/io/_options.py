@@ -6,6 +6,8 @@ from typing import final as _fin
 
 from ..util import Compiler as _Compiler
 
+__all__ = ("ClearType", "ClearOpts", "GenOpts")
+
 
 @_fin
 @_unq

@@ -42,6 +42,8 @@ from ..io import Reader as _Reader
 from ..io import Writer as _Writer
 from ..util import CompileCache as _CompCache
 
+__all__ = ("ExitCode", "Arguments", "main", "parser")
+
 
 @_fin
 @_unq

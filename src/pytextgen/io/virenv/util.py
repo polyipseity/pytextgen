@@ -38,10 +38,42 @@ from ... import (
 from ... import (
     FLASHCARD_STATES_REGEX as _FC_ST_RE,
 )
-from ...util import *  # Intentional wildcard
-from ..util import *  # Intentional wildcard
+from ...util import (  # explicit imports (avoid star-imports)
+    IteratorSequence,
+    TypedTuple,
+    Unit,
+    abc_subclasshook_check,
+    affix_lines,
+    constant,
+    identity,
+    ignore_args,
+    split_by_punctuations,
+    strip_lines,
+    wrap_async,
+)
+
+# from ..util import *  # intentionally removed star-import; no names from ..util are required here
 from .config import CONFIG as _CFG
 from .config import FlashcardSeparatorType as _FcSepT
+
+__all__ = (
+    "export_seq",
+    "FlashcardGroup",
+    "TwoSidedFlashcard",
+    "ClozeFlashcardGroup",
+    "FlashcardState",
+    "FlashcardStateGroup",
+    "StatefulFlashcardGroup",
+    "IteratorSequence",
+    "Unit",
+    "affix_lines",
+    "strip_lines",
+    "wrap_async",
+    "constant",
+    "identity",
+    "ignore_args",
+    "split_by_punctuations",
+)
 
 
 def export_seq(*seq: _Call[..., _Any] | type):

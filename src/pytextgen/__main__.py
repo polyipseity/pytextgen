@@ -4,6 +4,8 @@ from sys import argv as _argv
 
 from .main import parser as _parser
 
+__all__ = ()
+
 if __name__ == "__main__":
     basicConfig(level=INFO)
     entry = _parser().parse_args(_argv[1:])

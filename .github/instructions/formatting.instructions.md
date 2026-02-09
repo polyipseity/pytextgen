@@ -110,3 +110,5 @@ uv run --locked rumdl fmt
 - For large formatting changes, prefer small, focused commits and run the test suite locally after formatting to catch regressions.
 
 Agent note: Agents should not add new formatters (for Python) or change the line-length policy. The canonical tool is Ruff; run `uv run ruff check --fix` and `uv run ruff format` before committing. For type checks run `uv run pyright` and include the results in the PR description.
+
+Export control note: When an agent changes public symbols, update `__all__` tuples and ensure the change is covered by tests and type checks. Add a short test that imports the module and verifies its exported names if you're changing the public surface.

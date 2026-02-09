@@ -3,6 +3,8 @@ from enum import unique as _unq
 from typing import ClassVar as _ClsVar
 from typing import final as _fin
 
+__all__ = ("Tag",)
+
 
 @_fin
 @_unq

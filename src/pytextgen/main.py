@@ -22,6 +22,8 @@ from .generate.main import (
     parser as _generate_parser,
 )
 
+__all__ = ("parser",)
+
 
 def parser(parent: _Call[..., _ArgParser] | None = None):
     prog = __package__ or __name__
