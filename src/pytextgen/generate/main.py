@@ -1,3 +1,9 @@
+"""CLI 'generate' subcommand: generate content based on input files.
+
+This module exposes an async `main` entry point and a `parser` factory
+used by the top-level CLI.
+"""
+
 from argparse import (
     ONE_OR_MORE as _ONE_OR_MORE,
 )
@@ -48,6 +54,11 @@ __all__ = ("ExitCode", "Arguments", "main", "parser")
 @_fin
 @_unq
 class ExitCode(_IntFlg):
+    """Exit flags used by the `generate` subcommand.
+
+    Signals represent read/validate/write failures and are combinable.
+    """
+
     READ_ERROR = _auto()
     VALIDATE_ERROR = _auto()
     WRITE_ERROR = _auto()
@@ -66,6 +77,13 @@ class ExitCode(_IntFlg):
     slots=True,
 )
 class Arguments:
+    """Parsed arguments container for the `generate` command.
+
+    Attributes:
+        inputs: Sequence of input paths to generate from.
+        options: Generation options (`GenOpts`) controlling behaviour.
+    """
+
     inputs: _Seq[_Path]
     options: _GenOpts
 
@@ -74,6 +92,11 @@ class Arguments:
 
 
 async def main(args: Arguments):
+    """Main async entry point for the `generate` subcommand.
+
+    Reads inputs, validates and writes generated output. Exits with an
+    appropriate `ExitCode` on error.
+    """
     exit_code = ExitCode(0)
 
     async def read(input: _Path):
@@ -124,6 +147,11 @@ async def main(args: Arguments):
 
 
 def parser(parent: _Call[..., _ArgParser] | None = None):
+    """Create an `ArgumentParser` for the `generate` subcommand.
+
+    The returned parser is configured with options for timestamping,
+    flashcard initialization and code cache options.
+    """
     prog = __package__ or __name__
 
     parser = (_ArgParser if parent is None else parent)(

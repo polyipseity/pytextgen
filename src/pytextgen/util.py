@@ -1,3 +1,9 @@
+"""Small, well-tested utility helpers used by the package.
+
+This module provides small composable helpers (sync/async wrappers),
+protocols, and a small compile cache used by the `generate` path.
+"""
+
 from abc import ABCMeta as _ABCM
 from ast import (
     AST as _AST,
@@ -164,16 +170,27 @@ async def wrap_async(value: _Await[_T] | _T) -> _T: ...
 
 
 async def wrap_async(value: _Await[_T] | _T):
+    """Await and return the underlying value when awaitable.
+
+    This helper ensures that both plain values and awaitable values may
+    be handled transparently in async contexts.
+    """
     if _isawait(value):
         return await value
     return value
 
 
 def identity(var: _T) -> _T:
+    """Return the given value unchanged (identity function)."""
     return var
 
 
 def constant(var: _T) -> _Call[..., _T]:
+    """Return a callable that always returns `var`.
+
+    Useful for providing default callbacks or constant factories.
+    """
+
     def func(*_: _Any) -> _T:
         return var
 
@@ -181,6 +198,12 @@ def constant(var: _T) -> _Call[..., _T]:
 
 
 def ignore_args(func: _Call[[], _T]) -> _Call[..., _T]:
+    """Wrap a no-argument callable so it can accept and ignore extra args.
+
+    The returned function forwards no positional or keyword arguments to
+    the underlying `func` and returns its result.
+    """
+
     @_wraps(func)
     def func0(*_: _Any) -> _T:
         return func()
@@ -189,11 +212,20 @@ def ignore_args(func: _Call[[], _T]) -> _Call[..., _T]:
 
 
 def tuple1(var: _T) -> tuple[_T]:
+    """Return a 1-tuple containing `var`.
+
+    This helper improves readability at call-sites that expect a tuple.
+    """
     return (var,)
 
 
 @_actxmgr
 async def async_lock(lock: _TLock):
+    """Async context manager to acquire and release a threading lock.
+
+    This runs the blocking `lock.acquire` in a threadpool so it may be
+    used from async code.
+    """
     await _run_loop().run_in_executor(
         _ASYNC_LOCK_THREAD_POOLS.setdefault(lock, _cache(_partial(_TPExecutor, 1)))(),
         lock.acquire,
@@ -205,6 +237,10 @@ async def async_lock(lock: _TLock):
 
 
 def deep_foreach_module(module: _Mod):
+    """Yield modules from a package and its submodules, recursively.
+
+    Prevents revisiting modules by keeping track of seen module names.
+    """
     names = set[str]()
 
     def impl(mod: _Mod) -> _Itor[_Mod]:
@@ -222,6 +258,11 @@ def deep_foreach_module(module: _Mod):
 
 
 def copy_module(module: ModuleType) -> ModuleType:
+    """Create a fresh import of `module` with unrelated module cache.
+
+    This temporarily clears unrelated modules from `sys.modules` and
+    re-imports the requested module so consumers have a clean copy.
+    """
     names = discover_module_names(module)
     with _mock.patch.dict(
         _mods,
@@ -232,6 +273,7 @@ def copy_module(module: ModuleType) -> ModuleType:
 
 
 def discover_module_names(module: _Mod) -> _Seq[str]:
+    """Return a sequence of full module names for `module` and submodules."""
     return tuple(map(_attrgetter("__name__"), deep_foreach_module(module)))
 
 
@@ -244,6 +286,12 @@ def abc_subclasshook_check(
     names: _Collect[str],
     typing: _Lit["nominal", "structural"] = "nominal",
 ):
+    """Helper used in `__subclasshook__` implementations.
+
+    Supports both nominal and structural checks for the presence of
+    attributes specified by `names`. Returns `True`, `False` or
+    `NotImplemented` to be used directly from `__subclasshook__`.
+    """
     if cls is impl_cls:
         if typing == "nominal":
             if any(
@@ -278,31 +326,49 @@ def abc_subclasshook_check(
 
 @_fin
 class Unit(_Genic[_T_co]):
+    """A tiny container type wrapping a single value.
+
+    Provides monadic-style helpers: `counit`, `bind`, `map`, `join` and
+    `duplicate` for simple composition in utility code and tests.
+    """
+
     __slots__: _ClsVar = ("__value",)
 
     def __init__(self, value: _T_co):
         self.__value: _T_co = value
 
     def counit(self):
+        """Return the wrapped value."""
         return self.__value
 
     def bind(self, func: _Call[[_T_co], _ExtendsUnit]):
+        """Apply `func` to the wrapped value and return its result."""
         return func(self.counit())
 
     def extend(self, func: _Call[[_Self], _T1_co]) -> "Unit[_T1_co]":
+        """Extend the current `Unit` using `func` producing a new `Unit`."""
         return Unit(func(self))
 
     def map(self, func: _Call[[_T_co], _T1_co]) -> "Unit[_T1_co]":
+        """Map `func` over the contained value and wrap the result."""
         return Unit(func(self.counit()))
 
     def join(self: "Unit[_ExtendsUnit]"):
+        """Flatten one level of `Unit` by returning the inner value."""
         return self.counit()
 
     def duplicate(self):
+        """Return a new `Unit` that wraps this `Unit`."""
         return Unit(self)
 
 
 class TypedTuple(_Genic[_T], tuple[_T, ...]):
+    """A typed tuple with a fixed element type provided at subclassing.
+
+    Subclass by providing `element_type` to ensure the tuple contains only
+    elements of that type at construction time.
+    """
+
     __slots__: _ClsVar = ()
     element_type: type[_T]
 
@@ -327,6 +393,12 @@ class TypedTuple(_Genic[_T], tuple[_T, ...]):
 
 @_fin
 class IteratorSequence(_Genic[_T_co], _Seq[_T_co]):
+    """A sequence view over an iterator that supports len() and indexing.
+
+    Caches yielded values under a lock so the sequence can be iterated and
+    randomly accessed safely from multiple callers.
+    """
+
     __slots__: _ClsVar = ("__cache", "__done", "__iterator", "__lock")
 
     def __init__(self, iterator: _Itor[_T_co]):
@@ -393,6 +465,13 @@ class Compiler(_Proto):
 
 @_fin
 class CompileCache:
+    """A small on-disk/memory cache for compiled Python code objects.
+
+    Use as an async context manager. When `folder` is provided compiled
+    code is stored on disk along with metadata; otherwise caching is
+    kept in-memory for the context lifetime.
+    """
+
     __slots__: _ClsVar = ("__cache", "__cache_names", "__folder")
     __METADATA_FILENAME: _ClsVar = "metadata.json"
     __CACHE_NAME_FORMAT: _ClsVar = "{}.pyc"
@@ -640,6 +719,11 @@ class CompileCache:
 
 
 def affix_lines(text: str, /, *, prefix: str = "", suffix: str = ""):
+    """Return `text` with `prefix` and `suffix` inserted around each line.
+
+    Useful for constructing joined lines with consistent pre/post text.
+    """
+
     def ret_gen():
         newline: str = ""
         for line in text.splitlines():
@@ -653,8 +737,10 @@ def affix_lines(text: str, /, *, prefix: str = "", suffix: str = ""):
 
 
 def strip_lines(text: str, /, *, chars: str | None = None):
+    """Strip each line in `text` and return the joined result."""
     return "\n".join(line.strip(chars) for line in text.splitlines())
 
 
 def split_by_punctuations(text: str):
+    """Split `text` into parts using Unicode punctuation boundaries."""
     return _PUNCTUATION_REGEX.splititer(text)

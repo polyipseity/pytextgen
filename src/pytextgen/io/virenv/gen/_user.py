@@ -1,3 +1,10 @@
+"""User-facing generation helpers.
+
+Functions in this module transform `TextCode` fragments into textual
+representations for quoting, flashcards, tables, and other formatted
+outputs used by the project.
+"""
+
 from dataclasses import dataclass as _dc
 from functools import partial as _partial
 from html import unescape as _unescape
@@ -180,6 +187,7 @@ _HTML_TAG_REGEX = _re_comp(r"<([^>]+)>", _NOFLAG)
 
 
 def text(text: str):
+    """Wrap plain `text` into the standard section format used by generators."""
     return _Unit(text).map(_strp_ls).map(_SECTION_TEXT_FORMAT.format).counit()
 
 
@@ -187,14 +195,17 @@ _TEXT = text
 
 
 def quote(text: str, prefix: str = "> "):
+    """Return `text` formatted as a quote block with given `prefix`."""
     return _Unit(text).map(_partial(_afx_ls, prefix=prefix)).counit()
 
 
 def quotette(text: str, prefix: str = "> "):
+    """Return `text` quoted and formatted using the section wrapper."""
     return _Unit(text).map(_partial(quote, prefix=prefix)).map(_TEXT).counit()
 
 
 def quote_text(code: _TextCode, /, *, tag: str = _Tag.TEXT, line_prefix: str = "> "):
+    """Convert `code` into quoted plain text using the given `tag`."""
     return (
         _Unit(code)
         .map(_partial(_c2s, tag=tag))
@@ -214,6 +225,11 @@ def cloze_text(
     separator: str = "\n\n",
     states: _Iter[_FcStGrp],
 ):
+    """Convert cloze-tagged `code` into quoted text containing flashcards.
+
+    `states` provides an iterator of `FlashcardStateGroup` instances used
+    to attach state information to generated flashcards.
+    """
     return (
         _Unit(code)
         .map(_partial(_sep_c_by_t, tag=sep_tag))
@@ -236,6 +252,11 @@ def tagged_filter_sep(
     sep_tag: str | None = None,
     empty: bool = False,
 ):
+    """Return textual fragments of `code` filtered by `tag` and separators.
+
+    If `sep_tag` is provided, code is first split by that tag; otherwise all
+    blocks are considered. When `empty=False` empty fragments are removed.
+    """
     if sep_tag is None:
         unit = _Unit(code).map(_partial(_c2ss, tag=tag))
     else:
@@ -260,6 +281,11 @@ def memorize(
     empty: bool = False,
     ordered: bool = False,
 ):
+    """Apply a memorization function `func` to `code` and format the result.
+
+    The `func` returns an iterator of flashcard groups which are paired with
+    `states` and rendered as text.
+    """
     return (
         _Unit(code)
         .map(_partial(tagged_filter_sep, tag=tag, sep_tag=sep_tag, empty=empty))
@@ -280,6 +306,7 @@ def memorize_two_sided(
     reversible: bool = True,
     **kwargs: _Any,
 ):
+    """Convenience wrapper to create two-sided flashcards from `code`."""
     return memorize(
         code,
         func=_partial(
@@ -307,6 +334,7 @@ def memorize_linked_seq(
     reversible: bool = True,
     **kwargs: _Any,
 ):
+    """Create linked-sequence flashcards using `memorize` with a hinter."""
     return memorize(
         code,
         func=_partial(
@@ -335,6 +363,7 @@ def memorize_indexed_seq(
     reversible: bool = True,
     **kwargs: _Any,
 ):
+    """Create index-based flashcards from `code` using a sequence of indices."""
     return memorize(
         code,
         func=_partial(
@@ -363,6 +392,11 @@ def semantics_seq_map(
     reversible: bool = False,
     ordered: bool = False,
 ):
+    """Create semantic mapping flashcards from two `TextCode` inputs.
+
+    `code` provides the prompt text and `sem` the semantic values. The
+    resulting flashcards are paired with `states` and rendered as text.
+    """
     if not isinstance(tags, tuple):
         tags = (tags, tags)
     if not isinstance(sep_tags, tuple):
@@ -391,6 +425,8 @@ def semantics_seq_map(
 
 
 def markdown_sanitizer(text: str):
+    """Sanitize `text` by desugaring limited inline markdown and removing tags."""
+
     def get_and_del_tags(text: str):
         tags = set[str]()
         matches = list[_Match[str]]()
@@ -450,6 +486,8 @@ def seq_to_code(
     suffix: str = "",
     escape: bool = False,
 ):
+    """Convert a sequence of strings into a `TextCode` list representation."""
+
     def gen_code():
         yield prefix
         newline = ""

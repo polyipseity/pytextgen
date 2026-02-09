@@ -1,3 +1,9 @@
+"""Reader abstractions and the `MarkdownReader` implementation.
+
+Provides a pluggable `Reader` interface and a Markdown reader which
+extracts embedded Python code blocks for later execution.
+"""
+
 from abc import ABCMeta as _ABCM
 from abc import abstractmethod as _amethod
 from ast import parse as _parse
@@ -119,6 +125,12 @@ _PYTHON_ENV_MODULE_CACHE = _WkKDict[
 
 
 class Reader(metaclass=_ABCM):
+    """Abstract reader interface for file-like inputs.
+
+    Subclasses should implement `read` and `pipe`. Use `Reader.register2`
+    to register file extensions handled by concrete readers.
+    """
+
     __slots__: _ClsVar = ()
     REGISTRY: _ClsVar = dict[str, type[_Self]]()
     __CACHE: _ClsVar = dict[_Path, _Self]()
@@ -191,6 +203,12 @@ class Reader(metaclass=_ABCM):
 
 
 class CodeLibrary(metaclass=_ABCM):
+    """Interface for readers that contain library code.
+
+    Implementors expose a `codes` property returning sequences of code
+    objects used by `MarkdownReader` when composing generated modules.
+    """
+
     __slots__: _ClsVar = ()
 
     @property
@@ -212,6 +230,11 @@ def _Python_env(
         | None
     ) = None,
 ):
+    """Create an execution environment for running extracted Python code.
+
+    The environment ensures import isolation and provides helpers such as
+    `cwf` (current working file) and `cwf_sect` to locate file sections.
+    """
     if modifier is None:
         modifier = _i_args(_nullctx)
 
@@ -278,6 +301,13 @@ def _Python_env(
 @CodeLibrary.register
 @Reader.register2(".md")
 class MarkdownReader(Reader):
+    """A `Reader` that extracts Python code blocks embedded in Markdown.
+
+    Blocks are delimited by fenced code blocks and annotated to indicate
+    whether they are `data` or `module` blocks. The reader offers a
+    `pipe` method which yields configured `Writer` instances.
+    """
+
     __slots__: _ClsVar = ("__codes", "__library_codes", "__options", "__path")
 
     START: _ClsVar = _re_comp(rf"```Python\n# {_NAME} generate (data|module)", _NOFLAG)

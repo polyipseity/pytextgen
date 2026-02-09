@@ -1,3 +1,8 @@
+"""Executable entry point for the `generate` CLI subcommand.
+
+Runs the `parser` and invokes the selected subcommand.
+"""
+
 from asyncio import run as _run
 from logging import INFO, basicConfig
 from sys import argv as _argv

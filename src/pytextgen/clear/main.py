@@ -1,3 +1,9 @@
+"""CLI 'clear' subcommand: utilities to clear generated content from files.
+
+Provide an async `main` entry point and a `parser` factory wired into the
+top-level CLI.
+"""
+
 from argparse import (
     ONE_OR_MORE as _ONE_OR_MORE,
 )
@@ -43,6 +49,12 @@ __all__ = ("ExitCode", "Arguments", "main", "parser")
 @_fin
 @_unq
 class ExitCode(_IntFlg):
+    """Exit flags used by the `clear` subcommand.
+
+    Values are combinable using bitwise-or to signal multiple error
+    conditions to the process exit code.
+    """
+
     ERROR = _auto()
 
 
@@ -59,6 +71,13 @@ class ExitCode(_IntFlg):
     slots=True,
 )
 class Arguments:
+    """Container for parsed command-line arguments for `clear`.
+
+    Attributes:
+        inputs: Sequence of input paths to process.
+        types: Set of `ClearType` values indicating what to clear.
+    """
+
     inputs: _Seq[_Path]
     types: _ASet[_ClrT]
 
@@ -68,6 +87,11 @@ class Arguments:
 
 
 async def main(args: Arguments):
+    """Main async entry point for the `clear` command.
+
+    Processes inputs according to `args` and writes cleared files back to
+    disk. Returns by calling `sys.exit` with an `ExitCode` value.
+    """
     exit_code = ExitCode(0)
     options = _ClrOpts(types=args.types)
 
@@ -89,6 +113,11 @@ async def main(args: Arguments):
 
 
 def parser(parent: _Call[..., _ArgParser] | None = None):
+    """Create an `ArgumentParser` for the `clear` subcommand.
+
+    The returned parser is configured to parse `inputs` and the `--type`
+    option used to tell the command what to clear.
+    """
     prog = __package__ or __name__
 
     parser = (_ArgParser if parent is None else parent)(

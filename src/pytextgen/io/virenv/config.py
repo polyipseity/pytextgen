@@ -78,6 +78,11 @@ class FlashcardSeparatorType:
     slots=True,
 )
 class Configuration:
+    """Configuration values for the virtual environment helpers.
+
+    Provides defaults for cloze token handling and flashcard separators.
+    """
+
     cloze_token: tuple[str, str] = (R"{@{", R"}@}")
     flashcard_separators: _MMap[FlashcardSeparatorType, str] = _field(
         default_factory=lambda: {

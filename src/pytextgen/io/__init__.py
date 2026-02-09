@@ -1,3 +1,9 @@
+"""I/O utilities: readers, writers, and location helpers for pytextgen.
+
+Exports reader and writer classes used by the `generate` and `clear`
+subcommands, along with helpers to operate on file sections.
+"""
+
 from ._options import ClearOpts, ClearType, GenOpts
 from ._read import CodeLibrary, MarkdownReader, Reader
 from ._write import ClearWriter, PythonWriter, Writer

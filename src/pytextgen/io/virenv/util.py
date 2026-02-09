@@ -77,10 +77,17 @@ __all__ = (
 
 
 def export_seq(*seq: _Call[..., _Any] | type):
+    """Utility returning a mapping of names to callables/types for exports."""
     return {val.__name__: val for val in seq}
 
 
 class FlashcardGroup(_Seq[str], metaclass=_ABCM):
+    """Abstract sequence-like representing a flashcard.
+
+    Concrete implementations must implement `__str__` to render the
+    flashcard as text.
+    """
+
     __slots__: _ClsVar = ()
 
     @_amethod
@@ -108,6 +115,8 @@ class FlashcardGroup(_Seq[str], metaclass=_ABCM):
     slots=True,
 )
 class TwoSidedFlashcard:
+    """A two-sided flashcard with optional reversibility."""
+
     left: str
     right: str
     _: _KW_ONLY
@@ -150,6 +159,12 @@ assert issubclass(TwoSidedFlashcard, FlashcardGroup)
     slots=True,
 )
 class ClozeFlashcardGroup:
+    """Represents a cloze-style flashcard group extracted from text.
+
+    Finds tokens in `context` delimited by `token` and exposes them
+    via sequence protocol.
+    """
+
     __pattern_cache: _ClsVar = dict[tuple[str, str], _Pattern[str]]()
 
     context: str
@@ -195,6 +210,8 @@ assert issubclass(ClozeFlashcardGroup, FlashcardGroup)
     slots=True,
 )
 class FlashcardState:
+    """Represents a single flashcard state entry (date, interval, ease)."""
+
     FORMAT: _ClsVar = "!{date},{interval},{ease}"
     REGEX: _ClsVar = _re_comp(r"!(\d{4}-\d{2}-\d{2}),(\d+),(\d+)", _NOFLAG)
 
@@ -233,6 +250,8 @@ class FlashcardState:
 
 @_fin
 class FlashcardStateGroup(TypedTuple[FlashcardState], element_type=FlashcardState):
+    """A group of `FlashcardState` objects serialized as a single section."""
+
     __slots__: _ClsVar = ()
     FORMAT: _ClsVar = _FC_ST_FMT
     REGEX: _ClsVar = _FC_ST_RE
@@ -275,6 +294,8 @@ class FlashcardStateGroup(TypedTuple[FlashcardState], element_type=FlashcardStat
     slots=True,
 )
 class StatefulFlashcardGroup:
+    """Pairing of a `FlashcardGroup` and its `FlashcardStateGroup` state."""
+
     flashcard: FlashcardGroup
     state: FlashcardStateGroup
 

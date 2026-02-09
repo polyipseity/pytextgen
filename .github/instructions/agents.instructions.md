@@ -64,6 +64,33 @@ Repo-specific patterns & examples (do not assume standard patterns):
 
   Rationale and checks:
 
+  - **Docstrings:** Every module should start with a brief module-level docstring describing its responsibility. Every public function and class must include a docstring; private helpers should also have docstrings when non-trivial. Follow these simple conventions:
+
+    - Use triple double-quotes ("""Summary line.""") for all docstrings.
+    - Start with a one-line summary, followed by an optional description and sections for `Args:`, `Returns:`, `Raises:`, and `Example:` as needed.
+
+    Example:
+
+    ```python
+    """Utilities for reading and writing content.
+
+    Args:
+        path: Filesystem path handled by the reader.
+
+    Returns:
+        A `Reader` instance configured for the path.
+
+    Example:
+        >>> Reader.new(path=Path('doc.md'))
+    """
+    ```
+
+    - Tests should also include a short module docstring and test docstrings describing the intent of the test.
+    - Automated checks:
+      - Add or update tests if the behaviour or public surface changes.
+      - Run `uv run ruff check --fix`, `uv run pyright`, and `uv run pytest` after adding docstrings (these checks are fast and catch formatting/typing issues).
+
+  - Verification: After adding or changing docstrings, run local checks and include the commands you executed in the PR body.
   - Why: Explicit `__all__` makes public surface area explicit for users and tools, reduces accidental exports, and aids static analysis and packaging.
   - Verification: After adding or changing `__all__`, run your local checks (`uv run ruff check --fix`, `uv run pyright`, `uv run pytest`). When adding re-exports, ensure `pyright` and tests still import and reference symbols correctly.
   - Examples and automated checks: Prefer small tests which import the module and assert the presence of promised attributes and absence of private ones when appropriate.

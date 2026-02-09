@@ -38,7 +38,7 @@ If you add an instructions file, link to it from this `AGENTS.md`.
 - **Use os.PathLike for file identifiers.** Accept `os.PathLike` and use `os.fspath(path_like)` when a string path is needed.
 - **Timezone-aware datetimes.** Use `datetime.now(timezone.utc)` (avoid `datetime.utcnow()`).
 - **Type hints:** Prefer PEP 585 types (`dict`, `list`) and `X | Y` unions (PEP 604). Use `Self` where appropriate. Aim for `typeCheckingMode: "strict"` compatibility in `pyrightconfig.json`. Do not use `from __future__ import annotations` in this repository; postponed evaluation of annotations is not permitted.
-- **Docstrings & annotations:** Public modules, functions, classes, and tests must include module-level docstrings and complete type annotations.
+- **Docstrings & annotations:** All modules, functions, classes (public and private), and tests must include clear module-level and object-level docstrings and complete type annotations. Docstrings should be concise, use triple double-quotes, include a short one-line summary, and expand when necessary to describe parameters, return values, and examples. See the `agents.instructions.md` runbook for a short template and examples.
 - **`__all__` usage:** Export control via `__all__` is mandatory; tests should use `__all__ = ()`.
 
   Detailed rules:

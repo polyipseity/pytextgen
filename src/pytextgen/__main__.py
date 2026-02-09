@@ -1,3 +1,9 @@
+"""Module entry point used when running `python -m pytextgen`.
+
+This module simply configures logging and dispatches to the top-level
+`parser` to invoke subcommands.
+"""
+
 from asyncio import run as _run
 from logging import INFO, basicConfig
 from sys import argv as _argv

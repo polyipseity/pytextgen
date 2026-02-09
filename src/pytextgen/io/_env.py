@@ -1,3 +1,9 @@
+"""Execution environment used to run extracted Python code safely.
+
+`Environment` prepares isolated globals/locals and supports an async
+initialization step to return exported values from executed code.
+"""
+
 from ast import AsyncFunctionDef as _ASTAFunDef
 from ast import Module as _ASTMod
 from ast import parse as _parse
@@ -41,6 +47,13 @@ __all__ = ("Environment",)
 
 @_fin
 class Environment:
+    """Isolated execution environment for running extracted code.
+
+    Provides a stable `env` object where asynchronous initialization can
+    place exported data. Use `exec` to run code objects within the
+    environment and collect their exports.
+    """
+
     ENV_NAME: _ClsVar = "__env__"
     ENTRY: _ClsVar = f"_{_UUID.replace('-', '_')}"
     ENTRY_TEMPLATE: _ClsVar = f"""async def {ENTRY}(): pass

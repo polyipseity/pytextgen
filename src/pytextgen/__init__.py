@@ -1,3 +1,9 @@
+"""Top-level package metadata and shared constants for pytextgen.
+
+This module exposes the package `NAME`, `VERSION` and several common
+formats and regular expressions used across the package.
+"""
+
 from datetime import datetime as _dt
 from logging import getLogger as _getLogger
 from re import NOFLAG as _NOFLAG
@@ -22,6 +28,11 @@ __all__ = (
 
 @_fin
 class _OpenOptions(_TDict):
+    """Typed dict describing options used when opening text files.
+
+    Matches the arguments accepted by `open(..., encoding=..., errors=..., newline=...)`.
+    """
+
     encoding: str
     errors: _Lit[
         "strict",

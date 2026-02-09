@@ -1,3 +1,9 @@
+"""Top-level command line parser for the `pytextgen` package.
+
+This module wires together sub-commands from the `clear` and `generate`
+subpackages and exposes a `parser` factory function used by `__main__`.
+"""
+
 from argparse import ArgumentParser as _ArgParser
 from functools import partial as _partial
 from typing import Callable as _Call
@@ -26,6 +32,11 @@ __all__ = ("parser",)
 
 
 def parser(parent: _Call[..., _ArgParser] | None = None):
+    """Create the top-level `ArgumentParser` for the CLI.
+
+    Returns a configured `ArgumentParser` with subparsers for the
+    `clear` and `generate` subcommands.
+    """
     prog = __package__ or __name__
 
     parser = (_ArgParser if parent is None else parent)(

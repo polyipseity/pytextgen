@@ -1,3 +1,9 @@
+"""I/O helper types and utilities.
+
+Contains `Location` protocols, `FileSection` logic for extracting and
+updating named file sections, and small helpers used by readers/writers.
+"""
+
 from abc import ABCMeta as _ABCM
 from abc import abstractmethod as _amethod
 from asyncio import TaskGroup, create_task
@@ -95,11 +101,18 @@ _stat_a = sync_to_async(_stat)
 
 @_actxmgr
 async def lock_file(path: _Path):
+    """Async context manager that acquires a per-path lock for safe writes."""
     async with _a_lock(_FILE_LOCKS[await path.resolve(strict=True)]):
         yield
 
 
 class Location(metaclass=_ABCM):
+    """Protocol representing a location that can be opened for IO.
+
+    Concrete implementations should provide an async `open` context manager
+    returning an async text file-like object and a `path` property.
+    """
+
     __slots__: _ClsVar = ()
 
     @_amethod
@@ -119,6 +132,11 @@ class Location(metaclass=_ABCM):
 @_fin
 @Location.register
 class NullLocation:
+    """A `Location` that provides an in-memory, transient I/O buffer.
+
+    Useful for testing or representing missing targets.
+    """
+
     __slots__: _ClsVar = ()
 
     @_actxmgr
@@ -148,6 +166,8 @@ NULL_LOCATION = NullLocation()
     slots=True,
 )
 class PathLocation:
+    """A `Location` backed by a filesystem path."""
+
     path: _Path
 
     @_actxmgr
@@ -173,6 +193,12 @@ assert issubclass(PathLocation, Location)
     slots=True,
 )
 class FileSection:
+    """Represents a named section inside a file for safe read/write.
+
+    Use `FileSection.find` to locate available sections and `open` to edit
+    the contained data using a context manager that persists changes.
+    """
+
     @_fin
     @_dc(
         init=True,
@@ -402,6 +428,13 @@ assert issubclass(FileSection, Location)
     slots=True,
 )
 class Result:
+    """A textual result destined for a `Location`.
+
+    Attributes:
+        location: the `Location` to which the text should be written.
+        text: the string content to write.
+    """
+
     location: Location
     text: str
 

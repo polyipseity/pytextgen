@@ -1,3 +1,10 @@
+"""Writer abstractions and concrete writers.
+
+Defines the `Writer` protocol and implementations that either clear
+sections (`ClearWriter`) or write generated Python-based output
+(`PythonWriter`).
+"""
+
 from abc import ABCMeta as _ABCM
 from abc import abstractmethod as _amethod
 from asyncio import create_task
@@ -53,10 +60,16 @@ __all__ = ("Writer", "ClearWriter", "PythonWriter")
 
 
 class Writer(metaclass=_ABCM):
+    """Abstract writer protocol for writing or clearing content.
+
+    Implementations should expose a `write` async context manager.
+    """
+
     __slots__: _ClsVar = ()
 
     @_amethod
     def write(self) -> _AACtxMgr[None]:
+        """Return an async context manager performing the writer action."""
         raise NotImplementedError(self)
 
     @classmethod
@@ -66,6 +79,12 @@ class Writer(metaclass=_ABCM):
 
 @Writer.register
 class ClearWriter:
+    """Writer that clears generated sections or flashcard state values.
+
+    Use as an async context manager; on exit the appropriate sections are
+    updated/truncated depending on the requested `ClearType`.
+    """
+
     __slots__: _ClsVar = ("__options", "__path")
     __FLASHCARD_STATES_REGEX: _ClsVar = _re_comp(
         r" ?" + _FC_ST_RE.pattern, _FC_ST_RE.flags
@@ -77,6 +96,7 @@ class ClearWriter:
 
     @_actxmgr
     async def write(self):
+        """Return an async context manager which clears the file per options."""
         if _ClrT.CONTENT in self.__options.types:
 
             async def process(io: _ATxtIO):
@@ -114,6 +134,12 @@ assert issubclass(ClearWriter, Writer)
 
 @Writer.register
 class PythonWriter:
+    """Writer that executes code in the provided `Environment` and writes results.
+
+    The `write` context manager runs the code and collects `Result` objects
+    which are then written into their target locations.
+    """
+
     __slots__: _ClsVar = ("__code", "__env", "__init_codes", "__options")
 
     def __init__(
@@ -138,6 +164,8 @@ class PythonWriter:
 
     @_actxmgr
     async def write(self):
+        """Execute the code and write each resulting `Result` to its location."""
+
         def results0(result: _Any):
             if _Ret.isinstance(result):
                 yield result

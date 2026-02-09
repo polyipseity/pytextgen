@@ -1,3 +1,5 @@
+"""Small enums used by text code generation and templating."""
+
 from enum import StrEnum as _StrEnum
 from enum import unique as _unq
 from typing import ClassVar as _ClsVar
@@ -9,6 +11,8 @@ __all__ = ("Tag",)
 @_fin
 @_unq
 class Tag(_StrEnum):
+    """Tag values used by `TextCode` based helpers."""
+
     __slots__: _ClsVar = ()
 
     CLOZE_SEPARATOR = "cloze sep"

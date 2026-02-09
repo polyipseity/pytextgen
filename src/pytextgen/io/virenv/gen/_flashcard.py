@@ -63,6 +63,11 @@ __all__ = (
 
 
 def attach_flashcard_states(flashcards: _Iter[_FcGrp], /, *, states: _Iter[_FcStGrp]):
+    """Pair flashcards with provided state entries.
+
+    Yields `StatefulFlashcardGroup` instances by zipping flashcards with
+    the provided `states` sequence, filling missing states with empty groups.
+    """
     for fc, st in zip(flashcards, _chain(states, _repeat(_FcStGrp()))):
         yield _StFcGrp(flashcard=fc, state=st)
 
@@ -73,6 +78,11 @@ def listify_flashcards(
     *,
     ordered: bool = False,
 ):
+    """Return a Markdown list rendering of the flashcards.
+
+    When `ordered=True` renders an ordered list, otherwise a bullet list.
+    """
+
     def ret_gen():
         newline = ""
         if ordered:
@@ -118,6 +128,11 @@ def memorize_two_sided0(
     reversible: bool = True,
     hinter: _Call[[int, str], tuple[str, str]] = _const(("", "")),
 ) -> _Itor[_FcGrp]:
+    """Turn a sequence of strings into paired two-sided flashcards.
+
+    `offsets` controls how input indices are grouped, and `hinter` may add
+    per-item annotations to the left/right parts.
+    """
     strs_seq = _IterSeq(iter(strs))  # Handles infinite sequences
 
     def offseted():

@@ -1,3 +1,5 @@
+"""Public helpers used for generating text/code and flashcards."""
+
 from ._flashcard import (
     attach_flashcard_states,
     cloze_texts,

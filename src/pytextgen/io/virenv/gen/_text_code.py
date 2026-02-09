@@ -1,3 +1,9 @@
+"""Helpers for creating, parsing and formatting small text-based codes.
+
+`TextCode` provides a compact representation of tagged/escaped text blocks
+used in generated content.
+"""
+
 from collections import defaultdict as _defdict
 from dataclasses import KW_ONLY as _KW_ONLY
 from dataclasses import dataclass as _dc
@@ -43,6 +49,12 @@ __all__ = (
 
 @_fin
 class TextCode:
+    """Representation of text divided into `Block` elements.
+
+    Blocks may be ordinary text or specially tagged blocks that are
+    escaped and serialized with `{tag:...}` syntax.
+    """
+
     __slots__: _ClsVar = ("__blocks", "__by_tag")
     ESCAPES: _ClsVar = frozenset({"\\", "{", "}", ":"})
     ESCAPE_REGEX: _ClsVar = _re_comp(rf"{'|'.join(map(_re_esc, ESCAPES))}", _NOFLAG)
@@ -60,6 +72,12 @@ class TextCode:
         slots=True,
     )
     class Block:
+        """A single block of text inside a `TextCode`.
+
+        `tag` indicates a special block when non-empty; `char` is the
+        original character index used for splitting by tag.
+        """
+
         text: str
         _: _KW_ONLY
         char: int
@@ -119,6 +137,10 @@ class TextCode:
 
     @classmethod
     def escape(cls, text: str, /, *, block: bool = False):
+        """Escape special characters in `text`.
+
+        When `block=True` the escaped text is wrapped as a block `{:{escaped}}`.
+        """
         ret = cls.ESCAPE_REGEX.sub(lambda match: Rf"\{match[0]}", text)
         return f"{{:{ret}}}" if block else ret
 
@@ -255,18 +277,22 @@ class TextCode:
 
 
 def code_to_strs(code: TextCode, /, *, tag: str = _Tag.COMMON):
+    """Yield raw text strings from `code` for blocks matching `tag`."""
     return (block.text for block in code.blocks if block.common or block.tag == tag)
 
 
 def code_to_str(code: TextCode, /, *, tag: str = _Tag.COMMON):
+    """Return a single string composed of matching `code` blocks."""
     return "".join(code_to_strs(code, tag=tag))
 
 
 def affix_code(code: TextCode, /, *, prefix: str = "", suffix: str = ""):
+    """Wrap `code` with `prefix` and `suffix` and re-compile it."""
     return code.compile("".join((prefix, str(code), suffix)))
 
 
 def separate_code_by_tag(code: TextCode, /, *, tag: str):
+    """Yield compiled `TextCode` segments separated by the given `tag`."""
     source: str = str(code)
     cur: int | None = None
     index: int
