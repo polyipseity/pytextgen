@@ -23,9 +23,6 @@ from typing import (
     Callable as _Call,
 )
 from typing import (
-    ClassVar as _ClsVar,
-)
-from typing import (
     Sequence as _Seq,
 )
 from typing import (
@@ -44,7 +41,7 @@ from ..io import ClearWriter as _ClrWriter
 @_fin
 @_unq
 class ExitCode(_IntFlg):
-    ERROR: _ClsVar = _auto()
+    ERROR = _auto()
 
 
 @_fin

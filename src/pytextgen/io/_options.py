@@ -2,7 +2,6 @@ from dataclasses import dataclass as _dc
 from enum import StrEnum as _StrEnum
 from enum import unique as _unq
 from typing import AbstractSet as _ASet
-from typing import ClassVar as _ClsVar
 from typing import final as _fin
 
 from ..util import Compiler as _Compiler
@@ -11,8 +10,8 @@ from ..util import Compiler as _Compiler
 @_fin
 @_unq
 class ClearType(_StrEnum):
-    CONTENT: _ClsVar = "content"
-    FLASHCARD_STATE: _ClsVar = "fc_state"
+    CONTENT = "content"
+    FLASHCARD_STATE = "fc_state"
 
 
 @_fin

@@ -21,9 +21,6 @@ from typing import (
     Callable as _Call,
 )
 from typing import (
-    ClassVar as _ClsVar,
-)
-from typing import (
     Iterable as _Iter,
 )
 from typing import (
@@ -49,9 +46,9 @@ from ..util import CompileCache as _CompCache
 @_fin
 @_unq
 class ExitCode(_IntFlg):
-    READ_ERROR: _ClsVar = _auto()
-    VALIDATE_ERROR: _ClsVar = _auto()
-    WRITE_ERROR: _ClsVar = _auto()
+    READ_ERROR = _auto()
+    VALIDATE_ERROR = _auto()
+    WRITE_ERROR = _auto()
 
 
 @_fin

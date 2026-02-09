@@ -28,6 +28,7 @@ classifiers = [
 	"Typing :: Typed",
 ]
 dependencies = [
+	"aioshutil>=1.6.0",
 	"anyio>=3.6.2",
 	"asyncstdlib>=3.10.6",
 	"more-itertools>=9.1.0",

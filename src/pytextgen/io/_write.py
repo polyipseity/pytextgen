@@ -17,6 +17,7 @@ from types import CodeType as _Code
 from typing import Any as _Any
 from typing import ClassVar as _ClsVar
 from typing import Iterable as _Iter
+from typing import cast
 
 from anyio import Path as _Path
 
@@ -31,7 +32,6 @@ from .. import (
 )
 from ..io import ClearOpts as _ClrOpts
 from ..io import ClearType as _ClrT
-from ..io import GenOpts as _GenOpts
 from ..util import abc_subclasshook_check as _abc_sch_chk
 from ..util import wrap_async as _wrap_a
 from ._env import Environment as _Env
@@ -141,7 +141,7 @@ class PythonWriter:
                 yield result
                 return
             if isinstance(result, _Iter):
-                result0: _Iter[_Any] = result
+                result0: _Iter[_Any] = cast(_Iter[_Any], result)
                 for item in result0:
                     if not _Ret.isinstance(item):
                         raise TypeError(item)

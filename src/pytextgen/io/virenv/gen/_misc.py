@@ -9,10 +9,10 @@ from typing import final as _fin
 class Tag(_StrEnum):
     __slots__: _ClsVar = ()
 
-    CLOZE_SEPARATOR: _ClsVar = "cloze sep"
-    COMMENT: _ClsVar = "cmt"
-    COMMON: _ClsVar = ""
-    MEMORIZE: _ClsVar = "mem"
-    SEMANTICS: _ClsVar = "sem"
-    SEPARATOR: _ClsVar = "sep"
-    TEXT: _ClsVar = "text"
+    CLOZE_SEPARATOR = "cloze sep"
+    COMMENT = "cmt"
+    COMMON = ""
+    MEMORIZE = "mem"
+    SEMANTICS = "sem"
+    SEPARATOR = "sep"
+    TEXT = "text"

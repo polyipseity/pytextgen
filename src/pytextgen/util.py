@@ -44,6 +44,7 @@ from sys import modules as _mods
 from threading import Lock as _TLock
 from time import time as _time
 from types import CodeType as _Code
+from types import ModuleType
 from types import ModuleType as _Mod
 from types import TracebackType as _Tb
 from typing import (
@@ -120,7 +121,6 @@ _T = _TVar("_T")
 _T_co = _TVar("_T_co", covariant=True)
 _T1_co = _TVar("_T1_co", covariant=True)
 _ExtendsUnit = _TVar("_ExtendsUnit", bound="Unit[_Any]")
-_ExtendsModuleType = _TVar("_ExtendsModuleType", bound=_Mod)
 _PUNCTUATIONS = tuple(
     char for char in map(chr, range(_maxunicode + 1)) if _utf_cat(char).startswith("P")
 )
@@ -200,7 +200,7 @@ def deep_foreach_module(module: _Mod):
     return impl(module)
 
 
-def copy_module(module: _ExtendsModuleType) -> _ExtendsModuleType:
+def copy_module(module: ModuleType) -> ModuleType:
     names = discover_module_names(module)
     with _mock.patch.dict(
         _mods,
@@ -228,7 +228,8 @@ def abc_subclasshook_check(
             if any(
                 c.__subclasshook__(subclass) is False
                 for c in cls.__mro__
-                if c is not cls and hasattr(c, "__subclasshook__")
+                if c is not cls  # type: ignore[reportUnnecessaryComparison]
+                and hasattr(c, "__subclasshook__")
             ) or any(
                 all(c.__dict__[p] is None for c in subclass.__mro__ if p in c.__dict__)
                 for p in names
@@ -238,7 +239,8 @@ def abc_subclasshook_check(
             if all(
                 c.__subclasshook__(subclass) is not False
                 for c in cls.__mro__
-                if c is not cls and hasattr(c, "__subclasshook__")
+                if c is not cls  # type: ignore[reportUnnecessaryComparison]
+                and hasattr(c, "__subclasshook__")
             ) and all(
                 any(
                     c.__dict__[p] is not None
@@ -281,7 +283,7 @@ class Unit(_Genic[_T_co]):
 
 class TypedTuple(_Genic[_T], tuple[_T, ...]):
     __slots__: _ClsVar = ()
-    element_type: _ClsVar
+    element_type: type[_T]
 
     def __init_subclass__(cls, element_type: type[_T], **kwargs: _Any):
         super().__init_subclass__(**kwargs)
@@ -360,7 +362,7 @@ class Compiler(_Proto):
         | _ASTMod
         | _ASTExpr
         | _ASTInter""",
-        filename: "str | _ReadBuf | _PathL[_Any]",
+        filename: "str | bytes | _PathL[_Any]",
         mode: str,
         flags: int,
         dont_inherit: bool = ...,
@@ -571,7 +573,7 @@ class CompileCache:
         | _ASTMod
         | _ASTExpr
         | _ASTInter""",
-        filename: "str | _ReadBuf | _PathL[_Any]",
+        filename: "str | bytes | _PathL[_Any]",
         mode: str,
         flags: int = 0,
         dont_inherit: bool = False,

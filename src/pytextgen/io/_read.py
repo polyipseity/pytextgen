@@ -25,6 +25,7 @@ from contextlib import (
     nullcontext as _nullctx,
 )
 from dataclasses import replace as _dc_repl
+from datetime import date as _date
 from functools import cache as _cache
 from functools import partial as _partial
 from functools import wraps as _wraps
@@ -78,6 +79,7 @@ from asyncstdlib import chain as _achain
 from asyncstdlib import tuple as _atuple
 from more_itertools import unique_everseen as _unq_eseen
 
+from .. import FLASHCARD_EASE_DEFAULT as _FC_EASE_DEF
 from .. import NAME as _NAME
 from .. import OPEN_TEXT_OPTIONS as _OPEN_TXT_OPTS
 from ..util import (
@@ -123,7 +125,7 @@ class Reader(metaclass=_ABCM):
     @classmethod
     def register2(cls, *extensions: str):
         @_wraps(cls.register)
-        def register(subclass: type):
+        def register(subclass: type[_Self]) -> type[_Self]:
             ret = cls.register(subclass)
             for ext in extensions:
                 cls.REGISTRY[ext] = subclass
@@ -273,7 +275,7 @@ def _Python_env(
 
 @CodeLibrary.register
 @Reader.register2(".md")
-class MarkdownReader:
+class MarkdownReader(Reader):
     __slots__: _ClsVar = ("__codes", "__library_codes", "__options", "__path")
 
     START: _ClsVar = _re_comp(rf"```Python\n# {_NAME} generate (data|module)", _NOFLAG)
@@ -331,7 +333,7 @@ class MarkdownReader:
                         raise TypeError(reader)
                     yield _chain.from_iterable(reader.codes)
 
-            imports = _achain.from_iterable(imports0())
+            imports: _achain[_Code] = _achain.from_iterable(imports0())  # type: ignore[reportUnknownMemberType,reportUnknownVariableType]
             type_ = start[1]
             if type_ == "data":
                 self.__codes[compiler(ast)] = await _atuple(imports)
