@@ -3,6 +3,8 @@ name: Formatting & Linters
 description: How to run and configure formatters and linters for consistent code style.
 ---
 
+<!-- markdownlint-disable-file MD013 MD036 -->
+
 # Formatting & Linters
 
 This repository uses a small, consistent set of tooling for formatting and linting. The goal is to be fast, deterministic, and easy to run locally and in CI.
@@ -67,7 +69,7 @@ prek run
 - Run a single hook: `prek run <hook-id>` (e.g., `prek run check-yaml`).
 - Target specific files with `--files` or run across the whole repository with `--all-files`.
 
-3. Wire hooks into git automatically
+1. Wire hooks into git automatically
 
 ```powershell
 prek install
@@ -75,7 +77,7 @@ prek install
 
 - `prek install` configures the repository to run `prek run` automatically on commits. Undo with `prek uninstall`.
 
-4. Go further
+1. Go further
 
 - Explore the `prek` docs and the underlying hook repositories for advanced configuration and language-specific installers.
 

@@ -1,3 +1,5 @@
+<!-- markdownlint-disable-file MD013 MD036 -->
+
 # Common Workflows & Local Hook Usage
 
 This document provides step-by-step guidance for common local workflows:

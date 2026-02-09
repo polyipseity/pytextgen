@@ -1,3 +1,5 @@
+<!-- markdownlint-disable-file MD013 MD036 -->
+
 # Security & Secrets Handling
 
 This document covers security best-practices for the repository.

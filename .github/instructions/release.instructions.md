@@ -3,6 +3,8 @@ name: Releases
 description: Release checklist and best practices for publishing new versions.
 ---
 
+<!-- markdownlint-disable-file MD013 MD036 -->
+
 # Releases
 
 This document describes a minimal, reproducible release process for `pytextgen`.
@@ -20,27 +22,27 @@ This document describes a minimal, reproducible release process for `pytextgen`.
 
 1a. After changing the version, run `uv sync --all-extras --dev` locally to update `uv.lock` and development extras. If `uv.lock` changes, commit it together with the release commit. In CI use `uv sync --locked --all-extras --dev` to validate the locked environment.
 
-2. Commit using the version string as the commit message and sign the commit with GPG:
+1. Commit using the version string as the commit message and sign the commit with GPG:
 
 ```powershell
 git add pyproject.toml uv.lock src/pytextgen/__init__.py
 git commit -S -m "1.2.3"
 ```
 
-3. Create a signed annotated tag:
+1. Create a signed annotated tag:
 
 ```powershell
 git tag -s -a v1.2.3 -m "v1.2.3"
 ```
 
-4. Push the release commit and the tag:
+1. Push the release commit and the tag:
 
 ```powershell
 git push origin HEAD
 git push origin --tags
 ```
 
-5. Build artifacts and publish (CI can handle packaging and publishing; use a manual flow only when needed):
+1. Build artifacts and publish (CI can handle packaging and publishing; use a manual flow only when needed):
 
 ```powershell
 uv run -m build

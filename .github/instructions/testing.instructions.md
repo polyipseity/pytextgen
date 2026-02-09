@@ -3,6 +3,8 @@ name: Testing
 description: Test structure, how to write tests, and async testing guidance.
 ---
 
+<!-- markdownlint-disable-file MD013 MD036 -->
+
 # Testing
 
 Tests use `pytest` and `pytest-asyncio` for async test support. Test configuration is provided in `pyproject.toml` under `[tool.pytest.ini_options]`.

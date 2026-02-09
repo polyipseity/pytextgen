@@ -1,3 +1,5 @@
+<!-- markdownlint-disable-file MD013 MD036 -->
+
 # Developer Workflows
 
 This document describes common development workflows for contributors and

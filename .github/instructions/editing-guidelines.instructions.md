@@ -1,3 +1,5 @@
+<!-- markdownlint-disable-file MD013 MD036 -->
+
 # Editing & Formatting Guidelines
 
 This document provides guidance for editing source and documentation files

@@ -1,3 +1,5 @@
+<!-- markdownlint-disable-file MD013 MD036 -->
+
 # Git Commit & Commit Message Conventions
 
 This file documents the repository's expectations for commit messages, signing,
