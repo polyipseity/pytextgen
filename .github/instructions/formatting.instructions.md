@@ -87,3 +87,5 @@ prek install
 
 - Always run formatters and linters before committing to avoid CI failures.
 - For large formatting changes, prefer small, focused commits and run the test suite locally after formatting to catch regressions.
+
+Agent note: Agents should not add new formatters (for Python) or change the line-length policy. The canonical tool is Ruff; run `uv run ruff check --fix .` and `uv run ruff format .` before committing. For type checks run `uv run pyright` and include the results in the PR description.

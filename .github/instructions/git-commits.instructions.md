@@ -10,8 +10,10 @@ Conventional commits:
 
 Commit body & wrapping:
 
-- Wrap commit body lines to **100 characters** or fewer. This is enforced by
-  commitlint/pre-commit in some projects and keeps patches readable.
+- Wrap commit body lines to **72 characters** or fewer. Use 72 as a buffer for
+  human-readability. Note: some tooling (commitlint, editor helpers) may still
+  be configured for 100 characters—if those tools reject a commit, rewrap to
+  satisfy the tool but prefer 72 where possible.
 
 Signed release commits & tags:
 
@@ -34,5 +36,6 @@ Agent & automation notes:
 
 - Agents must include a short rationale in the commit body when deviating from
   usual conventions or performing non-trivial changes.
+- Agents must run the same local checks documented in `.github/instructions/agents.instructions.md` before committing (format, pyright, tests, and prek hooks). If unsure about a behavioural change, stop and ask a maintainer rather than guessing — include the question and context in the PR body.
 - Domain-data or transaction commits (if applicable) may follow stricter
   machine-parseable formats; follow domain-specific policies if present.

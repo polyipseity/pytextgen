@@ -56,6 +56,8 @@ uv run -m twine upload dist/*
 - Prefer publishing from CI using stored secrets (PyPI API tokens in CI secrets) and secure workflows.
 - Ensure the CI job performs the following checks before publishing: tests, linters, and package build.
 
+Agent-specific note: Agents performing a release or preparing a release PR should follow `.github/instructions/agents.instructions.md` and include in the PR body the exact commands they executed locally (example: `uv sync --all-extras --dev`, `uv run pytest`, `uv run -m build`). Release commits must be GPG-signed as described above.
+
 ## Post-release
 
 - Update any downstream references or submodules if applicable.

@@ -37,3 +37,4 @@ When adding a new dependency:
 
 - Add the package to `pyproject.toml` under the appropriate section and run
   `uv sync --all-extras --dev` to update `uv.lock` and commit the lockfile.
+- Validate the change locally: run `uv run pytest` and `uv run ruff check --fix .` to ensure the dependency doesn't break type checks or formatting. Agents should record these commands in their PR description and link the updated `uv.lock` entry.

@@ -11,8 +11,9 @@ Tests use `pytest` and `pytest-asyncio` for async test support. Test configurati
 
 - All tests live under `tests/` and follow `test_*.py` naming.
 - **One test file per source file** is the preferred layout. Mirror the `src/` structure under `tests/` (for example `src/module/sub.py` → `tests/module/test_sub.py`).
-- Test modules must define `__all__ = ()` at the top (tests do not export public symbols).
+- Test modules must define `__all__ = ()` at the top (tests do not export public symbols). See `tests/pytextgen/test___init__.py` for the project-level version parity test.
 - All tests and public code must include type annotations and module-level docstrings.
+- Agents adding behavior must include tests that follow these conventions and ensure new tests run with `uv run pytest` locally. Use `tmp_path` for filesystem tests and avoid external network calls (mock where appropriate).
 
 ## Async tests
 
@@ -22,7 +23,7 @@ Tests use `pytest` and `pytest-asyncio` for async test support. Test configurati
 ## Running tests locally
 
 ```powershell
-uv run pytest -q
+uv run pytest
 # With coverage
 uv run pytest --cov=./ --cov-report=term-missing
 ```

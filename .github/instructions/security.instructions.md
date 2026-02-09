@@ -21,6 +21,10 @@ Reporting security issues:
 
 - Report vulnerabilities privately to maintainers. If a `SECURITY.md` exists
   include the contact and escalation steps (email or issue tracker link).
+- If an automated agent discovers a potential secret or credential in the repo,
+  it must stop further changes, redact the secret from any generated output,
+  and notify a human maintainer immediately following the `SECURITY.md` steps.
+  Do not attempt to remediate or rotate secrets yourself without express human direction.
 
 Credential scanning:
 

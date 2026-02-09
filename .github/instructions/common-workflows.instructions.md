@@ -30,7 +30,7 @@ Testing:
 - Run tests locally with `pytest` via `uv`:
 
     ```powershell
-    uv run pytest -q
+    uv run pytest
     ```
 
 - When adding new behavior, add tests that reflect the intended usage. Keep
@@ -41,6 +41,7 @@ Push & PR checks:
 - Ensure prek hooks and tests pass locally before creating a PR. CI will
   re-run these checks and block merge on failures.
 - Use a descriptive PR title and summary with bullet points for key changes.
+- Agents: follow the pre-PR checklist in `.github/instructions/agents.instructions.md` and use the Todo List Tool for multi-step tasks (plan → mark `in-progress` → complete). Always include the commands you ran in the PR description (for example: `uv run ruff check --fix .`, `uv run pytest`).
 
 Notes about Node/JS tools:
 

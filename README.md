@@ -22,7 +22,7 @@ Follow these steps to create a reproducible development environment (Windows exa
 3. Run tests and format/lint via `uv`:
 
    ```powershell
-   uv run pytest -q
+   uv run pytest
    uv run ruff check --fix .
    ```
 

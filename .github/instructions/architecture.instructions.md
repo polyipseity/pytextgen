@@ -23,5 +23,15 @@ Important invariants:
 - Use `uv` (astral-sh) for Python dependency management and `uv.lock` for
   reproducible installs.
 
-If you add new top-level folders, update this document and `AGENTS.md`
+If you add new top-level folders, update this document and `AGENTS.md`.
+
+Agent note: For AI agents and automation, consult `.github/instructions/agents.instructions.md` for a short runbook that includes pre-PR checks and repo-specific patterns (for example: the package follows an async-first approach and uses import aliasing conventions in `src/pytextgen/util.py`).
+
+Key component callouts:
+
+- `src/pytextgen/io/` — environment and file I/O helpers used throughout the package.
+- `src/pytextgen/generate/` — generation backends for content units.
+- `src/pytextgen/clear/` — small CLI utilities (commands follow the same typing and testing conventions).
+
+Keep this document small and authoritative; add examples above only when they help newcomers find the most relevant files quickly.
 references to keep discoverability consistent.

@@ -23,7 +23,7 @@ Local development quick start:
     ```powershell
     uv run ruff check --fix .
     pre-commit run --all-files
-    uv run pytest -q
+    uv run pytest
     ```
 
 Script & CI conventions:
@@ -44,3 +44,6 @@ Agent & automation rules:
   and the test suite.
 - Agents must ask clarifying questions if intent is ambiguous rather than
   guessing when correctness matters.
+- See `.github/instructions/agents.instructions.md` for an AI agent runbook with
+  concrete commands, repo-specific patterns (imports, `__all__`, version bump
+  workflow), and a pre-PR checklist to follow.

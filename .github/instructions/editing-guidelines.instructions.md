@@ -6,7 +6,8 @@ in a consistent and review-friendly manner.
 General rules:
 
 - Use `UTF-8` encoding and preserve newline at end-of-file.
-- Keep paragraphs short and lines wrapped at 100 characters for commit bodies.
+- Keep paragraphs short and wrap commit body lines at **72 characters** (tooling may
+  still be configured for 100 characters; prefer 72 as a buffer for clarity).
 - Use `README.md` and `AGENTS.md` for high-level project guidance.
 
 Markdown:
@@ -32,3 +33,4 @@ Commits & PRs:
 - Small, focused commits are easier to review. Use Conventional Commits.
 - For agent-generated changes, include the rationale in the commit body when
   deviating from conventions or making non-obvious changes.
+- Agents should include the exact commands they ran (format, linter, tests) and a short Todo Plan in the PR description when the change was produced by an automated workflow. Use the repository `agents.instructions.md` for a suggested PR template.
