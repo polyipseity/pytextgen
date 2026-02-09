@@ -162,11 +162,15 @@ _rm_a = sync_to_async(_rm)
 
 
 @_overload
-async def wrap_async(value: _Await[_T]) -> _T: ...
+async def wrap_async(value: _Await[_T]) -> _T:
+    """Await and return the underlying value when awaitable (overload)."""
+    ...
 
 
 @_overload
-async def wrap_async(value: _Await[_T] | _T) -> _T: ...
+async def wrap_async(value: _Await[_T] | _T) -> _T:
+    """Await and return the underlying value when awaitable (overload)."""
+    ...
 
 
 async def wrap_async(value: _Await[_T] | _T):
@@ -448,6 +452,12 @@ assert issubclass(IteratorSequence, _Seq)
 
 @_fin
 class Compiler(_Proto):
+    """Protocol for a callable compatible with the built-in `compile`.
+
+    Represents an object that accepts source and compilation parameters
+    and returns a Python code object.
+    """
+
     def __call__(
         self,
         source: """str

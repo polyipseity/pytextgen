@@ -1,3 +1,5 @@
+"""Helpers for constructing and formatting flashcards used by generators."""
+
 from dataclasses import dataclass as _dc
 from itertools import chain as _chain
 from itertools import cycle as _cycle
@@ -165,6 +167,10 @@ def memorize_linked_seq0(
     hinter: _Call[[int, str], tuple[str, str]] = _const(("→", "←")),
     **kwargs: _Any,
 ):
+    """Create linked-sequence two-sided flashcards from `strs`.
+
+    Uses an alternating offsets pattern to link adjacent items into pairs.
+    """
     return memorize_two_sided0(
         strs,
         offsets=_ig_args(_chain((1,), _cycle((1, 0))).__next__),
@@ -180,6 +186,11 @@ def memorize_indexed_seq0(
     indices: _Call[[int], int | None] = int(1).__add__,
     reversible: bool = True,
 ):
+    """Create indexed two-sided flashcards from `strs` using `indices`.
+
+    For each item, `indices(idx)` determines the left-side index or
+    skips the item if it returns ``None``.
+    """
     for idx, str_ in enumerate(strs):
         index = indices(idx)
         if index is None:
@@ -190,6 +201,11 @@ def memorize_indexed_seq0(
 
 
 def semantics_seq_map0(map: _Iter[tuple[str, str]], /, *, reversible: bool = False):
+    """Turn an iterator of ``(text, sem)`` pairs into flashcard groups.
+
+    Each pair becomes a two-sided flashcard with `text` as the prompt and
+    `sem` as the semantic value.
+    """
     for text, sem in map:
         ret = _2SidedFc(text, sem, reversible=reversible)
         assert isinstance(ret, _FcGrp)
@@ -199,6 +215,12 @@ def semantics_seq_map0(map: _Iter[tuple[str, str]], /, *, reversible: bool = Fal
 def punctuation_hinter(
     hinted: _Call[[int], bool] = _const(True), *, sanitizer: _Call[[str], str] = _id
 ):
+    """Return a hinter function that annotates hints using punctuation counts.
+
+    The returned function yields left/right hint annotations based on the
+    number of punctuation-boundary splits in the sanitized text.
+    """
+
     def ret(index: int, str: str):
         if hinted(index):
             count: int = sum(1 for _ in _spt_by_puncts(sanitizer(str)))
@@ -209,6 +231,7 @@ def punctuation_hinter(
 
 
 def cloze_texts(texts: _Iter[str], /, *, token: tuple[str, str] = _CFG.cloze_token):
+    """Yield cloze-style flashcard groups for each input text using `token`."""
     for text in texts:
         ret: _CzFcGrp = _CzFcGrp(text, token=token)
         assert isinstance(ret, _FcGrp)

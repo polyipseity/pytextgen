@@ -509,6 +509,12 @@ def map_to_code(
     key_cloze: bool = False,
     value_cloze: bool = True,
 ):
+    """Convert a mapping into a `TextCode` list representation.
+
+    Each mapping entry becomes a list item of "key: value". Optional
+    `name` may be rendered as a heading, and `name_cloze`, `key_cloze`,
+    `value_cloze` control whether to wrap components in cloze tokens.
+    """
     token = (_TextCode.escape(token[0]), _TextCode.escape(token[1]))
     name_token = token if name_cloze else ("", "")
     key_token = token if key_cloze else ("", "")
@@ -544,6 +550,11 @@ def maps_to_code(
     sep_tag: str = _Tag.CLOZE_SEPARATOR,
     **kwargs: _Any,
 ):
+    """Combine multiple mappings into a single `TextCode` with sections.
+
+    Each mapping is converted via `map_to_code` and joined using `sep_tag`.
+    """
+
     def codegen():
         for key, value in maps.items():
             yield str(map_to_code(value, name=key, **kwargs))
@@ -561,6 +572,11 @@ def rows_to_table(
     use_compiled_len: bool = False,  # compile TextCode and use its length
     use_visible_len: bool = False,  # use advanced visible width counting (wcwidth, CJK, diacritics)
 ):
+    """Render `rows` as a Markdown table using provided `names` and `values`.
+
+    `names` supplies headers and optional alignments; `values` extracts
+    cell values for each row. Options control escaping and width calculations.
+    """
     if escape:
 
         def escaper(var: str):
@@ -647,6 +663,11 @@ def two_columns_to_code(
     left: _Call[[_T], str],
     right: _Call[[_T], str],
 ):
+    """Compile two-column rows into a `TextCode` combining left and right values.
+
+    Each row yields `left(row)` and `right(row)` which are concatenated into
+    a compiled `TextCode` string.
+    """
     return _TextCode.compile(
         "{}".join(
             item if item else "{:}"

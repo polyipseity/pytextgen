@@ -1,3 +1,5 @@
+"""Utility helpers for the virtual environment IO layer."""
+
 from abc import ABCMeta as _ABCM
 from abc import abstractmethod as _amethod
 from dataclasses import KW_ONLY as _KW_ONLY

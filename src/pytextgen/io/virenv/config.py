@@ -1,3 +1,9 @@
+"""Configuration defaults for the virtual environment helpers.
+
+Provides default tokens and flashcard separator settings used by the
+`virenv` IO helpers.
+"""
+
 from dataclasses import dataclass as _dc
 from dataclasses import field as _field
 from typing import (
@@ -35,6 +41,12 @@ __all__ = ("FlashcardSeparatorType", "Configuration", "CONFIG")
     slots=True,
 )
 class FlashcardSeparatorType:
+    """Representation of flashcard separator options.
+
+    Instances indicate whether a separator is `reversible` and/or
+    `multiline`; parsing is provided via :meth:`parse`.
+    """
+
     OPTIONS: _ClsVar[_Map[str, _Call[[_Self, bool], None]]] = {
         "r": lambda self, value: object.__setattr__(self, "reversible", value),
         "m": lambda self, value: object.__setattr__(self, "multiline", value),
