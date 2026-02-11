@@ -40,7 +40,7 @@ from typing import (
     final as _fin,
 )
 
-from .. import UUID as _UUID
+from ..meta import UUID as _UUID
 
 __all__ = ("Environment",)
 
@@ -125,7 +125,8 @@ class Environment:
     def closure(self):
         return self.__closure
 
-    async def exec(self, code: _Code, *init_codes: _Code):
+    async def exec(self, code: _Code, *init_codes: _Code) -> _Any:
+        """Execute `code` and optional `init_codes` in this environment and return any exported result."""
         env = _SimpNS(result=None, **self.env)
         globals = {**self.globals, self.ENV_NAME: env}
         locals = (

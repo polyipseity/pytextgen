@@ -45,7 +45,7 @@ If you add an instructions file, link to it from this `AGENTS.md`.
 
   - Place `__all__` as a tuple literal immediately after imports at the top of the module.
   - Only include public symbols (classes, functions, constants) or package-level module names; do not include names starting with `_`.
-  - Prefer not to re-export submodules via package `__init__.py`. Callers should import directly from submodules. If a package-level API is necessary, limit `__all__` to stable, intentionally exposed names and keep the surface minimal.
+  - Prefer not to re-export submodules via package `__init__.py`. Callers should import directly from submodules. When a package-level API is necessary and intentionally stable, prefer centralizing the package's exported surface in a `meta.py` module located in the package directory. Put the exported symbols and the `__all__` tuple in `meta.py` and have `__init__.py` import the minimal exported names (or forward `__all__` from `_meta`) so the package-level surface remains small and explicit.
   - When changing public symbols, update `__all__`, update docs, and add or update tests that verify exports. Run `uv run ruff check --fix`, `uv run pyright`, and `uv run pytest` locally before opening a PR.
 - **Async tests:** Prefer `async def` tests with `@pytest.mark.asyncio` and `await` usage. Do not use `asyncio.run` within pytest tests.
 

@@ -41,11 +41,11 @@ from typing import (
 
 from anyio import Path as _Path
 
-from .. import LOGGER as _LOGGER
-from .. import VERSION as _VER
 from ..io._options import GenOpts as _GenOpts
 from ..io._read import Reader as _Reader
 from ..io._write import Writer as _Writer
+from ..meta import LOGGER as _LOGGER
+from ..meta import VERSION as _VER
 from ..util import CompileCache as _CompCache
 
 __all__ = ("ExitCode", "Arguments", "main", "parser")

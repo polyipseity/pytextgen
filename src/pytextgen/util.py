@@ -60,6 +60,9 @@ from typing import (
     Any as _Any,
 )
 from typing import (
+    AsyncIterator as _AItor,
+)
+from typing import (
     Awaitable as _Await,
 )
 from typing import (
@@ -117,8 +120,8 @@ from anyio import Path as _Path
 from regex import VERSION0 as _REX_VER0
 from regex import compile as _rex_comp
 
-from . import LOGGER as _LOGGER
-from . import OPEN_TEXT_OPTIONS as _OPEN_TXT_OPTS
+from .meta import LOGGER as _LOGGER
+from .meta import OPEN_TEXT_OPTIONS as _OPEN_TXT_OPTS
 
 __all__ = (
     "wrap_async",
@@ -224,7 +227,7 @@ def tuple1(var: _T) -> tuple[_T]:
 
 
 @_actxmgr
-async def async_lock(lock: _TLock):
+async def async_lock(lock: _TLock) -> _AItor[_TLock]:
     """Async context manager to acquire and release a threading lock.
 
     This runs the blocking `lock.acquire` in a threadpool so it may be

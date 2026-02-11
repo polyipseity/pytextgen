@@ -42,6 +42,9 @@ from typing import (
     Any as _Any,
 )
 from typing import (
+    AsyncIterator as _AItor,
+)
+from typing import (
     Awaitable as _Await,
 )
 from typing import (
@@ -49,6 +52,9 @@ from typing import (
 )
 from typing import (
     ClassVar as _ClsVar,
+)
+from typing import (
+    Iterable as _Iter,
 )
 from typing import (
     Mapping as _Map,
@@ -71,8 +77,8 @@ from aioshutil import sync_to_async
 from anyio import AsyncFile as _AFile
 from anyio import Path as _Path
 
-from .. import NAME as _NAME
-from .. import OPEN_TEXT_OPTIONS as _OPEN_TXT_OPTS
+from ..meta import NAME as _NAME
+from ..meta import OPEN_TEXT_OPTIONS as _OPEN_TXT_OPTS
 from ..util import (
     abc_subclasshook_check as _abc_sch_chk,
 )
@@ -100,7 +106,7 @@ _stat_a = sync_to_async(_stat)
 
 
 @_actxmgr
-async def lock_file(path: _Path):
+async def lock_file(path: _Path) -> _AItor[None]:
     """Async context manager that acquires a per-path lock for safe writes."""
     async with _a_lock(_FILE_LOCKS[await path.resolve(strict=True)]):
         yield
@@ -140,11 +146,12 @@ class NullLocation:
     __slots__: _ClsVar = ()
 
     @_actxmgr
-    async def open(self):
+    async def open(self) -> _AItor[AnyTextIO]:
+        """Return an async context manager yielding a transient text buffer."""
         yield _StrIO()
 
     @property
-    def path(self):
+    def path(self) -> None:
         return None
 
 
@@ -171,7 +178,8 @@ class PathLocation:
     path: _Path
 
     @_actxmgr
-    async def open(self):
+    async def open(self) -> _AItor[AnyTextIO]:
+        """Open the underlying filesystem path for read/write access."""
         async with await self.path.open(mode="r+t", **_OPEN_TXT_OPTS) as file:
             yield file
 
@@ -241,11 +249,13 @@ class FileSection:
     section: str
 
     @classmethod
-    async def find(cls, path: _Path):
+    async def find(cls, path: _Path) -> _Iter[str]:
+        """Return an iterable of section names present in `path`."""
         return (await _FILE_SECTION_CACHE[path]).sections.keys()
 
     @_actxmgr
-    async def open(self):
+    async def open(self) -> _AItor[AnyTextIO]:
+        """Return an async context manager for editing this file section."""
         async with (
             _FileSectionIO(self)
             if self.section
@@ -390,7 +400,7 @@ class _FileSectionIO(_StrIO):
         finally:
             super().close()
 
-    async def __aenter__(self):
+    async def __aenter__(self) -> "_FileSectionIO":
         self.__file = await self.__closure.path.open(mode="r+t", **_OPEN_TXT_OPTS)
         try:
             self.__slice, self.__initial_value = (

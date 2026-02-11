@@ -12,11 +12,11 @@ from pathlib import Path
 __all__ = ()
 
 
-def test_pyproject_and_init_version_match():
-    """Ensure [project].version in pyproject.toml equals src/pytextgen.VERSION.
+def test_pyproject_and_meta_version_match():
+    """Ensure [project].version in pyproject.toml equals src/pytextgen/meta.py VERSION.
 
     This test loads the project metadata from the TOML file and imports the
-    package module to compare versions.
+    `pytextgen.meta` module to compare versions.
     """
     pyproject_text = Path("pyproject.toml").read_text(encoding="utf-8")
     pyproject = tomllib.loads(pyproject_text)
@@ -25,18 +25,16 @@ def test_pyproject_and_init_version_match():
     )
     py_version = pyproject["project"]["version"]
 
-    init_path = Path("src/pytextgen/__init__.py")
-    spec = importlib.util.spec_from_file_location("pytextgen", str(init_path))
+    meta_path = Path("src/pytextgen/meta.py")
+    spec = importlib.util.spec_from_file_location("pytextgen.meta", str(meta_path))
     assert spec is not None and spec.loader is not None, (
-        f"Could not load module from {init_path}"
+        f"Could not load module from {meta_path}"
     )
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
-    assert hasattr(module, "VERSION"), (
-        "Could not find VERSION in src/pytextgen/__init__.py"
-    )
-    init_version = module.VERSION
+    assert hasattr(module, "VERSION"), "Could not find VERSION in src/pytextgen/meta.py"
+    meta_version = module.VERSION
 
-    assert py_version == init_version, (
-        f"Version mismatch: pyproject.toml has {py_version!r} but src/pytextgen/__init__.py has {init_version!r}"
+    assert py_version == meta_version, (
+        f"Version mismatch: pyproject.toml has {py_version!r} but src/pytextgen/meta.py has {meta_version!r}"
     )

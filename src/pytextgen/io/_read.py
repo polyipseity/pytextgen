@@ -85,9 +85,9 @@ from asyncstdlib import chain as _achain
 from asyncstdlib import tuple as _atuple
 from more_itertools import unique_everseen as _unq_eseen
 
-from .. import FLASHCARD_EASE_DEFAULT as _FC_EASE_DEF
-from .. import NAME as _NAME
-from .. import OPEN_TEXT_OPTIONS as _OPEN_TXT_OPTS
+from ..meta import FLASHCARD_EASE_DEFAULT as _FC_EASE_DEF
+from ..meta import NAME as _NAME
+from ..meta import OPEN_TEXT_OPTIONS as _OPEN_TXT_OPTS
 from ..util import (
     abc_subclasshook_check as _abc_sch_chk,
 )
@@ -229,7 +229,7 @@ def _Python_env(
         ]
         | None
     ) = None,
-):
+) -> _Env:
     """Create an execution environment for running extracted Python code.
 
     The environment ensures import isolation and provides helpers such as
@@ -281,7 +281,10 @@ def _Python_env(
                 with modifier(module, modules), _mock.patch.dict(_mods, modules):
                     yield
             finally:
-                if not module.dirty():
+                # Do not rely on package-level re-exports. Check package
+                # configuration dirtiness via its `meta` module instead of
+                # `module.dirty()` so `__init__` can remain non-exporting.
+                if not _import(".virenv.meta", __package__).dirty():
                     _PYTHON_ENV_MODULE_CACHE[loop] = (module, modules)
 
     return _Env(
@@ -315,24 +318,24 @@ class MarkdownReader(Reader):
     IMPORT: _ClsVar = _re_comp(r"# import (.+)$", _MULTILINE)
 
     @property
-    def path(self):
+    def path(self) -> _Path:
         return self.__path
 
     @property
-    def options(self):
+    def options(self) -> _GenOpts:
         return self.__options
 
     @property
-    def codes(self):
+    def codes(self) -> list[_Seq[_Code]]:
         return self.__library_codes
 
-    def __init__(self, *, path: _Path, options: _GenOpts):
+    def __init__(self, *, path: _Path, options: _GenOpts) -> None:
         self.__path = path
         self.__options = options
         self.__library_codes = list[_Seq[_Code]]()
         self.__codes = dict[_Code, _Seq[_Code]]()
 
-    async def read(self, text: str, /):
+    async def read(self, text: str, /) -> None:
         compiler = _partial(
             self.options.compiler,
             filename=self.path,
@@ -377,7 +380,7 @@ class MarkdownReader(Reader):
                 raise ValueError(type_)
             start = self.START.search(text, stop.end())
 
-    def pipe(self):
+    def pipe(self) -> tuple[_Writer, ...]:
         assert isinstance(self, Reader)
 
         @_ctxmgr

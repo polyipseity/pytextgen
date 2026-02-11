@@ -8,7 +8,6 @@ from argparse import ArgumentParser as _ArgParser
 from functools import partial as _partial
 from typing import Callable as _Call
 
-from . import VERSION as _VER
 from .clear.main import (
     __name__ as _clear_name,
 )
@@ -27,6 +26,7 @@ from .generate.main import (
 from .generate.main import (
     parser as _generate_parser,
 )
+from .meta import VERSION as _VER
 
 __all__ = ("parser",)
 

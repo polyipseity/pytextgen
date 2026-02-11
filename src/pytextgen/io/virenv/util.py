@@ -28,16 +28,19 @@ from typing import (
     ClassVar as _ClsVar,
 )
 from typing import (
+    Iterator as _Itor,
+)
+from typing import (
     Sequence as _Seq,
 )
 from typing import (
     final as _fin,
 )
 
-from ... import (
+from ...meta import (
     FLASHCARD_STATES_FORMAT as _FC_ST_FMT,
 )
-from ... import (
+from ...meta import (
     FLASHCARD_STATES_REGEX as _FC_ST_RE,
 )
 from ...util import (  # explicit imports (avoid star-imports)
@@ -78,8 +81,12 @@ __all__ = (
 )
 
 
-def export_seq(*seq: _Call[..., _Any] | type):
-    """Utility returning a mapping of names to callables/types for exports."""
+def export_seq(*seq: _Call[..., _Any] | type) -> dict[str, _Any]:
+    """Return a mapping of symbol names to callables or types.
+
+    Returns a dict suitable for populating export maps used by package
+    `meta` modules or other small registries.
+    """
     return {val.__name__: val for val in seq}
 
 
@@ -135,7 +142,7 @@ class TwoSidedFlashcard:
     def __len__(self):
         return 2 if self.reversible else 1
 
-    def __getitem__(self, index: int):
+    def __getitem__(self, index: int) -> str:
         if self.reversible:
             if -2 > index or index >= 2:
                 raise IndexError(index)
@@ -192,7 +199,7 @@ class ClozeFlashcardGroup:
     def __len__(self):
         return len(self._clozes)
 
-    def __getitem__(self, index: int):
+    def __getitem__(self, index: int) -> str:
         return self._clozes[index]
 
 
@@ -227,7 +234,8 @@ class FlashcardState:
         )
 
     @classmethod
-    def compile_many(cls, text: str):
+    def compile_many(cls, text: str) -> _Itor["FlashcardState"]:
+        """Yield parsed `FlashcardState` objects found in `text`."""
         for match in cls.REGEX.finditer(text):
             yield cls(
                 date=_date.fromisoformat(match[1]),
@@ -236,7 +244,11 @@ class FlashcardState:
             )
 
     @classmethod
-    def compile(cls, text: str):
+    def compile(cls, text: str) -> "FlashcardState":
+        """Parse a single `FlashcardState` from `text`.
+
+        Raises `ValueError` if zero or multiple matches are present.
+        """
         rets = cls.compile_many(text)
         try:
             ret = next(rets)
@@ -264,12 +276,17 @@ class FlashcardStateGroup(TypedTuple[FlashcardState], element_type=FlashcardStat
         return ""
 
     @classmethod
-    def compile_many(cls, text: str):
+    def compile_many(cls, text: str) -> _Itor["FlashcardStateGroup"]:
+        """Yield parsed `FlashcardStateGroup` objects found in `text`."""
         for match in cls.REGEX.finditer(text):
             yield cls(FlashcardState.compile_many(text[match.start() : match.end()]))
 
     @classmethod
-    def compile(cls, text: str):
+    def compile(cls, text: str) -> "FlashcardStateGroup":
+        """Parse a single `FlashcardStateGroup` from `text`.
+
+        Raises `ValueError` if zero or multiple matches are present.
+        """
         rets = cls.compile_many(text)
         try:
             ret = next(rets)

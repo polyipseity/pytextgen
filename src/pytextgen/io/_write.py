@@ -22,19 +22,20 @@ from datetime import datetime as _datetime
 from re import compile as _re_comp
 from types import CodeType as _Code
 from typing import Any as _Any
+from typing import AsyncIterator as _AItor
 from typing import ClassVar as _ClsVar
 from typing import Iterable as _Iter
 from typing import cast
 
 from anyio import Path as _Path
 
-from .. import (
+from ..meta import (
     FLASHCARD_STATES_REGEX as _FC_ST_RE,
 )
-from .. import (
+from ..meta import (
     GENERATE_COMMENT_FORMAT as _GEN_CMT_FMT,
 )
-from .. import (
+from ..meta import (
     GENERATE_COMMENT_REGEX as _GEN_CMT_RE,
 )
 from ..util import abc_subclasshook_check as _abc_sch_chk
@@ -90,21 +91,28 @@ class ClearWriter:
         r" ?" + _FC_ST_RE.pattern, _FC_ST_RE.flags
     )
 
-    def __init__(self, path: _Path, *, options: _ClrOpts):
+    def __init__(self, path: _Path, *, options: _ClrOpts) -> None:
+        """Create a `ClearWriter` for `path` with the given `options`."""
         self.__path = path
         self.__options = options
 
     @_actxmgr
-    async def write(self):
-        """Return an async context manager which clears the file per options."""
+    async def write(self) -> _AItor[None]:
+        """Return an async context manager which clears the file per options.
+
+        The returned context manager yields control to the caller and performs
+        clearing work on exit.
+        """
         if _ClrT.CONTENT in self.__options.types:
 
-            async def process(io: _ATxtIO):
+            async def process(io: _ATxtIO) -> None:
+                """Truncate content sections (clear content)."""
                 await _wrap_a(io.truncate())
 
         elif _ClrT.FLASHCARD_STATE in self.__options.types:
 
-            async def process(io: _ATxtIO):
+            async def process(io: _ATxtIO) -> None:
+                """Strip flashcard state markers from the section content."""
                 read = await _wrap_a(io.read())
                 seek = create_task(_wrap_a(io.seek(0)))
                 try:
@@ -117,7 +125,8 @@ class ClearWriter:
 
         else:
 
-            async def process(io: _ATxtIO):
+            async def process(io: _ATxtIO) -> None:
+                """No-op processor for unrecognized clear types."""
                 pass
 
         try:
@@ -150,23 +159,29 @@ class PythonWriter:
         init_codes: _Iter[_Code],
         env: _Env,
         options: _GenOpts,
-    ):
+    ) -> None:
+        """Create a `PythonWriter` which will execute `code` in `env`.
+
+        `init_codes` are executed before `code` and may initialize environment
+        state used by the primary code object.
+        """
         self.__code = code
         self.__init_codes = tuple(init_codes)
         self.__env = env
         self.__options = options
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"{type(self).__qualname__}({self.__code!r}, env={self.__env!r}, options={self.__options!r})"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{type(self).__qualname__}({self.__code}, env={self.__env}, options={self.__options})"
 
     @_actxmgr
-    async def write(self):
+    async def write(self) -> _AItor[None]:
         """Execute the code and write each resulting `Result` to its location."""
 
-        def results0(result: _Any):
+        def results0(result: _Any) -> _Iter[_Ret]:
+            """Normalize the writer execution result to an iterator of `Result`."""
             if _Ret.isinstance(result):
                 yield result
                 return
@@ -184,7 +199,13 @@ class PythonWriter:
             yield
         finally:
 
-            async def process(result: _Ret):
+            async def process(result: _Ret) -> None:
+                """Write a single `Result` to its location, preserving timestamps.
+
+                This coroutine updates the target section only when the generated
+                text differs from existing content (accounting for the timestamp
+                header when present).
+                """
                 loc = result.location
                 path = loc.path
                 async with _nullctx() if path is None else _lck_f(path):

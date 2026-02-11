@@ -58,7 +58,10 @@ Repo-specific patterns & examples (do not assume standard patterns):
   - What to include: Only include names that are part of the module's public API:
     - Public classes, functions, constants, and names intended for `from module import *`.
     - Do not include private names (names that start with `_`).
-    - Avoid re-exporting submodules or symbols from package `__init__.py`. Prefer explicit imports from submodules (for example, `from package.submodule import Thing`) so callers import symbols directly from the module that defines them. If a package-level surface is required for a stable, long-lived API, list only those intentionally exposed names in `__all__` and keep the surface minimal and stable (use a tuple literal).
+    - Avoid re-exporting submodules or symbols from package `__init__.py`. Prefer explicit imports from submodules (for example, `from package.submodule import Thing`) so callers import symbols directly from the module that defines them.
+
+  - Package-level exports (`meta.py`): When a package needs a small, stable package-level API, create a `meta.py` module inside the package directory and place the exported symbols and the `__all__` tuple there. Keep `__init__.py` minimal: import the exported symbols from `.meta` and set `__all__` to the exported tuple (for example `from . import meta as _meta` then `__all__ = _meta.__all__`). This reduces import-time work, avoids accidental import cycles, and centralizes the package's exported surface for easier testing and maintenance. Importers should still prefer importing from the module that actually defines the symbol where practical.
+
   - Tests: Test modules must set `__all__ = ()` to make it explicit they export nothing.
 
   Rationale and checks:
