@@ -1,73 +1,14 @@
-"""Public helpers used for generating text/code and flashcards."""
+"""Public helpers used for generating text/code and flashcards.
 
-from ._flashcard import (
-    attach_flashcard_states,
-    cloze_texts,
-    listify_flashcards,
-    memorize_indexed_seq0,
-    memorize_linked_seq0,
-    memorize_two_sided0,
-    punctuation_hinter,
-    semantics_seq_map0,
-)
-from ._misc import Tag
-from ._text_code import (
-    TextCode,
-    affix_code,
-    code_to_str,
-    code_to_strs,
-    separate_code_by_tag,
-)
-from ._user import (
-    cloze_text,
-    map_to_code,
-    maps_to_code,
-    markdown_sanitizer,
-    memorize,
-    memorize_indexed_seq,
-    memorize_linked_seq,
-    memorize_two_sided,
-    quote,
-    quote_text,
-    quotette,
-    rows_to_table,
-    semantics_seq_map,
-    seq_to_code,
-    tagged_filter_sep,
-    text,
-    two_columns_to_code,
-)
+This package intentionally does not re-export symbols from submodules. Callers
+should import directly from the submodule that defines the symbol, for
+example:
 
-__all__ = (
-    "Tag",
-    "TextCode",
-    "attach_flashcard_states",
-    "listify_flashcards",
-    "memorize_two_sided0",
-    "memorize_linked_seq0",
-    "memorize_indexed_seq0",
-    "semantics_seq_map0",
-    "punctuation_hinter",
-    "cloze_texts",
-    "code_to_strs",
-    "code_to_str",
-    "affix_code",
-    "separate_code_by_tag",
-    "text",
-    "quote",
-    "quotette",
-    "quote_text",
-    "cloze_text",
-    "tagged_filter_sep",
-    "memorize",
-    "memorize_two_sided",
-    "memorize_linked_seq",
-    "memorize_indexed_seq",
-    "semantics_seq_map",
-    "markdown_sanitizer",
-    "seq_to_code",
-    "map_to_code",
-    "maps_to_code",
-    "rows_to_table",
-    "two_columns_to_code",
-)
+    from pytextgen.io.virenv.gen._text_code import TextCode
+    from pytextgen.io.virenv.gen._flashcard import attach_flashcard_states
+
+Keeping a minimal package surface avoids accidental API stabilization and
+makes the origin of each symbol explicit.
+"""
+
+__all__ = ()

@@ -37,11 +37,11 @@ from .. import (
 from .. import (
     GENERATE_COMMENT_REGEX as _GEN_CMT_RE,
 )
-from ..io import ClearOpts as _ClrOpts
-from ..io import ClearType as _ClrT
 from ..util import abc_subclasshook_check as _abc_sch_chk
 from ..util import wrap_async as _wrap_a
 from ._env import Environment as _Env
+from ._options import ClearOpts as _ClrOpts
+from ._options import ClearType as _ClrT
 from ._options import GenOpts as _GenOpts
 from .util import (
     AnyTextIO as _ATxtIO,

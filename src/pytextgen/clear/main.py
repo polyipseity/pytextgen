@@ -39,9 +39,9 @@ from anyio import Path as _Path
 
 from .. import LOGGER as _LOGGER
 from .. import VERSION as _VER
-from ..io import ClearOpts as _ClrOpts
-from ..io import ClearType as _ClrT
-from ..io import ClearWriter as _ClrWriter
+from ..io._options import ClearOpts as _ClrOpts
+from ..io._options import ClearType as _ClrT
+from ..io._write import ClearWriter as _ClrWriter
 
 __all__ = ("ExitCode", "Arguments", "main", "parser")
 

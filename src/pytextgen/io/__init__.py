@@ -4,36 +4,9 @@ Exports reader and writer classes used by the `generate` and `clear`
 subcommands, along with helpers to operate on file sections.
 """
 
-from ._options import ClearOpts, ClearType, GenOpts
-from ._read import CodeLibrary, MarkdownReader, Reader
-from ._write import ClearWriter, PythonWriter, Writer
-from .util import (
-    NULL_LOCATION,
-    AnyTextIO,
-    FileSection,
-    Location,
-    NullLocation,
-    PathLocation,
-    Result,
-    lock_file,
-)
+# Public surface for the `io` package is intentionally minimal.
+# Prefer importing directly from the defining modules, for example:
+#   from pytextgen.io._read import Reader
+#   from pytextgen.io._options import GenOpts
 
-__all__ = (
-    "ClearType",
-    "ClearOpts",
-    "GenOpts",
-    "Reader",
-    "CodeLibrary",
-    "MarkdownReader",
-    "Writer",
-    "ClearWriter",
-    "PythonWriter",
-    "AnyTextIO",
-    "lock_file",
-    "Location",
-    "NullLocation",
-    "NULL_LOCATION",
-    "PathLocation",
-    "FileSection",
-    "Result",
-)
+__all__ = ()

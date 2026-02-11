@@ -58,8 +58,7 @@ Repo-specific patterns & examples (do not assume standard patterns):
   - What to include: Only include names that are part of the module's public API:
     - Public classes, functions, constants, and names intended for `from module import *`.
     - Do not include private names (names that start with `_`).
-    - Re-exported symbols (for example, `from .submodule import Thing`) should be explicitly listed in `__all__` of the parent module.
-  - Package `__init__.py`: When a package exposes a public surface via the package import (for example `import package`), set `__all__` in `__init__.py` to the names that should be available at package level (module names or specific symbols). Use tuples there as well.
+    - Avoid re-exporting submodules or symbols from package `__init__.py`. Prefer explicit imports from submodules (for example, `from package.submodule import Thing`) so callers import symbols directly from the module that defines them. If a package-level surface is required for a stable, long-lived API, list only those intentionally exposed names in `__all__` and keep the surface minimal and stable (use a tuple literal).
   - Tests: Test modules must set `__all__ = ()` to make it explicit they export nothing.
 
   Rationale and checks:
@@ -92,7 +91,7 @@ Repo-specific patterns & examples (do not assume standard patterns):
 
   - Verification: After adding or changing docstrings, run local checks and include the commands you executed in the PR body.
   - Why: Explicit `__all__` makes public surface area explicit for users and tools, reduces accidental exports, and aids static analysis and packaging.
-  - Verification: After adding or changing `__all__`, run your local checks (`uv run ruff check --fix`, `uv run pyright`, `uv run pytest`). When adding re-exports, ensure `pyright` and tests still import and reference symbols correctly.
+  - Verification: After adding or changing `__all__`, run your local checks (`uv run ruff check --fix`, `uv run pyright`, `uv run pytest`). When changing package exports, ensure `pyright` and tests still import and reference symbols correctly; prefer updating callers to import directly from submodules when possible.
   - Examples and automated checks: Prefer small tests which import the module and assert the presence of promised attributes and absence of private ones when appropriate.
 - Typing & dataclasses: Prefer PEP-585/604 annotations (`list[int]`, `str | None`). Many dataclasses use `@dataclass(..., slots=True, frozen=True)`. Do not use `from __future__ import annotations` anywhere in this repository; postponed evaluation of annotations is disallowed. Use explicit forward references or runtime-compatible patterns when necessary.
 - Async-first code: Many helpers are `async` (use `@pytest.mark.asyncio` for tests). Examples: `CompileCache` context manager in `src/pytextgen/util.py`.
