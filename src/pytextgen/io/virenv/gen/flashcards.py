@@ -10,8 +10,8 @@ from typing import (
     final,
 )
 
-from ..config import CONFIG
-from ..util import (
+from ..configs import CONFIG
+from ..utils import (
     ClozeFlashcardGroup,
     FlashcardGroup,
     FlashcardStateGroup,

@@ -36,7 +36,7 @@ from aioshutil import sync_to_async
 from anyio import AsyncFile, Path
 
 from ..meta import NAME, OPEN_TEXT_OPTIONS
-from ..util import (
+from ..utils import (
     abc_subclasshook_check,
     async_lock,
     wrap_async,

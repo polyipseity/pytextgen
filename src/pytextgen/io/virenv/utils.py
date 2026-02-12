@@ -9,7 +9,7 @@ from re import compile as re_compile
 from typing import Any, Callable, ClassVar, Iterator, Sequence, final
 
 from ...meta import FLASHCARD_STATES_FORMAT, FLASHCARD_STATES_REGEX
-from ...util import (  # explicit imports (avoid star-imports)
+from ...utils import (  # explicit imports (avoid star-imports)
     IteratorSequence,
     TypedTuple,
     Unit,
@@ -24,7 +24,7 @@ from ...util import (  # explicit imports (avoid star-imports)
 )
 
 # from ..util import *  # intentionally removed star-import; no names from ..util are required here
-from .config import CONFIG, FlashcardSeparatorType
+from .configs import CONFIG, FlashcardSeparatorType
 
 __all__ = (
     "export_seq",

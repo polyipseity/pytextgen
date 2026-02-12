@@ -1,7 +1,7 @@
 """Helpers for reading flashcard state input for the virtual environment IO."""
 
-from ..util import Location
-from .util import FlashcardStateGroup, wrap_async
+from ..utils import Location
+from .utils import FlashcardStateGroup, wrap_async
 
 __all__ = ("read_flashcard_states",)
 

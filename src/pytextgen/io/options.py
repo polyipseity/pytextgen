@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from enum import StrEnum, unique
 from typing import AbstractSet, final
 
-from ..util import Compiler
+from ..utils import Compiler
 
 __all__ = ("ClearType", "ClearOpts", "GenOpts")
 

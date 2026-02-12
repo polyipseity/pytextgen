@@ -20,7 +20,7 @@ from ..io.options import GenOpts
 from ..io.read import Reader
 from ..io.write import Writer
 from ..meta import LOGGER, VERSION
-from ..util import CompileCache
+from ..utils import CompileCache
 
 __all__ = ("ExitCode", "Arguments", "main", "parser")
 

@@ -24,8 +24,8 @@ from typing import (
 )
 from unicodedata import normalize
 
-from ..config import CONFIG
-from ..util import (
+from ..configs import CONFIG
+from ..utils import (
     FlashcardGroup,
     FlashcardStateGroup,
     IteratorSequence,

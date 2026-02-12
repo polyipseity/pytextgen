@@ -47,7 +47,7 @@ from asyncstdlib import tuple as atuple
 from more_itertools import unique_everseen
 
 from ..meta import FLASHCARD_EASE_DEFAULT, NAME, OPEN_TEXT_OPTIONS
-from ..util import (
+from ..utils import (
     abc_subclasshook_check,
     async_lock,
     copy_module,
@@ -56,8 +56,8 @@ from ..util import (
 )
 from .env import Environment
 from .options import GenOpts
-from .util import NULL_LOCATION, FileSection
-from .virenv.util import StatefulFlashcardGroup
+from .utils import NULL_LOCATION, FileSection
+from .virenv.utils import StatefulFlashcardGroup
 from .write import PythonWriter, Writer
 
 __all__ = ("Reader", "CodeLibrary", "MarkdownReader")

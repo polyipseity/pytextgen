@@ -20,7 +20,7 @@ from typing import (
     overload,
 )
 
-from ..util import constant
+from ..utils import constant
 from .misc import Tag
 
 __all__ = (
