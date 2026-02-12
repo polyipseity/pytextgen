@@ -14,8 +14,8 @@ from typing import AbstractSet, Callable, Sequence, final
 
 from anyio import Path
 
-from ..io._options import ClearOpts, ClearType
-from ..io._write import ClearWriter
+from ..io.options import ClearOpts, ClearType
+from ..io.write import ClearWriter
 from ..meta import LOGGER, VERSION
 
 __all__ = ("ExitCode", "Arguments", "main", "parser")

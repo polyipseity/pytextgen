@@ -21,7 +21,7 @@ from typing import (
 )
 
 from ..util import constant
-from ._misc import Tag
+from .misc import Tag
 
 __all__ = (
     "TextCode",

@@ -16,9 +16,9 @@ from typing import Callable, Iterable, Sequence, final
 
 from anyio import Path
 
-from ..io._options import GenOpts
-from ..io._read import Reader
-from ..io._write import Writer
+from ..io.options import GenOpts
+from ..io.read import Reader
+from ..io.write import Writer
 from ..meta import LOGGER, VERSION
 from ..util import CompileCache
 

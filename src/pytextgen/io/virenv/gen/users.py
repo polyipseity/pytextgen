@@ -35,7 +35,7 @@ from ..util import (
     identity,
     strip_lines,
 )
-from ._flashcard import (
+from .flashcards import (
     attach_flashcard_states,
     cloze_texts,
     listify_flashcards,
@@ -45,8 +45,8 @@ from ._flashcard import (
     punctuation_hinter,
     semantics_seq_map0,
 )
-from ._misc import Tag
-from ._text_code import (
+from .misc import Tag
+from .text_code import (
     TextCode,
     code_to_str,
     code_to_strs,

@@ -54,11 +54,11 @@ from ..util import (
     deep_foreach_module,
     ignore_args,
 )
-from ._env import Environment
-from ._options import GenOpts
-from ._write import PythonWriter, Writer
+from .env import Environment
+from .options import GenOpts
 from .util import NULL_LOCATION, FileSection
 from .virenv.util import StatefulFlashcardGroup
+from .write import PythonWriter, Writer
 
 __all__ = ("Reader", "CodeLibrary", "MarkdownReader")
 

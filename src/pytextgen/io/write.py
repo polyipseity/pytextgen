@@ -21,8 +21,8 @@ from ..meta import (
     GENERATE_COMMENT_REGEX,
 )
 from ..util import abc_subclasshook_check
-from ._env import Environment
-from ._options import ClearOpts, ClearType, GenOpts
+from .env import Environment
+from .options import ClearOpts, ClearType, GenOpts
 from .util import AnyTextIO, FileSection, Result, lock_file, wrap_async
 
 __all__ = ("Writer", "ClearWriter", "PythonWriter")
