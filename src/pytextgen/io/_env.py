@@ -37,6 +37,12 @@ class Environment:
 
     @classmethod
     def transform_code(cls, ast: Module):
+        """Wrap an AST into the internal async-entry template used by Environment.
+
+        Returns a module AST where the provided `ast` body is placed into the
+        pre-defined async-entry function so it may be executed and its exports
+        collected by `Environment.exec`.
+        """
         template = parse(cls.ENTRY_TEMPLATE, "<string>", "exec", type_comments=True)
         if ast.body:
             cast(AsyncFunctionDef, template.body[0]).body = ast.body
@@ -51,6 +57,11 @@ class Environment:
         closure: tuple[CellType, ...] | None = None,
         context: Callable[[], AbstractAsyncContextManager[Any]] | None = None,
     ):
+        """Initialize an isolated execution environment.
+
+        Arguments are copied and exposed as read-only mappings so callers can
+        provide initial globals/locals and optional async `context` handling.
+        """
         self.__env = MappingProxyType(dict(env))
         self.__globals = MappingProxyType(dict(globals))
         self.__locals = MappingProxyType(dict(locals))
@@ -60,9 +71,15 @@ class Environment:
         assert self.ENV_NAME not in self.locals
 
     def __repr__(self):
+        """Return a detailed representation useful for debugging tests and logs."""
         return f"{type(self).__qualname__}(env={self.__env!r}, globals={self.__globals!r}, locals={self.__locals!r})"
 
     def __str__(self):
+        """Return a compact, public-facing string representation.
+
+        Hides common dunder entries to make output concise when printed.
+        """
+
         def filter(map_: Mapping[str, Any]):
             return {
                 key: val
@@ -80,18 +97,22 @@ class Environment:
 
     @property
     def env(self):
+        """Return the read-only mapping of environment initial values."""
         return self.__env
 
     @property
     def globals(self):
+        """Return the read-only globals mapping used during code execution."""
         return self.__globals
 
     @property
     def locals(self):
+        """Return the read-only locals mapping used during code execution."""
         return self.__locals
 
     @property
     def closure(self):
+        """Return optional closure cells to be supplied when executing code."""
         return self.__closure
 
     async def exec(self, code: CodeType, *init_codes: CodeType) -> Any:

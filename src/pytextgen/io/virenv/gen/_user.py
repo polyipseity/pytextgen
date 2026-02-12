@@ -102,6 +102,8 @@ _TABLE_ALIGNS: Mapping[Literal["default", "left", "right", "center"], str] = {
     slots=True,
 )
 class _MarkdownRegex:
+    """Pair of compiled regex and its desugared replacement form used by sanitizer."""
+
     regex: Pattern[str]
     desugared: str
 

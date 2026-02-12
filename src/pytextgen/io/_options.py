@@ -48,6 +48,7 @@ class ClearOpts:
     types: AbstractSet[ClearType]
 
     def __post_init__(self):
+        """Normalize `types` to a frozenset after dataclass initialization."""
         object.__setattr__(self, "types", frozenset(self.types))
 
 

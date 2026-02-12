@@ -43,6 +43,7 @@ class Writer(metaclass=ABCMeta):
 
     @classmethod
     def __subclasshook__(cls, subclass: type):
+        """Structural check used by `issubclass` to recognise Writer-like types."""
         return abc_subclasshook_check(
             Writer, cls, subclass, names=(cls.write.__name__,)
         )
@@ -143,9 +144,11 @@ class PythonWriter:
         self.__options = options
 
     def __repr__(self) -> str:
+        """Return an unambiguous representation for debugging and tests."""
         return f"{type(self).__qualname__}({self.__code!r}, env={self.__env!r}, options={self.__options!r})"
 
     def __str__(self) -> str:
+        """Return a concise, human-friendly string for the writer."""
         return f"{type(self).__qualname__}({self.__code}, env={self.__env}, options={self.__options})"
 
     @asynccontextmanager

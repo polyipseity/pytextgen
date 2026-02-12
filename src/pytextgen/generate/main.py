@@ -62,6 +62,7 @@ class Arguments:
     options: GenOpts
 
     def __post_init__(self):
+        """Normalize `inputs` into an immutable tuple after construction."""
         object.__setattr__(self, "inputs", tuple(self.inputs))
 
 

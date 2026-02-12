@@ -66,10 +66,12 @@ class FlashcardGroup(Sequence[str], metaclass=ABCMeta):
 
     @abstractmethod
     def __str__(self) -> str:
+        """Render the flashcard as text for serialization and display."""
         raise NotImplementedError(self)
 
     @classmethod
     def __subclasshook__(cls, subclass: type):
+        """Structural check used by `issubclass` to recognise FlashcardGroup types."""
         return abc_subclasshook_check(
             FlashcardGroup, cls, subclass, names=(cls.__str__.__name__,)
         )
@@ -97,6 +99,7 @@ class TwoSidedFlashcard:
     reversible: bool
 
     def __str__(self):
+        """Render the two-sided flashcard as text using configured separators."""
         return CONFIG.flashcard_separators[
             FlashcardSeparatorType(
                 reversible=self.reversible,
@@ -105,9 +108,14 @@ class TwoSidedFlashcard:
         ].join((self.left, self.right))
 
     def __len__(self):
+        """Return the number of visible sides for this flashcard (1 or 2)."""
         return 2 if self.reversible else 1
 
     def __getitem__(self, index: int) -> str:
+        """Return the textual representation for the given index.
+
+        Indexing supports reversing when `reversible` is True.
+        """
         if self.reversible:
             if -2 > index or index >= 2:
                 raise IndexError(index)
@@ -147,6 +155,7 @@ class ClozeFlashcardGroup:
     _clozes: Sequence[str] = field(init=False, repr=False, hash=False, compare=False)
 
     def __post_init__(self):
+        """Compile an internal regex and extract cloze matches into `_clozes`."""
         try:
             pattern = self.__pattern_cache[self.token]
         except KeyError:
@@ -159,12 +168,15 @@ class ClozeFlashcardGroup:
         )
 
     def __str__(self):
+        """Return the underlying context string for the cloze flashcard group."""
         return self.context
 
     def __len__(self):
+        """Return number of cloze items found in the context."""
         return len(self._clozes)
 
     def __getitem__(self, index: int) -> str:
+        """Return the cloze text at `index`."""
         return self._clozes[index]
 
 
@@ -194,6 +206,7 @@ class FlashcardState:
     ease: int
 
     def __str__(self):
+        """Format this flashcard state as a compact string matching `FORMAT`."""
         return self.FORMAT.format(
             date=self.date, interval=self.interval, ease=self.ease
         )
@@ -236,6 +249,7 @@ class FlashcardStateGroup(TypedTuple[FlashcardState], element_type=FlashcardStat
     REGEX: ClassVar = FLASHCARD_STATES_REGEX
 
     def __str__(self):
+        """Serialize the state group into the FLASHCARD_STATES_FORMAT or empty string."""
         if self:
             return self.FORMAT.format(states="".join(map(str, self)))
         return ""
@@ -284,4 +298,5 @@ class StatefulFlashcardGroup:
     state: FlashcardStateGroup
 
     def __str__(self):
+        """Return combined representation of flashcard and its state."""
         return " ".join((str(self.flashcard), str(self.state)))

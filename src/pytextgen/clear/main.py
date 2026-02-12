@@ -57,6 +57,11 @@ class Arguments:
     types: AbstractSet[ClearType]
 
     def __post_init__(self):
+        """Normalize container attributes after dataclass initialization.
+
+        Ensures `inputs` is a tuple and `types` is a frozenset for stable
+        downstream usage and hashing.
+        """
         object.__setattr__(self, "inputs", tuple(self.inputs))
         object.__setattr__(self, "types", frozenset(self.types))
 

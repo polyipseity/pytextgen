@@ -46,6 +46,12 @@ class FlashcardSeparatorType:
 
     @classmethod
     def parse(cls, options: str | Self):
+        """Parse a compact option string (e.g. 'rm', 'r', 'm') into an instance.
+
+        Accepts an existing `FlashcardSeparatorType` (returned unchanged) or a
+        short string encoding the boolean options. Raises `ValueError` for
+        malformed input.
+        """
         if not isinstance(options, str):
             return options
         self = cls(reversible=False, multiline=False)

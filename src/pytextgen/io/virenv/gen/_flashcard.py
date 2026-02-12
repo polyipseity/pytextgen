@@ -91,6 +91,8 @@ def listify_flashcards(
     slots=True,
 )
 class _HintedStr:
+    """Small container holding a hint-annotated string and its left/right hints."""
+
     str_: str
     left: str
     right: str

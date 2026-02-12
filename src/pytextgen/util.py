@@ -280,6 +280,7 @@ class Unit(Generic[_T_co]):
     __slots__: ClassVar = ("__value",)
 
     def __init__(self, value: _T_co):
+        """Store the wrapped value inside the `Unit` container."""
         self.__value: _T_co = value
 
     def counit(self):
@@ -318,21 +319,28 @@ class TypedTuple(Generic[_T], tuple[_T, ...]):
     element_type: type[_T]
 
     def __init_subclass__(cls, element_type: type[_T], **kwargs: Any):
+        """Record the required `element_type` for this `TypedTuple` subclass."""
         super().__init_subclass__(**kwargs)
         cls.element_type = element_type
 
     @overload
-    def __new__(cls, iterable: Iterable[_T], /) -> Self: ...
+    def __new__(cls, iterable: Iterable[_T], /) -> Self:
+        """Overload: construct from iterable."""
+        ...
 
     @overload
-    def __new__(cls, *items: _T) -> Self: ...
+    def __new__(cls, *items: _T) -> Self:
+        """Overload: construct from explicit items."""
+        ...
 
     def __new__(cls, *items: Iterable[_T] | _T):
+        """Construct a `TypedTuple` enforcing `element_type` at creation time."""
         if len(items) == 1 and not isinstance(items[0], cls.element_type):
             return super().__new__(cls, cast(Iterable[_T], items[0]))
         return super().__new__(cls, cast(Iterable[_T], items))
 
     def __repr__(self):
+        """Include the subclass name in the tuple representation."""
         return type(self).__qualname__ + super().__repr__()
 
 
@@ -347,12 +355,14 @@ class IteratorSequence(Generic[_T_co], Sequence[_T_co]):
     __slots__: ClassVar = ("__cache", "__done", "__iterator", "__lock")
 
     def __init__(self, iterator: Iterator[_T_co]):
+        """Initialise the sequence view over `iterator`, preparing cache and lock."""
         self.__lock = Lock()
         self.__iterator = iterator
         self.__cache = list[_T_co]()
         self.__done = False
 
     def __cache_to(self, length: int | None):
+        """Ensure the internal cache contains up to `length` items (or all if None)."""
         cur_len = len(self.__cache)
         if self.__done or (length is not None and cur_len >= length):
             return cur_len
@@ -371,12 +381,17 @@ class IteratorSequence(Generic[_T_co], Sequence[_T_co]):
         return new_len
 
     @overload
-    def __getitem__(self, index: int) -> _T_co: ...
+    def __getitem__(self, index: int) -> _T_co:
+        """Overload: index returns single element."""
+        ...
 
     @overload
-    def __getitem__(self, index: slice) -> Self: ...
+    def __getitem__(self, index: slice) -> Self:
+        """Overload: slice returns a new sequence view."""
+        ...
 
     def __getitem__(self, index: int | slice):
+        """Return cached item(s) by index; populate cache on demand."""
         if isinstance(index, int):
             available = self.__cache_to(index + 1)
             if index >= available:
@@ -385,6 +400,7 @@ class IteratorSequence(Generic[_T_co], Sequence[_T_co]):
         return type(self)(islice(self, index.start, index.stop, index.step))
 
     def __len__(self):
+        """Return the total number of elements, exhausting the iterator if needed."""
         return self.__cache_to(None)
 
 
@@ -407,7 +423,13 @@ class Compiler(Protocol):
         flags: int,
         dont_inherit: bool = ...,
         optimize: int = ...,
-    ) -> CodeType: ...
+    ) -> CodeType:
+        """Protocol signature: compile-source callable compatible with `compile`.
+
+        Implementations should accept the same parameters as built-in `compile`
+        and return a code object.
+        """
+        ...
 
 
 @final
@@ -490,20 +512,24 @@ class CompileCache:
 
     @classmethod
     def __time(cls):
+        """Return the current epoch time as an integer (seconds)."""
         return int(time())
 
     def __gen_cache_name(self):
+        """Generate a unique filename for storing compiled cache entries."""
         ret: str = self.__CACHE_NAME_FORMAT.format(str(uuid4()))
         while ret in self.__cache_names:
             ret = self.__CACHE_NAME_FORMAT.format(str(uuid4()))
         return ret
 
     def __init__(self, *, folder: PathLike[Any] | None):
+        """Create a compile cache optionally backed by a filesystem `folder`."""
         self.__folder = None if folder is None else Path(folder)
         self.__cache = dict[CompileCache.CacheKey, CompileCache.CacheEntry]()
         self.__cache_names = set[str]()
 
     async def __aenter__(self):
+        """Async enter: load on-disk metadata and cached compiled code if a folder is set."""
         folder = self.__folder
         if folder is None:
             return self
@@ -564,6 +590,7 @@ class CompileCache:
         exc_value: BaseException | None,
         traceback: TracebackType | None,
     ):
+        """Async-exit: persist cache metadata and write any on-disk entries."""
         folder = self.__folder
         if folder is None:
             return
@@ -620,6 +647,11 @@ class CompileCache:
         dont_inherit: bool = False,
         optimize: int = -1,
     ):
+        """Compile `source` and return a cached code object when available.
+
+        If a folder was provided to the cache the compiled code may be
+        persisted and reused across context lifetimes.
+        """
         compile0 = partial(
             compile,
             source=source,
@@ -656,6 +688,7 @@ class CompileCache:
         return entry.code
 
     def __repr__(self):
+        """Return a concise representation showing the backing folder (if any)."""
         return f"{type(self).__qualname__}(folder={self.__folder!r})"
 
 

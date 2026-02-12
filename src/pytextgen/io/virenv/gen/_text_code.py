@@ -100,6 +100,7 @@ class TextCode:
         block: "TextCode.Block"
 
     def __init__(self, blocks: Iterable[Block]):
+        """Create a `TextCode` instance from an iterable of `Block` elements."""
         self.__blocks = tuple(blocks)
         by_tag = defaultdict[str, MutableSequence[TextCode.ByTagValue]](list)
         for idx, block in enumerate(self.blocks):
@@ -109,17 +110,21 @@ class TextCode:
         )
 
     def __repr__(self):
+        """Return a detailed representation including contained blocks."""
         return f"{type(self).__qualname__}(blocks={self.blocks!r})"
 
     def __str__(self):
+        """Serialize the `TextCode` back to its textual representation."""
         return "".join(map(str, self.blocks))
 
     @property
     def blocks(self):
+        """Return the tuple of `Block` elements comprising this `TextCode`."""
         return self.__blocks
 
     @property
     def by_tag(self):
+        """Return a mapping of tag -> sequence of `ByTagValue` entries."""
         return self.__by_tag
 
     @classmethod
@@ -193,6 +198,11 @@ class TextCode:
 
     @classmethod
     def compiler(cls, code: str):
+        """Compile a raw `code` string into a sequence of `Block` elements.
+
+        This generator handles escaping and tagged blocks and yields `Block`
+        objects in order.
+        """
         stack = list[TextCode.__CompilerState]()
         stack.append(cls.__CompilerState.wrap("normal", ""))
         for index, char in enumerate(
@@ -260,6 +270,7 @@ class TextCode:
 
     @classmethod
     def compile(cls, text: str):
+        """Compile textual `text` into a `TextCode` composed of `Block`s."""
         return cls(cls.compiler(text))
 
 

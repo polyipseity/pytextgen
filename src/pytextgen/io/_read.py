@@ -88,6 +88,12 @@ class Reader(metaclass=ABCMeta):
 
     @classmethod
     def register2(cls, *extensions: str):
+        """Decorator factory: register a Reader subclass for additional extensions.
+
+        Mirrors `Reader.register` behaviour while also assigning the class to
+        the `REGISTRY` for each supplied file extension.
+        """
+
         @wraps(cls.register)
         def register(subclass: type[Self]) -> type[Self]:
             ret = cls.register(subclass)
@@ -99,6 +105,11 @@ class Reader(metaclass=ABCMeta):
 
     @classmethod
     async def new(cls, *, path: Path, options: GenOpts):
+        """Create and populate a new reader instance for `path`.
+
+        Reads the file from disk and calls the reader's ``read`` coroutine to
+        initialise internal state.
+        """
         _, ext = splitext(path)
         ret = cls.REGISTRY[ext](path=path, options=options)
         async with await path.open(mode="rt", **OPEN_TEXT_OPTIONS) as io:
@@ -107,6 +118,10 @@ class Reader(metaclass=ABCMeta):
 
     @classmethod
     async def cached(cls, *, path: Path, options: GenOpts):
+        """Return a cached `Reader` for `path`, creating it if necessary.
+
+        Ensures only one reader is created per path using an async lock.
+        """
         path = await path.resolve(strict=True)
         async with async_lock(cls.__CACHE_LOCKS[path]):
             try:
@@ -117,28 +132,41 @@ class Reader(metaclass=ABCMeta):
 
     @abstractmethod
     def __init__(self, *, path: Path, options: GenOpts):
+        """Construct a `Reader` for `path` with the given generation `options`.
+
+        Concrete readers must call `super().__init__` (if needed) and set up
+        any internal state required for `read`/`pipe` operations.
+        """
         raise NotImplementedError(self)
 
     @property
     @abstractmethod
     def path(self) -> Path:
+        """Filesystem `Path` handled by this reader."""
         raise NotImplementedError(self)
 
     @property
     @abstractmethod
     def options(self) -> GenOpts:
+        """Generation options (`GenOpts`) used by this reader."""
         raise NotImplementedError(self)
 
     @abstractmethod
     async def read(self, text: str, /) -> None:
+        """Parse and consume the textual contents of the underlying file.
+
+        Implementations should populate internal structures used by `pipe`.
+        """
         raise NotImplementedError(self)
 
     @abstractmethod
     def pipe(self) -> Collection[Writer]:
+        """Return writer instances produced from the reader's parsed state."""
         raise NotImplementedError(self)
 
     @classmethod
     def __subclasshook__(cls, subclass: type):
+        """Structural check used by `issubclass` to recognise Reader-like types."""
         return abc_subclasshook_check(
             Reader,
             cls,
@@ -163,10 +191,13 @@ class CodeLibrary(metaclass=ABCMeta):
 
     @property
     @abstractmethod
-    def codes(self) -> Collection[Sequence[CodeType]]: ...
+    def codes(self) -> Collection[Sequence[CodeType]]:
+        """Sequence(s) of compiled code objects exposed by code-library readers."""
+        ...
 
     @classmethod
     def __subclasshook__(cls, subclass: type):
+        """Structural check used by `issubclass` to recognise CodeLibrary types."""
         return abc_subclasshook_check(CodeLibrary, cls, subclass, names=("codes",))
 
 
@@ -270,23 +301,32 @@ class MarkdownReader(Reader):
 
     @property
     def path(self) -> Path:
+        """Filesystem path associated with this `MarkdownReader`."""
         return self.__path
 
     @property
     def options(self) -> GenOpts:
+        """Generation options supplied to this reader instance."""
         return self.__options
 
     @property
     def codes(self) -> list[Sequence[CodeType]]:
+        """Return compiled module-level code blocks collected by the reader."""
         return self.__library_codes
 
     def __init__(self, *, path: Path, options: GenOpts) -> None:
+        """Initialise a `MarkdownReader` for `path` with the given `options`."""
         self.__path = path
         self.__options = options
         self.__library_codes: list[Sequence[CodeType]] = []
         self.__codes: dict[CodeType, Sequence[CodeType]] = {}
 
     async def read(self, text: str, /) -> None:
+        """Parse markdown input and extract embedded Python `data`/`module` blocks.
+
+        Populates the reader's internal compiled-code caches used later by
+        `pipe` to create writers.
+        """
         compiler = partial(
             self.options.compiler,
             filename=self.path,
@@ -332,6 +372,11 @@ class MarkdownReader(Reader):
             start = self.START.search(text, stop.end())
 
     def pipe(self) -> tuple[Writer, ...]:
+        """Produce `Writer` instances for each extracted code block.
+
+        Returns a tuple of configured `Writer` objects which will execute the
+        extracted code within the isolated `Environment`.
+        """
         assert isinstance(self, Reader)
 
         @contextmanager

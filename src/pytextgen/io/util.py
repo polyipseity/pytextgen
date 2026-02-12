@@ -76,15 +76,18 @@ class Location(metaclass=ABCMeta):
 
     @abstractmethod
     def open(self) -> AbstractAsyncContextManager[AnyTextIO]:
+        """Open this `Location` and return an async text file-like context."""
         raise NotImplementedError(self)
 
     @property
     @abstractmethod
     def path(self) -> Path | None:
+        """Return the underlying filesystem `Path` or `None` for `NullLocation`."""
         raise NotImplementedError(self)
 
     @classmethod
     def __subclasshook__(cls, subclass: type):
+        """Structural check used by `issubclass` to recognise Location-like types."""
         return abc_subclasshook_check(
             Location, cls, subclass, names=("path", cls.open.__name__)
         )
@@ -107,6 +110,7 @@ class NullLocation:
 
     @property
     def path(self) -> None:
+        """`NullLocation` has no filesystem path and returns `None`."""
         return None
 
 
@@ -232,11 +236,14 @@ class FileSection:
     slots=True,
 )
 class _FileSectionCacheData:
+    """Container for cached section metadata and the file's modification time."""
+
     EMPTY: ClassVar[Self]
     mod_time: int
     sections: Mapping[str, tuple[slice, str]]
 
     def __post_init__(self):
+        """Wrap `sections` in a read-only mapping after construction."""
         object.__setattr__(self, "sections", MappingProxyType(dict(self.sections)))
 
 
@@ -244,13 +251,25 @@ _FileSectionCacheData.EMPTY = _FileSectionCacheData(mod_time=-1, sections={})
 
 
 class _FileSectionCache(dict[Path, Awaitable[_FileSectionCacheData]]):
+    """Async-aware cache mapping `Path` to `_FileSectionCacheData` awaitables.
+
+    Manages per-path locks to avoid concurrent parses of the same file.
+    """
+
     __slots__: ClassVar = ("__locks",)
 
     def __init__(self):
+        """Initialise the file-section cache with per-path locks."""
         super().__init__()
         self.__locks = WeakKeyDictionary[Path, Callable[[], Lock]]()
 
     async def __getitem__(self, key: Path):
+        """Return cached file-section metadata for `key`, refreshing when stale.
+
+        Parses the file for named sections when the file modification time
+        differs from the cached value and returns a `_FileSectionCacheData`
+        instance.
+        """
         key = await key.resolve(strict=True)
         _, ext = splitext(key)
         try:
@@ -303,6 +322,7 @@ class _FileSectionCache(dict[Path, Awaitable[_FileSectionCacheData]]):
         return cache_
 
     def __setitem__(self, key: Path, value: Awaitable[_FileSectionCacheData]):
+        """Prevent external assignment — cache entries must be managed internally."""
         raise TypeError("Unsupported")
 
 
@@ -311,12 +331,20 @@ _FILE_SECTION_CACHE = _FileSectionCache()
 
 @final
 class _FileSectionIO(StringIO):
+    """In-memory I/O proxy for editing a `FileSection` safely.
+
+    Provides an async enter/exit lifecycle that persists changes back to disk
+    when the context is exited.
+    """
+
     __slots__: ClassVar = ("__closure", "__file", "__slice", "__initial_value")
 
     def __init__(self, closure: FileSection, /):
+        """Initialise an in-memory IO proxy for a `FileSection` instance."""
         self.__closure = closure
 
     def __enter__(self):
+        """Synchronous context manager entry is unsupported for `_FileSectionIO`."""
         raise TypeError("Unsupported")
 
     def __exit__(
@@ -325,12 +353,19 @@ class _FileSectionIO(StringIO):
         exc_value: BaseException | None,
         traceback: TracebackType | None,
     ):
+        """Synchronous context manager exit is unsupported for `_FileSectionIO`."""
         raise TypeError("Unsupported")
 
     def close(self):
+        """Direct close is unsupported; use the async context manager methods."""
         raise TypeError("Unsupported")
 
     async def aclose(self):
+        """Persist any changes made to the in-memory buffer back to disk.
+
+        This method is used by the async context manager exit path to update
+        the underlying file section safely and then close the real file.
+        """
         try:
             try:
 
@@ -356,6 +391,7 @@ class _FileSectionIO(StringIO):
             super().close()
 
     async def __aenter__(self) -> "_FileSectionIO":
+        """Async-enter: prepare the in-memory buffer with the section's content."""
         self.__file = await self.__closure.path.open(mode="r+t", **OPEN_TEXT_OPTIONS)
         try:
             self.__slice, self.__initial_value = (
@@ -374,6 +410,7 @@ class _FileSectionIO(StringIO):
         exc_value: BaseException | None,
         traceback: TracebackType | None,
     ):
+        """Async-exit: persist buffer changes and close underlying file."""
         await self.aclose()
 
 
@@ -405,6 +442,11 @@ class Result:
 
     @classmethod
     def isinstance(cls, any: Any) -> TypeGuard[Self]:
+        """Type-guard helper that checks whether `any` matches the `Result` shape.
+
+        Returns True when `any` has a `location` implementing `Location` and a
+        `text` string attribute; otherwise returns False.
+        """
         try:
             return isinstance(any.location, Location) and isinstance(any.text, str)
         except AttributeError:
