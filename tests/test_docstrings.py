@@ -12,7 +12,6 @@ that:
 
 import ast
 from pathlib import Path
-from typing import Optional
 
 __all__ = ()
 
@@ -34,7 +33,7 @@ def _find_py_files() -> list[Path]:
     return sorted(files)
 
 
-def _extract_all_tuple(node: ast.Module) -> Optional[tuple[str, ...]]:
+def _extract_all_tuple(node: ast.Module) -> tuple[str, ...] | None:
     """Parse a module AST and return the `__all__` tuple of names, if present.
 
     Returns None if `__all__` is not present or cannot be statically determined
@@ -77,7 +76,7 @@ def _extract_all_tuple(node: ast.Module) -> Optional[tuple[str, ...]]:
     return None
 
 
-def _find_def_node(node: ast.Module, name: str) -> Optional[ast.AST]:
+def _find_def_node(node: ast.Module, name: str) -> ast.AST | None:
     """Find a top-level definition node (FunctionDef/ClassDef) for `name`.
 
     Returns None if not found or the name corresponds to an assignment.
