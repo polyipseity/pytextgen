@@ -84,7 +84,7 @@ class Reader(metaclass=ABCMeta):
     __slots__: ClassVar = ()
     REGISTRY: ClassVar = dict[str, type[Self]]()
     __CACHE: ClassVar = dict[Path, Self]()
-    __CACHE_LOCKS: ClassVar = defaultdict[Path, ThreadLock](ThreadLock)  # type: ignore[assignment]
+    __CACHE_LOCKS: ClassVar = defaultdict[Path, ThreadLock](ThreadLock)
 
     @classmethod
     def register2(cls, *extensions: str):
@@ -359,7 +359,7 @@ class MarkdownReader(Reader):
                         raise TypeError(reader)
                     yield chain.from_iterable(reader.codes)
 
-            imports: achain[CodeType] = achain.from_iterable(imports0())  # type: ignore[reportUnknownMemberType,reportUnknownVariableType]
+            imports: achain[CodeType] = achain.from_iterable(imports0())  # type: ignore[reportUnknownMemberType, reportUnknownVariableType]
             type_ = start[1]
             if type_ == "data":
                 self.__codes[compiler(ast)] = await atuple(imports)
