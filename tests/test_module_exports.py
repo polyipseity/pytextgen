@@ -15,14 +15,17 @@ surface self-documenting and avoid accidental exports.
 """
 
 import ast
-from pathlib import Path
+
+import pytest
+from anyio import Path
 
 __all__ = ()
 
-ROOT = Path(".").resolve()
+# keep ROOT as an anyio.Path instance (don't await resolve at import time)
+ROOT = Path(".")
 
 
-def _find_py_files() -> list[Path]:
+async def _find_py_files() -> list[Path]:
     """Return a sorted list of Python file paths under `src/` and `tests/`.
 
     The helper parallels the module traversal used in repository checks and
@@ -31,9 +34,9 @@ def _find_py_files() -> list[Path]:
 
     files: list[Path] = []
 
-    for path in (ROOT / "src").rglob("*.py"):
+    async for path in (ROOT / "src").rglob("*.py"):
         files.append(path)
-    for path in (ROOT / "tests").rglob("*.py"):
+    async for path in (ROOT / "tests").rglob("*.py"):
         files.append(path)
     return sorted(files)
 
@@ -80,7 +83,8 @@ def _has_all_tuple(node: ast.Module) -> tuple[bool, str]:
     return False, "__all__ not found"
 
 
-def test_all_tuple_present_and_is_tuple() -> None:
+@pytest.mark.asyncio
+async def test_all_tuple_present_and_is_tuple() -> None:
     """Assert that every module declares `__all__` as a tuple of strings.
 
     The test parses AST for each file and reports per-file failures for
@@ -89,9 +93,9 @@ def test_all_tuple_present_and_is_tuple() -> None:
 
     failures: list[str] = []
 
-    for path in _find_py_files():
+    for path in await _find_py_files():
         # ignore compiled or cache files (shouldn't be any), and exclude vendored/third-party code
-        text = path.read_text(encoding="utf-8")
+        text = await path.read_text(encoding="utf-8")
         try:
             node = ast.parse(text, filename=str(path))
         except SyntaxError as exc:

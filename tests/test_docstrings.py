@@ -11,24 +11,27 @@ that:
 """
 
 import ast
-from pathlib import Path
+
+import pytest
+from anyio import Path
 
 __all__ = ()
 
-ROOT = Path(".").resolve()
+# keep ROOT as an anyio.Path instance (don't await resolve at import time)
+ROOT = Path(".")
 
 
-def _find_py_files() -> list[Path]:
-    """Return a sorted list of Python file paths under `src/` and `tests/`.
+async def _find_py_files() -> list[Path]:
+    """Return a sorted list of Python file paths under `src/` and `tests`.
 
     Mirrors the traversal used by other repository checks.
     """
 
     files: list[Path] = []
 
-    for path in (ROOT / "src").rglob("*.py"):
+    async for path in (ROOT / "src").rglob("*.py"):
         files.append(path)
-    for path in (ROOT / "tests").rglob("*.py"):
+    async for path in (ROOT / "tests").rglob("*.py"):
         files.append(path)
     return sorted(files)
 
@@ -95,13 +98,14 @@ def _find_def_node(node: ast.Module, name: str) -> ast.AST | None:
     return None
 
 
-def test_modules_and_exported_objects_have_docstrings() -> None:
+@pytest.mark.asyncio
+async def test_modules_and_exported_objects_have_docstrings() -> None:
     """Assert each module has a docstring and exported functions/classes have docstrings."""
 
     failures: list[str] = []
 
-    for path in _find_py_files():
-        text = path.read_text(encoding="utf-8")
+    for path in await _find_py_files():
+        text = await path.read_text(encoding="utf-8")
         try:
             node = ast.parse(text, filename=str(path))
         except SyntaxError as exc:
