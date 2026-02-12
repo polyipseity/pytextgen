@@ -70,7 +70,6 @@ typeCheckingMode = "strict"
 venv = ".venv"
 venvPath = "."
 
-
 [[tool.pyright.executionEnvironments]]
 root = "src"
 
@@ -100,3 +99,6 @@ respect-gitignore = true
 
 [tool.uv]
 required-version = ">=0.10.0,<0.11.0"
+
+[tool.uv.build-backend]
+source-include = ["py.typed"]
