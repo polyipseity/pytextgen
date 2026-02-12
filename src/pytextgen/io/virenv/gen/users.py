@@ -81,12 +81,6 @@ __all__ = (
 )
 
 _SECTION_TEXT_FORMAT = "\n\n{}\n\n"
-_TABLE_ALIGNS: Mapping[Literal["default", "left", "right", "center"], str] = {
-    "default": "-",
-    "left": ":-",
-    "right": "-:",
-    "center": ":-:",
-}
 
 
 @final
