@@ -5,77 +5,47 @@ sections (`ClearWriter`) or write generated Python-based output
 (`PythonWriter`).
 """
 
-from abc import ABCMeta as _ABCM
-from abc import abstractmethod as _amethod
-from asyncio import create_task
-from asyncio import gather as _gather
-from contextlib import (
-    AbstractAsyncContextManager as _AACtxMgr,
-)
-from contextlib import (
-    asynccontextmanager as _actxmgr,
-)
-from contextlib import (
-    nullcontext as _nullctx,
-)
-from datetime import datetime as _datetime
-from re import compile as _re_comp
-from types import CodeType as _Code
-from typing import Any as _Any
-from typing import AsyncIterator as _AItor
-from typing import ClassVar as _ClsVar
-from typing import Iterable as _Iter
-from typing import cast
+import re
+from abc import ABCMeta, abstractmethod
+from asyncio import create_task, gather
+from contextlib import AbstractAsyncContextManager, asynccontextmanager, nullcontext
+from datetime import datetime
+from types import CodeType
+from typing import Any, AsyncIterator, ClassVar, Iterable, cast
 
-from anyio import Path as _Path
+from anyio import Path
 
 from ..meta import (
-    FLASHCARD_STATES_REGEX as _FC_ST_RE,
+    FLASHCARD_STATES_REGEX,
+    GENERATE_COMMENT_FORMAT,
+    GENERATE_COMMENT_REGEX,
 )
-from ..meta import (
-    GENERATE_COMMENT_FORMAT as _GEN_CMT_FMT,
-)
-from ..meta import (
-    GENERATE_COMMENT_REGEX as _GEN_CMT_RE,
-)
-from ..util import abc_subclasshook_check as _abc_sch_chk
-from ..util import wrap_async as _wrap_a
-from ._env import Environment as _Env
-from ._options import ClearOpts as _ClrOpts
-from ._options import ClearType as _ClrT
-from ._options import GenOpts as _GenOpts
-from .util import (
-    AnyTextIO as _ATxtIO,
-)
-from .util import (
-    FileSection as _FSect,
-)
-from .util import (
-    Result as _Ret,
-)
-from .util import (
-    lock_file as _lck_f,
-)
+from ..util import abc_subclasshook_check
+from ._env import Environment
+from ._options import ClearOpts, ClearType, GenOpts
+from .util import AnyTextIO, FileSection, Result, lock_file, wrap_async
 
 __all__ = ("Writer", "ClearWriter", "PythonWriter")
 
 
-class Writer(metaclass=_ABCM):
+class Writer(metaclass=ABCMeta):
     """Abstract writer protocol for writing or clearing content.
 
     Implementations should expose a `write` async context manager.
     """
 
-    __slots__: _ClsVar = ()
+    __slots__: ClassVar = ()
 
-    @_amethod
-    def write(self) -> _AACtxMgr[None]:
+    @abstractmethod
+    def write(self) -> AbstractAsyncContextManager[None]:
         """Return an async context manager performing the writer action."""
         raise NotImplementedError(self)
 
     @classmethod
     def __subclasshook__(cls, subclass: type):
-        return _abc_sch_chk(Writer, cls, subclass, names=(cls.write.__name__,))
+        return abc_subclasshook_check(
+            Writer, cls, subclass, names=(cls.write.__name__,)
+        )
 
 
 @Writer.register
@@ -86,55 +56,57 @@ class ClearWriter:
     updated/truncated depending on the requested `ClearType`.
     """
 
-    __slots__: _ClsVar = ("__options", "__path")
-    __FLASHCARD_STATES_REGEX: _ClsVar = _re_comp(
-        r" ?" + _FC_ST_RE.pattern, _FC_ST_RE.flags
+    __slots__: ClassVar = ("__options", "__path")
+    __FLASHCARD_STATES_REGEX: ClassVar = re.compile(
+        r" ?" + FLASHCARD_STATES_REGEX.pattern, FLASHCARD_STATES_REGEX.flags
     )
 
-    def __init__(self, path: _Path, *, options: _ClrOpts) -> None:
+    def __init__(self, path: Path, *, options: ClearOpts) -> None:
         """Create a `ClearWriter` for `path` with the given `options`."""
         self.__path = path
         self.__options = options
 
-    @_actxmgr
-    async def write(self) -> _AItor[None]:
+    @asynccontextmanager
+    async def write(self) -> AsyncIterator[None]:
         """Return an async context manager which clears the file per options.
 
         The returned context manager yields control to the caller and performs
         clearing work on exit.
         """
-        if _ClrT.CONTENT in self.__options.types:
+        if ClearType.CONTENT in self.__options.types:
 
-            async def process(io: _ATxtIO) -> None:
+            async def process(io: AnyTextIO) -> None:
                 """Truncate content sections (clear content)."""
-                await _wrap_a(io.truncate())
+                await wrap_async(io.truncate())
 
-        elif _ClrT.FLASHCARD_STATE in self.__options.types:
+        elif ClearType.FLASHCARD_STATE in self.__options.types:
 
-            async def process(io: _ATxtIO) -> None:
+            async def process(io: AnyTextIO) -> None:
                 """Strip flashcard state markers from the section content."""
-                read = await _wrap_a(io.read())
-                seek = create_task(_wrap_a(io.seek(0)))
+                read = await wrap_async(io.read())
+                seek = create_task(wrap_async(io.seek(0)))
                 try:
-                    if (text := self.__FLASHCARD_STATES_REGEX.sub("", read)) != read:
+                    if (text := FLASHCARD_STATES_REGEX.sub("", read)) != read:
                         await seek
-                        await _wrap_a(io.write(text))
-                        await _wrap_a(io.truncate())
+                        await wrap_async(io.write(text))
+                        await wrap_async(io.truncate())
                 finally:
                     seek.cancel()
 
         else:
 
-            async def process(io: _ATxtIO) -> None:
+            async def process(io: AnyTextIO) -> None:
                 """No-op processor for unrecognized clear types."""
                 pass
 
         try:
             yield
         finally:
-            async with _lck_f(self.__path):
-                for section in await _FSect.find(self.__path):
-                    async with _FSect(path=self.__path, section=section).open() as io:
+            async with lock_file(self.__path):
+                for section in await FileSection.find(self.__path):
+                    async with FileSection(
+                        path=self.__path, section=section
+                    ).open() as io:
                         await process(io)
 
 
@@ -149,16 +121,16 @@ class PythonWriter:
     which are then written into their target locations.
     """
 
-    __slots__: _ClsVar = ("__code", "__env", "__init_codes", "__options")
+    __slots__: ClassVar = ("__code", "__env", "__init_codes", "__options")
 
     def __init__(
         self,
-        code: _Code,
+        code: CodeType,
         /,
         *,
-        init_codes: _Iter[_Code],
-        env: _Env,
-        options: _GenOpts,
+        init_codes: Iterable[CodeType],
+        env: Environment,
+        options: GenOpts,
     ) -> None:
         """Create a `PythonWriter` which will execute `code` in `env`.
 
@@ -176,19 +148,19 @@ class PythonWriter:
     def __str__(self) -> str:
         return f"{type(self).__qualname__}({self.__code}, env={self.__env}, options={self.__options})"
 
-    @_actxmgr
-    async def write(self) -> _AItor[None]:
+    @asynccontextmanager
+    async def write(self) -> AsyncIterator[None]:
         """Execute the code and write each resulting `Result` to its location."""
 
-        def results0(result: _Any) -> _Iter[_Ret]:
+        def results0(result: Any) -> Iterable[Result]:
             """Normalize the writer execution result to an iterator of `Result`."""
-            if _Ret.isinstance(result):
+            if Result.isinstance(result):
                 yield result
                 return
-            if isinstance(result, _Iter):
-                result0: _Iter[_Any] = cast(_Iter[_Any], result)
+            if isinstance(result, Iterable):
+                result0: Iterable[Any] = cast(Iterable[Any], result)
                 for item in result0:
-                    if not _Ret.isinstance(item):
+                    if not Result.isinstance(item):
                         raise TypeError(item)
                     yield item
                 return
@@ -199,7 +171,7 @@ class PythonWriter:
             yield
         finally:
 
-            async def process(result: _Ret) -> None:
+            async def process(result: Result) -> None:
                 """Write a single `Result` to its location, preserving timestamps.
 
                 This coroutine updates the target section only when the generated
@@ -208,20 +180,20 @@ class PythonWriter:
                 """
                 loc = result.location
                 path = loc.path
-                async with _nullctx() if path is None else _lck_f(path):
+                async with nullcontext() if path is None else lock_file(path):
                     async with loc.open() as io:
-                        read = await _wrap_a(io.read())
-                        seek = create_task(_wrap_a(io.seek(0)))
+                        read = await wrap_async(io.read())
+                        seek = create_task(wrap_async(io.seek(0)))
                         try:
-                            timestamp = _GEN_CMT_RE.search(read)
+                            timestamp = GENERATE_COMMENT_REGEX.search(read)
                             if result.text != (
                                 read[: timestamp.start()] + read[timestamp.end() :]
                                 if timestamp
                                 else read
                             ):
                                 text = (
-                                    _GEN_CMT_FMT.format(
-                                        now=_datetime.now().astimezone().isoformat()
+                                    GENERATE_COMMENT_FORMAT.format(
+                                        now=datetime.now().astimezone().isoformat()
                                     )
                                     if self.__options.timestamp
                                     else timestamp[0]
@@ -229,12 +201,12 @@ class PythonWriter:
                                     else ""
                                 ) + result.text
                                 await seek
-                                await _wrap_a(io.write(text))
-                                await _wrap_a(io.truncate())
+                                await wrap_async(io.write(text))
+                                await wrap_async(io.truncate())
                         finally:
                             seek.cancel()
 
-            await _gather(*map(process, results))
+            await gather(*map(process, results))
 
 
 assert issubclass(PythonWriter, Writer)

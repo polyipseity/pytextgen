@@ -5,123 +5,60 @@ representations for quoting, flashcards, tables, and other formatted
 outputs used by the project.
 """
 
-from dataclasses import dataclass as _dc
-from functools import partial as _partial
-from html import unescape as _unescape
-from itertools import chain as _chain
-from re import (
-    DOTALL as _DOTALL,
-)
-from re import (
-    NOFLAG as _NOFLAG,
-)
-from re import (
-    Match as _Match,
-)
-from re import (
-    Pattern as _Pattern,
-)
-from re import (
-    compile as _re_comp,
-)
+from dataclasses import dataclass
+from functools import partial
+from html import unescape
+from itertools import chain
+from re import DOTALL, NOFLAG, Match, Pattern
+from re import compile as re_compile
 from typing import (
-    Any as _Any,
+    Any,
+    Callable,
+    Iterable,
+    Iterator,
+    Literal,
+    Mapping,
+    Sequence,
+    TypeVar,
+    final,
 )
-from typing import (
-    Callable as _Call,
-)
-from typing import (
-    Iterable as _Iter,
-)
-from typing import (
-    Iterator as _Itor,
-)
-from typing import (
-    Literal as _Lit,
-)
-from typing import (
-    Mapping as _Map,
-)
-from typing import (
-    Sequence as _Seq,
-)
-from typing import (
-    TypeVar as _TVar,
-)
-from typing import (
-    final as _fin,
-)
-from unicodedata import normalize as _normalize
+from unicodedata import normalize
 
-from ..config import CONFIG as _CFG
+from ..config import CONFIG
 from ..util import (
-    FlashcardGroup as _FcGrp,
-)
-from ..util import (
-    FlashcardStateGroup as _FcStGrp,
-)
-from ..util import (
-    IteratorSequence as _IterSeq,
-)
-from ..util import (
-    Unit as _Unit,
-)
-from ..util import (
-    affix_lines as _afx_ls,
-)
-from ..util import (
-    constant as _const,
-)
-from ..util import (
-    identity as _id,
-)
-from ..util import (
-    strip_lines as _strp_ls,
+    FlashcardGroup,
+    FlashcardStateGroup,
+    IteratorSequence,
+    Unit,
+    affix_lines,
+    constant,
+    identity,
+    strip_lines,
 )
 from ._flashcard import (
-    attach_flashcard_states as _atch_fc_s,
+    attach_flashcard_states,
+    cloze_texts,
+    listify_flashcards,
+    memorize_indexed_seq0,
+    memorize_linked_seq0,
+    memorize_two_sided0,
+    punctuation_hinter,
+    semantics_seq_map0,
 )
-from ._flashcard import (
-    cloze_texts as _cz_txts,
-)
-from ._flashcard import (
-    listify_flashcards as _lsty_fc,
-)
-from ._flashcard import (
-    memorize_indexed_seq0 as _mem_idx_seq,
-)
-from ._flashcard import (
-    memorize_linked_seq0 as _mem_lkd_seq,
-)
-from ._flashcard import (
-    memorize_two_sided0 as _mem_2s,
-)
-from ._flashcard import (
-    punctuation_hinter as _punct_htr,
-)
-from ._flashcard import (
-    semantics_seq_map0 as _sem_seq_map,
-)
-from ._misc import Tag as _Tag
+from ._misc import Tag
 from ._text_code import (
-    TextCode as _TextCode,
-)
-from ._text_code import (
-    code_to_str as _c2s,
-)
-from ._text_code import (
-    code_to_strs as _c2ss,
-)
-from ._text_code import (
-    separate_code_by_tag as _sep_c_by_t,
+    TextCode,
+    code_to_str,
+    code_to_strs,
+    separate_code_by_tag,
 )
 
 try:
-    from wcwidth import wcswidth as _wcswidth
+    from wcwidth import wcswidth
 except Exception:
-    _wcswidth = None
+    wcswidth = None
 
-_T = _TVar("_T")
+_T = TypeVar("_T")
 
 __all__ = (
     "text",
@@ -144,7 +81,7 @@ __all__ = (
 )
 
 _SECTION_TEXT_FORMAT = "\n\n{}\n\n"
-_TABLE_ALIGNS: _Map[_Lit["default", "left", "right", "center"], str] = {
+_TABLE_ALIGNS: Mapping[Literal["default", "left", "right", "center"], str] = {
     "default": "-",
     "left": ":-",
     "right": "-:",
@@ -152,8 +89,8 @@ _TABLE_ALIGNS: _Map[_Lit["default", "left", "right", "center"], str] = {
 }
 
 
-@_fin
-@_dc(
+@final
+@dataclass(
     init=True,
     repr=True,
     eq=True,
@@ -165,65 +102,65 @@ _TABLE_ALIGNS: _Map[_Lit["default", "left", "right", "center"], str] = {
     slots=True,
 )
 class _MarkdownRegex:
-    regex: _Pattern[str]
+    regex: Pattern[str]
     desugared: str
 
 
 _MARKDOWN_REGEXES = (
-    _MarkdownRegex(regex=_re_comp(r"(?:\b|^)__(?=\S)", _NOFLAG), desugared="<b u>"),
-    _MarkdownRegex(regex=_re_comp(r"(?<=\S)__(?:\b|$)", _NOFLAG), desugared="</b u>"),
-    _MarkdownRegex(regex=_re_comp(r"\*\*(?=\S)", _NOFLAG), desugared="<b s>"),
-    _MarkdownRegex(regex=_re_comp(r"(?<=\S)\*\*", _NOFLAG), desugared="</b s>"),
-    _MarkdownRegex(regex=_re_comp(r"(?:\b|^)_(?=\S)", _NOFLAG), desugared="<i u>"),
-    _MarkdownRegex(regex=_re_comp(r"(?<=\S)_(?:\b|$)", _NOFLAG), desugared="</i u>"),
-    _MarkdownRegex(regex=_re_comp(r"\*(?=\S)", _NOFLAG), desugared="<i s>"),
-    _MarkdownRegex(regex=_re_comp(r"(?<=\S)\*", _NOFLAG), desugared="</i s>"),
+    _MarkdownRegex(regex=re_compile(r"(?:\b|^)__(?=\S)", NOFLAG), desugared="<b u>"),
+    _MarkdownRegex(regex=re_compile(r"(?<=\S)__(?:\b|$)", NOFLAG), desugared="</b u>"),
+    _MarkdownRegex(regex=re_compile(r"\*\*(?=\S)", NOFLAG), desugared="<b s>"),
+    _MarkdownRegex(regex=re_compile(r"(?<=\S)\*\*", NOFLAG), desugared="</b s>"),
+    _MarkdownRegex(regex=re_compile(r"(?:\b|^)_(?=\S)", NOFLAG), desugared="<i u>"),
+    _MarkdownRegex(regex=re_compile(r"(?<=\S)_(?:\b|$)", NOFLAG), desugared="</i u>"),
+    _MarkdownRegex(regex=re_compile(r"\*(?=\S)", NOFLAG), desugared="<i s>"),
+    _MarkdownRegex(regex=re_compile(r"(?<=\S)\*", NOFLAG), desugared="</i s>"),
     _MarkdownRegex(
-        regex=_re_comp(r"\[(.*?(?<!\\))\]\(.*?(?<!\\)\)", _DOTALL),
+        regex=re_compile(r"\[(.*?(?<!\\))\]\(.*?(?<!\\)\)", DOTALL),
         desugared=R"<a>\1</a>",
     ),
 )
-_HTML_TAG_REGEX = _re_comp(r"<([^>]+)>", _NOFLAG)
+_HTML_TAG_REGEX = re_compile(r"<([^>]+)>", NOFLAG)
 
 
 def text(text: str):
     """Wrap plain `text` into the standard section format used by generators."""
-    return _Unit(text).map(_strp_ls).map(_SECTION_TEXT_FORMAT.format).counit()
+    return Unit(text).map(strip_lines).map(_SECTION_TEXT_FORMAT.format).counit()
 
 
-_TEXT = text
+TEXT = text
 
 
 def quote(text: str, prefix: str = "> "):
     """Return `text` formatted as a quote block with given `prefix`."""
-    return _Unit(text).map(_partial(_afx_ls, prefix=prefix)).counit()
+    return Unit(text).map(partial(affix_lines, prefix=prefix)).counit()
 
 
 def quotette(text: str, prefix: str = "> "):
     """Return `text` quoted and formatted using the section wrapper."""
-    return _Unit(text).map(_partial(quote, prefix=prefix)).map(_TEXT).counit()
+    return Unit(text).map(partial(quote, prefix=prefix)).map(TEXT).counit()
 
 
-def quote_text(code: _TextCode, /, *, tag: str = _Tag.TEXT, line_prefix: str = "> "):
+def quote_text(code: TextCode, /, *, tag: str = Tag.TEXT, line_prefix: str = "> "):
     """Convert `code` into quoted plain text using the given `tag`."""
     return (
-        _Unit(code)
-        .map(_partial(_c2s, tag=tag))
-        .map(_partial(quotette, prefix=line_prefix))
+        Unit(code)
+        .map(partial(code_to_str, tag=tag))
+        .map(partial(quotette, prefix=line_prefix))
         .counit()
     )
 
 
 def cloze_text(
-    code: _TextCode,
+    code: TextCode,
     /,
     *,
-    tag: str = _Tag.TEXT,
-    sep_tag: str = _Tag.CLOZE_SEPARATOR,
-    token: tuple[str, str] = _CFG.cloze_token,
+    tag: str = Tag.TEXT,
+    sep_tag: str = Tag.CLOZE_SEPARATOR,
+    token: tuple[str, str] = CONFIG.cloze_token,
     line_prefix: str = "> ",
     separator: str = "\n\n",
-    states: _Iter[_FcStGrp],
+    states: Iterable[FlashcardStateGroup],
 ):
     """Convert cloze-tagged `code` into quoted text containing flashcards.
 
@@ -231,13 +168,13 @@ def cloze_text(
     to attach state information to generated flashcards.
     """
     return (
-        _Unit(code)
-        .map(_partial(_sep_c_by_t, tag=sep_tag))
-        .map(lambda codes: map(_partial(_c2s, tag=tag), codes))
-        .map(_partial(_cz_txts, token=token))
-        .map(_partial(_atch_fc_s, states=states))
+        Unit(code)
+        .map(partial(separate_code_by_tag, tag=sep_tag))
+        .map(lambda codes: map(partial(code_to_str, tag=tag), codes))
+        .map(partial(cloze_texts, token=token))
+        .map(partial(attach_flashcard_states, states=states))
         .map(lambda groups: map(str, groups))
-        .map(lambda strs: map(_partial(quote, prefix=line_prefix), strs))
+        .map(lambda strs: map(partial(quote, prefix=line_prefix), strs))
         .map(separator.join)
         .map(text)
         .counit()
@@ -245,7 +182,7 @@ def cloze_text(
 
 
 def tagged_filter_sep(
-    code: _TextCode,
+    code: TextCode,
     /,
     *,
     tag: str,
@@ -258,12 +195,12 @@ def tagged_filter_sep(
     blocks are considered. When `empty=False` empty fragments are removed.
     """
     if sep_tag is None:
-        unit = _Unit(code).map(_partial(_c2ss, tag=tag))
+        unit = Unit(code).map(partial(code_to_strs, tag=tag))
     else:
         unit = (
-            _Unit(code)
-            .map(_partial(_sep_c_by_t, tag=sep_tag))
-            .map(lambda codes: map(_partial(_c2s, tag=tag), codes))
+            Unit(code)
+            .map(partial(separate_code_by_tag, tag=sep_tag))
+            .map(lambda codes: map(partial(code_to_str, tag=tag), codes))
         )
     if not empty:
         unit = unit.map(lambda strs: filter(lambda x: len(x) > 0, strs))
@@ -271,12 +208,12 @@ def tagged_filter_sep(
 
 
 def memorize(
-    code: _TextCode,
+    code: TextCode,
     /,
     *,
-    func: _Call[[_Iter[str]], _Iter[_FcGrp]],
-    states: _Iter[_FcStGrp],
-    tag: str = _Tag.MEMORIZE,
+    func: Callable[[Iterable[str]], Iterable[FlashcardGroup]],
+    states: Iterable[FlashcardStateGroup],
+    tag: str = Tag.MEMORIZE,
     sep_tag: str | None = None,
     empty: bool = False,
     ordered: bool = False,
@@ -287,35 +224,35 @@ def memorize(
     `states` and rendered as text.
     """
     return (
-        _Unit(code)
-        .map(_partial(tagged_filter_sep, tag=tag, sep_tag=sep_tag, empty=empty))
+        Unit(code)
+        .map(partial(tagged_filter_sep, tag=tag, sep_tag=sep_tag, empty=empty))
         .map(func)
-        .map(_partial(_atch_fc_s, states=states))
-        .map(_partial(_lsty_fc, ordered=ordered))
+        .map(partial(attach_flashcard_states, states=states))
+        .map(partial(listify_flashcards, ordered=ordered))
         .map(text)
         .counit()
     )
 
 
 def memorize_two_sided(
-    code: _TextCode,
+    code: TextCode,
     /,
     *,
-    offsets: _Call[[int], int | None] | _Seq[int] | int = 1,
-    hinter: _Call[[int, str], tuple[str, str]] = _const(("", "")),
+    offsets: Callable[[int], int | None] | Sequence[int] | int = 1,
+    hinter: Callable[[int, str], tuple[str, str]] = constant(("", "")),
     reversible: bool = True,
-    **kwargs: _Any,
+    **kwargs: Any,
 ):
     """Convenience wrapper to create two-sided flashcards from `code`."""
     return memorize(
         code,
-        func=_partial(
-            _mem_2s,
+        func=partial(
+            memorize_two_sided0,
             offsets=(
-                _const(offsets)
+                constant(offsets)
                 if isinstance(offsets, int)
                 else offsets.__getitem__
-                if isinstance(offsets, _Seq)
+                if isinstance(offsets, Sequence)
                 else offsets
             ),
             reversible=reversible,
@@ -326,26 +263,26 @@ def memorize_two_sided(
 
 
 def memorize_linked_seq(
-    code: _TextCode,
+    code: TextCode,
     /,
     *,
-    hinted: _Call[[int], bool] | _Seq[bool] | bool = True,
-    sanitizer: _Call[[str], str] = _id,
+    hinted: Callable[[int], bool] | Sequence[bool] | bool = True,
+    sanitizer: Callable[[str], str] = identity,
     reversible: bool = True,
-    **kwargs: _Any,
+    **kwargs: Any,
 ):
     """Create linked-sequence flashcards using `memorize` with a hinter."""
     return memorize(
         code,
-        func=_partial(
-            _mem_lkd_seq,
+        func=partial(
+            memorize_linked_seq0,
             reversible=reversible,
-            hinter=_punct_htr(
+            hinter=punctuation_hinter(
                 (
-                    _const(hinted)
+                    constant(hinted)
                     if isinstance(hinted, bool)
                     else hinted.__getitem__
-                    if isinstance(hinted, _Seq)
+                    if isinstance(hinted, Sequence)
                     else hinted
                 ),
                 sanitizer=sanitizer,
@@ -356,23 +293,23 @@ def memorize_linked_seq(
 
 
 def memorize_indexed_seq(
-    code: _TextCode,
+    code: TextCode,
     /,
     *,
-    indices: _Call[[int], int | None] | _Seq[int | None] | int = 1,
+    indices: Callable[[int], int | None] | Sequence[int | None] | int = 1,
     reversible: bool = True,
-    **kwargs: _Any,
+    **kwargs: Any,
 ):
     """Create index-based flashcards from `code` using a sequence of indices."""
     return memorize(
         code,
-        func=_partial(
-            _mem_idx_seq,
+        func=partial(
+            memorize_indexed_seq0,
             indices=(
                 indices.__add__
                 if isinstance(indices, int)
                 else indices.__getitem__
-                if isinstance(indices, _Seq)
+                if isinstance(indices, Sequence)
                 else indices
             ),
             reversible=reversible,
@@ -382,11 +319,11 @@ def memorize_indexed_seq(
 
 
 def semantics_seq_map(
-    code: _TextCode,
-    sem: _TextCode,
+    code: TextCode,
+    sem: TextCode,
     *,
-    states: _Iter[_FcStGrp],
-    tags: str | tuple[str, str] = _Tag.SEMANTICS,
+    states: Iterable[FlashcardStateGroup],
+    tags: str | tuple[str, str] = Tag.SEMANTICS,
     sep_tags: tuple[str | None, str | None] | str | None = None,
     empty: tuple[bool, bool] | bool = False,
     reversible: bool = False,
@@ -404,7 +341,7 @@ def semantics_seq_map(
     if not isinstance(empty, tuple):
         empty = (empty, empty)
     return (
-        _Unit((code, sem))
+        Unit((code, sem))
         .map(
             lambda codes: (
                 tagged_filter_sep(
@@ -416,9 +353,9 @@ def semantics_seq_map(
             )
         )
         .map(lambda strss: zip(*strss, strict=True))
-        .map(_partial(_sem_seq_map, reversible=reversible))
-        .map(_partial(_atch_fc_s, states=states))
-        .map(_partial(_lsty_fc, ordered=ordered))
+        .map(partial(semantics_seq_map0, reversible=reversible))
+        .map(partial(attach_flashcard_states, states=states))
+        .map(partial(listify_flashcards, ordered=ordered))
         .map(text)
         .counit()
     )
@@ -429,10 +366,10 @@ def markdown_sanitizer(text: str):
 
     def get_and_del_tags(text: str):
         tags = set[str]()
-        matches = list[_Match[str]]()
+        matches = list[Match[str]]()
 
-        stack = list[_Match[str]]()
-        match: _Match[str]
+        stack = list[Match[str]]()
+        match: Match[str]
         for match in _HTML_TAG_REGEX.finditer(text):
             tag: str = match[1]
             if tag.startswith("/"):
@@ -447,11 +384,11 @@ def markdown_sanitizer(text: str):
             else:
                 tags.add(tag)
                 stack.append(match)
-        matches.sort(key=_Match[str].start)
+        matches.sort(key=Match[str].start)
 
-        def ret_gen() -> _Itor[str]:
+        def ret_gen() -> Iterator[str]:
             prev: int = 0
-            match: _Match[str]
+            match: Match[str]
             for match in matches:
                 yield text[prev : match.start()]
                 prev = match.end()
@@ -474,11 +411,11 @@ def markdown_sanitizer(text: str):
             text,
         )
     text, _ = get_and_del_tags(text)
-    return _unescape(text)
+    return unescape(text)
 
 
 def seq_to_code(
-    seq: _Seq[str],
+    seq: Sequence[str],
     /,
     *,
     index: int = 1,
@@ -492,19 +429,19 @@ def seq_to_code(
         yield prefix
         newline = ""
         for idx, str_ in enumerate(seq):
-            yield f"{{{_Tag.TEXT}:{newline}{index + idx}. }}{_TextCode.escape(str_, block=True) if escape else str_}"
+            yield f"{{{Tag.TEXT}:{newline}{index + idx}. }}{TextCode.escape(str_, block=True) if escape else str_}"
             newline = "\n"
         yield suffix
 
-    return _TextCode.compile("".join(gen_code()))
+    return TextCode.compile("".join(gen_code()))
 
 
 def map_to_code(
-    map: _Map[str, str],
+    map: Mapping[str, str],
     /,
     *,
     name: str = "",
-    token: tuple[str, str] = _CFG.cloze_token,
+    token: tuple[str, str] = CONFIG.cloze_token,
     name_cloze: bool = False,
     key_cloze: bool = False,
     value_cloze: bool = True,
@@ -515,7 +452,7 @@ def map_to_code(
     `name` may be rendered as a heading, and `name_cloze`, `key_cloze`,
     `value_cloze` control whether to wrap components in cloze tokens.
     """
-    token = (_TextCode.escape(token[0]), _TextCode.escape(token[1]))
+    token = (TextCode.escape(token[0]), TextCode.escape(token[1]))
     name_token = token if name_cloze else ("", "")
     key_token = token if key_cloze else ("", "")
     value_token = token if value_cloze else ("", "")
@@ -540,15 +477,15 @@ def map_to_code(
             yield value_token[1]
             newline = "\n"
 
-    return _TextCode.compile("".join(gen_code()))
+    return TextCode.compile("".join(gen_code()))
 
 
 def maps_to_code(
-    maps: _Map[str, _Map[str, str]],
+    maps: Mapping[str, Mapping[str, str]],
     /,
     *,
-    sep_tag: str = _Tag.CLOZE_SEPARATOR,
-    **kwargs: _Any,
+    sep_tag: str = Tag.CLOZE_SEPARATOR,
+    **kwargs: Any,
 ):
     """Combine multiple mappings into a single `TextCode` with sections.
 
@@ -559,15 +496,15 @@ def maps_to_code(
         for key, value in maps.items():
             yield str(map_to_code(value, name=key, **kwargs))
 
-    return _TextCode.compile(f"{{{_TextCode.escape(sep_tag)}:}}".join(codegen()))
+    return TextCode.compile(f"{{{TextCode.escape(sep_tag)}:}}".join(codegen()))
 
 
 def rows_to_table(
-    rows: _Iter[_T],
+    rows: Iterable[_T],
     /,
     *,
-    names: _Iter[str | tuple[str, _Lit["default", "left", "right", "center"]]],
-    values: _Call[[_T], _Iter[_Any]],
+    names: Iterable[str | tuple[str, Literal["default", "left", "right", "center"]]],
+    values: Callable[[_T], Iterable[Any]],
     escape: bool = True,
     use_compiled_len: bool = False,  # compile TextCode and use its length
     use_visible_len: bool = False,  # use advanced visible width counting (wcwidth, CJK, diacritics)
@@ -583,7 +520,7 @@ def rows_to_table(
             return var.replace("|", "\\|")
 
     else:
-        escaper = _id
+        escaper = identity
 
     # Prepare headers as a lazily-cached sequence of (escaped_name, align, visible_len) tuples
     def _header_gen():
@@ -595,7 +532,7 @@ def rows_to_table(
             hv = _compute_display_length(hs, use_compiled_len, use_visible_len)
             yield (hs, align, hv)
 
-    headers = _IterSeq(_header_gen())
+    headers = IteratorSequence(_header_gen())
 
     # Create a lazily-cached sequence of processed rows (escaped strings with visible lengths)
     def _rows_gen():
@@ -607,16 +544,16 @@ def rows_to_table(
                     cv = _compute_display_length(cs, use_compiled_len, use_visible_len)
                     yield (cs, cv)
 
-            yield _IterSeq(_cells())
+            yield IteratorSequence(_cells())
 
-    rows_seq = _IterSeq(_rows_gen())
+    rows_seq = IteratorSequence(_rows_gen())
 
     # Compute column widths based on stored visible lengths (no further compilation)
     widths = tuple(
         max(
             3,
             max(
-                _chain(
+                chain(
                     (hv,),
                     (r[i][1] if i < len(r) else 0 for r in rows_seq),
                 )
@@ -653,25 +590,25 @@ def rows_to_table(
         for r in rows_seq
     )
 
-    return "\n".join(_chain((header_line, align_line), row_lines))
+    return "\n".join(chain((header_line, align_line), row_lines))
 
 
 def two_columns_to_code(
-    rows: _Iter[_T],
+    rows: Iterable[_T],
     /,
     *,
-    left: _Call[[_T], str],
-    right: _Call[[_T], str],
+    left: Callable[[_T], str],
+    right: Callable[[_T], str],
 ):
     """Compile two-column rows into a `TextCode` combining left and right values.
 
     Each row yields `left(row)` and `right(row)` which are concatenated into
     a compiled `TextCode` string.
     """
-    return _TextCode.compile(
+    return TextCode.compile(
         "{}".join(
             item if item else "{:}"
-            for item in _chain.from_iterable((left(row), right(row)) for row in rows)
+            for item in chain.from_iterable((left(row), right(row)) for row in rows)
         )
     )
 
@@ -684,8 +621,8 @@ def _visible_display_width(text: str) -> int:
     normalized string. Installing `wcwidth` is recommended for accurate
     visible widths.
     """
-    s = _normalize("NFC", text)
-    if _wcswidth is not None and (w := _wcswidth(s)) >= 0:
+    s = normalize("NFC", text)
+    if wcswidth is not None and (w := wcswidth(s)) >= 0:
         return w
     return len(s)
 
@@ -697,8 +634,8 @@ def _compute_display_length(s: str, use_compiled: bool, use_visible: bool) -> in
     rendered. Behavior depends on the flags passed:
 
     - If ``use_compiled`` is True, the function first attempts to compile
-      ``s`` as a ``_TextCode`` fragment and convert it to a string via
-      ``_c2s``. If compilation raises ``ValueError``, the original ``s``
+      ``s`` as a ``TextCode`` fragment and convert it to a string via
+      ``code_to_str``. If compilation raises ``ValueError``, the original ``s``
       is used unchanged.
     - If ``use_visible`` is True, the function measures the *visible*
       display width using :func:`_visible_display_width`. That helper
@@ -714,7 +651,7 @@ def _compute_display_length(s: str, use_compiled: bool, use_visible: bool) -> in
     """
     if use_compiled:
         try:
-            s = _c2s(_TextCode.compile(s))
+            s = code_to_str(TextCode.compile(s))
         except ValueError:
             pass
     return _visible_display_width(s) if use_visible else len(s)

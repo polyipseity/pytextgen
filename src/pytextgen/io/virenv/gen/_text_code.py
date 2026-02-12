@@ -4,39 +4,24 @@
 used in generated content.
 """
 
-from collections import defaultdict as _defdict
-from dataclasses import KW_ONLY as _KW_ONLY
-from dataclasses import dataclass as _dc
-from re import NOFLAG as _NOFLAG
-from re import compile as _re_comp
-from re import escape as _re_esc
+from collections import defaultdict
+from dataclasses import KW_ONLY, dataclass
+from re import NOFLAG
+from re import compile as re_compile
+from re import escape as re_escape
 from typing import (
-    Any as _Any,
-)
-from typing import (
-    ClassVar as _ClsVar,
-)
-from typing import (
-    Iterable as _Iter,
-)
-from typing import (
-    Literal as _Lit,
-)
-from typing import (
-    MutableSequence as _MSeq,
-)
-from typing import (
-    Self as _Self,
-)
-from typing import (
-    final as _fin,
-)
-from typing import (
-    overload as _overload,
+    Any,
+    ClassVar,
+    Iterable,
+    Literal,
+    MutableSequence,
+    Self,
+    final,
+    overload,
 )
 
-from ..util import constant as _const
-from ._misc import Tag as _Tag
+from ..util import constant
+from ._misc import Tag
 
 __all__ = (
     "TextCode",
@@ -47,7 +32,7 @@ __all__ = (
 )
 
 
-@_fin
+@final
 class TextCode:
     """Representation of text divided into `Block` elements.
 
@@ -55,12 +40,12 @@ class TextCode:
     escaped and serialized with `{tag:...}` syntax.
     """
 
-    __slots__: _ClsVar = ("__blocks", "__by_tag")
-    ESCAPES: _ClsVar = frozenset({"\\", "{", "}", ":"})
-    ESCAPE_REGEX: _ClsVar = _re_comp(rf"{'|'.join(map(_re_esc, ESCAPES))}", _NOFLAG)
+    __slots__: ClassVar = ("__blocks", "__by_tag")
+    ESCAPES: ClassVar = frozenset({"\\", "{", "}", ":"})
+    ESCAPE_REGEX: ClassVar = re_compile(rf"{'|'.join(map(re_escape, ESCAPES))}", NOFLAG)
 
-    @_fin
-    @_dc(
+    @final
+    @dataclass(
         init=True,
         repr=True,
         eq=True,
@@ -79,7 +64,7 @@ class TextCode:
         """
 
         text: str
-        _: _KW_ONLY
+        _: KW_ONLY
         char: int
         tag: str = ""
 
@@ -98,8 +83,8 @@ class TextCode:
                 return TextCode.escape(self.text)
             return "{:}"
 
-    @_fin
-    @_dc(
+    @final
+    @dataclass(
         init=True,
         repr=True,
         eq=True,
@@ -114,12 +99,14 @@ class TextCode:
         idx: int
         block: "TextCode.Block"
 
-    def __init__(self, blocks: _Iter[Block]):
+    def __init__(self, blocks: Iterable[Block]):
         self.__blocks = tuple(blocks)
-        by_tag = _defdict[str, _MSeq[TextCode.ByTagValue]](list)
+        by_tag = defaultdict[str, MutableSequence[TextCode.ByTagValue]](list)
         for idx, block in enumerate(self.blocks):
             by_tag[block.tag].append(TextCode.ByTagValue(idx=idx, block=block))
-        self.__by_tag = _defdict(_const(()), {k: tuple(v) for k, v in by_tag.items()})
+        self.__by_tag = defaultdict(
+            constant(()), {k: tuple(v) for k, v in by_tag.items()}
+        )
 
     def __repr__(self):
         return f"{type(self).__qualname__}(blocks={self.blocks!r})"
@@ -144,8 +131,8 @@ class TextCode:
         ret = cls.ESCAPE_REGEX.sub(lambda match: Rf"\{match[0]}", text)
         return f"{{:{ret}}}" if block else ret
 
-    @_fin
-    @_dc(
+    @final
+    @dataclass(
         init=True,
         repr=True,
         eq=True,
@@ -157,51 +144,51 @@ class TextCode:
         slots=True,
     )
     class __CompilerState:
-        Tag = _Lit["block", "escape", "normal", "tag"]
-        __Tag0 = _Lit["normal", "tag"]
-        __Tag1 = _Lit["block"]
-        __Tag2 = _Lit["escape"]
+        Tag = Literal["block", "escape", "normal", "tag"]
+        __Tag0 = Literal["normal", "tag"]
+        __Tag1 = Literal["block"]
+        __Tag2 = Literal["escape"]
         tag: Tag
-        data: _Any
+        data: Any
 
-        @_overload
+        @overload
         @classmethod
-        def wrap(cls, tag: __Tag0, data: str) -> _Self: ...
+        def wrap(cls, tag: __Tag0, data: str) -> Self: ...
 
-        @_overload
+        @overload
         def unwrap(self, tag: __Tag0) -> str: ...
 
-        @_overload
+        @overload
         def mutate(self, tag: __Tag0, data: str) -> None: ...
 
-        @_overload
+        @overload
         @classmethod
-        def wrap(cls, tag: __Tag1, data: tuple[str, str]) -> _Self: ...
+        def wrap(cls, tag: __Tag1, data: tuple[str, str]) -> Self: ...
 
-        @_overload
+        @overload
         def unwrap(self, tag: __Tag1) -> tuple[str, str]: ...
 
-        @_overload
+        @overload
         def mutate(self, tag: __Tag1, data: tuple[str, str]) -> None: ...
 
-        @_overload
+        @overload
         @classmethod
-        def wrap(cls, tag: __Tag2, data: __Tag0 | __Tag1) -> _Self: ...
+        def wrap(cls, tag: __Tag2, data: __Tag0 | __Tag1) -> Self: ...
 
-        @_overload
+        @overload
         def unwrap(self, tag: __Tag2) -> __Tag0 | __Tag1: ...
 
-        @_overload
+        @overload
         def mutate(self, tag: __Tag2, data: __Tag0 | __Tag1) -> None: ...
 
         @classmethod
-        def wrap(cls, tag: Tag, data: _Any):
+        def wrap(cls, tag: Tag, data: Any):
             return cls(tag=tag, data=data)
 
         def unwrap(self, tag: Tag):
             return self.data
 
-        def mutate(self, tag: Tag, data: _Any):
+        def mutate(self, tag: Tag, data: Any):
             self.data = data
 
     @classmethod
@@ -276,12 +263,12 @@ class TextCode:
         return cls(cls.compiler(text))
 
 
-def code_to_strs(code: TextCode, /, *, tag: str = _Tag.COMMON):
+def code_to_strs(code: TextCode, /, *, tag: str = Tag.COMMON):
     """Yield raw text strings from `code` for blocks matching `tag`."""
     return (block.text for block in code.blocks if block.common or block.tag == tag)
 
 
-def code_to_str(code: TextCode, /, *, tag: str = _Tag.COMMON):
+def code_to_str(code: TextCode, /, *, tag: str = Tag.COMMON):
     """Return a single string composed of matching `code` blocks."""
     return "".join(code_to_strs(code, tag=tag))
 

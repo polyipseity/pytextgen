@@ -4,68 +4,42 @@ This module exposes an async `main` entry point and a `parser` factory
 used by the top-level CLI.
 """
 
-from argparse import (
-    ONE_OR_MORE as _ONE_OR_MORE,
-)
-from argparse import (
-    ArgumentParser as _ArgParser,
-)
-from argparse import (
-    Namespace as _NS,
-)
-from asyncio import gather as _gather
-from dataclasses import dataclass as _dc
-from enum import IntFlag as _IntFlg
-from enum import auto as _auto
-from enum import unique as _unq
-from functools import partial as _partial
-from functools import reduce as _reduce
-from functools import wraps as _wraps
-from itertools import chain as _chain
-from sys import exit as _exit
-from typing import (
-    Callable as _Call,
-)
-from typing import (
-    Iterable as _Iter,
-)
-from typing import (
-    MutableSequence as _MSeq,
-)
-from typing import (
-    Sequence as _Seq,
-)
-from typing import (
-    final as _fin,
-)
+from argparse import ONE_OR_MORE, ArgumentParser, Namespace
+from asyncio import gather
+from collections.abc import MutableSequence
+from dataclasses import dataclass
+from enum import IntFlag, auto, unique
+from functools import partial, reduce, wraps
+from itertools import chain
+from sys import exit
+from typing import Callable, Iterable, Sequence, final
 
-from anyio import Path as _Path
+from anyio import Path
 
-from ..io._options import GenOpts as _GenOpts
-from ..io._read import Reader as _Reader
-from ..io._write import Writer as _Writer
-from ..meta import LOGGER as _LOGGER
-from ..meta import VERSION as _VER
-from ..util import CompileCache as _CompCache
+from ..io._options import GenOpts
+from ..io._read import Reader
+from ..io._write import Writer
+from ..meta import LOGGER, VERSION
+from ..util import CompileCache
 
 __all__ = ("ExitCode", "Arguments", "main", "parser")
 
 
-@_fin
-@_unq
-class ExitCode(_IntFlg):
+@final
+@unique
+class ExitCode(IntFlag):
     """Exit flags used by the `generate` subcommand.
 
     Signals represent read/validate/write failures and are combinable.
     """
 
-    READ_ERROR = _auto()
-    VALIDATE_ERROR = _auto()
-    WRITE_ERROR = _auto()
+    READ_ERROR = auto()
+    VALIDATE_ERROR = auto()
+    WRITE_ERROR = auto()
 
 
-@_fin
-@_dc(
+@final
+@dataclass(
     init=True,
     repr=True,
     eq=True,
@@ -84,8 +58,8 @@ class Arguments:
         options: Generation options (`GenOpts`) controlling behaviour.
     """
 
-    inputs: _Seq[_Path]
-    options: _GenOpts
+    inputs: Sequence[Path]
+    options: GenOpts
 
     def __post_init__(self):
         object.__setattr__(self, "inputs", tuple(self.inputs))
@@ -99,16 +73,16 @@ async def main(args: Arguments):
     """
     exit_code = ExitCode(0)
 
-    async def read(input: _Path):
+    async def read(input: Path):
         try:
-            return (await _Reader.cached(path=input, options=args.options)).pipe()
+            return (await Reader.cached(path=input, options=args.options)).pipe()
         except Exception:
-            _LOGGER.exception(f"Exception reading file: {input}")
+            LOGGER.exception(f"Exception reading file: {input}")
             return ExitCode.READ_ERROR
 
     def reduce_read_result(
-        left: tuple[_MSeq[_Iter[_Writer]], ExitCode],
-        right: _Iter[_Writer] | ExitCode,
+        left: tuple[MutableSequence[Iterable[Writer]], ExitCode],
+        right: Iterable[Writer] | ExitCode,
     ):
         seq, code = left
         if isinstance(right, ExitCode):
@@ -117,36 +91,36 @@ async def main(args: Arguments):
             seq.append(right)
         return (seq, code)
 
-    writers0, exit_code = _reduce(
+    writers0, exit_code = reduce(
         reduce_read_result,
-        await _gather(*map(read, args.inputs)),
-        (list[_Iter[_Writer]](), exit_code),
+        await gather(*map(read, args.inputs)),
+        (list[Iterable[Writer]](), exit_code),
     )
-    writers = _chain.from_iterable(writers0)
+    writers = chain.from_iterable(writers0)
 
-    async def write(writer: _Writer):
+    async def write(writer: Writer):
         write = writer.write()
         try:
             await write.__aenter__()
         except Exception:
-            _LOGGER.exception(f"Error while validation: {writer}")
+            LOGGER.exception(f"Error while validation: {writer}")
             return ExitCode.VALIDATE_ERROR
         try:
             await write.__aexit__(None, None, None)
         except Exception:
-            _LOGGER.exception(f"Error while writing: {writer}")
+            LOGGER.exception(f"Error while writing: {writer}")
             return ExitCode.WRITE_ERROR
         return ExitCode(0)
 
-    exit_code = _reduce(
+    exit_code = reduce(
         lambda left, right: left | right,
-        await _gather(*map(write, writers)),
+        await gather(*map(write, writers)),
         exit_code,
     )
-    _exit(exit_code)
+    exit(exit_code)
 
 
-def parser(parent: _Call[..., _ArgParser] | None = None):
+def parser(parent: Callable[..., ArgumentParser] | None = None):
     """Create an `ArgumentParser` for the `generate` subcommand.
 
     The returned parser is configured with options for timestamping,
@@ -154,7 +128,7 @@ def parser(parent: _Call[..., _ArgParser] | None = None):
     """
     prog = __package__ or __name__
 
-    parser = (_ArgParser if parent is None else parent)(
+    parser = (ArgumentParser if parent is None else parent)(
         prog=f"python -m {prog}",
         description="generate text from input",
         add_help=True,
@@ -165,7 +139,7 @@ def parser(parent: _Call[..., _ArgParser] | None = None):
         "-v",
         "--version",
         action="version",
-        version=f"{prog} v{_VER}",
+        version=f"{prog} v{VERSION}",
         help="print version and exit",
     )
     t_group = parser.add_mutually_exclusive_group()
@@ -204,8 +178,8 @@ def parser(parent: _Call[..., _ArgParser] | None = None):
     code_cache_group.add_argument(
         "--code-cache",
         action="store",
-        default=_Path("./__pycache__/"),
-        type=_Path,
+        default=Path("./__pycache__/"),
+        type=Path,
         help="specify code cache (default: ./__pycache__/)",
         dest="code_cache",
     )
@@ -220,14 +194,14 @@ def parser(parent: _Call[..., _ArgParser] | None = None):
     parser.add_argument(
         "inputs",
         action="store",
-        nargs=_ONE_OR_MORE,
-        type=_Path,
+        nargs=ONE_OR_MORE,
+        type=Path,
         help="sequence of input(s) to read",
     )
 
-    @_wraps(main)
-    async def invoke(args: _NS):
-        async with _CompCache(
+    @wraps(main)
+    async def invoke(args: Namespace):
+        async with CompileCache(
             folder=(
                 args.code_cache
                 if args.code_cache is None
@@ -236,10 +210,10 @@ def parser(parent: _Call[..., _ArgParser] | None = None):
         ) as cache:
             await main(
                 Arguments(
-                    inputs=await _gather(
-                        *map(_partial(_Path.resolve, strict=True), args.inputs)
+                    inputs=await gather(
+                        *map(partial(Path.resolve, strict=True), args.inputs)
                     ),
-                    options=_GenOpts(
+                    options=GenOpts(
                         timestamp=args.timestamp,
                         init_flashcards=args.init_flashcards,
                         compiler=cache.compile,

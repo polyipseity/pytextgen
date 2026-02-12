@@ -4,48 +4,17 @@
 initialization step to return exported values from executed code.
 """
 
-from ast import AsyncFunctionDef as _ASTAFunDef
-from ast import Module as _ASTMod
-from ast import parse as _parse
-from contextlib import AbstractAsyncContextManager as _AACtxMgr
-from contextlib import nullcontext as _nullctx
-from types import (
-    CellType as _Cell,
-)
-from types import (
-    CodeType as _Code,
-)
-from types import (
-    MappingProxyType as _FrozenMap,
-)
-from types import (
-    SimpleNamespace as _SimpNS,
-)
-from typing import (
-    Any as _Any,
-)
-from typing import (
-    Callable as _Call,
-)
-from typing import (
-    ClassVar as _ClsVar,
-)
-from typing import (
-    Mapping as _Map,
-)
-from typing import (
-    cast as _cast,
-)
-from typing import (
-    final as _fin,
-)
+from ast import AsyncFunctionDef, Module, parse
+from contextlib import AbstractAsyncContextManager, nullcontext
+from types import CellType, CodeType, MappingProxyType, SimpleNamespace
+from typing import Any, Callable, ClassVar, Mapping, cast, final
 
-from ..meta import UUID as _UUID
+from ..meta import UUID
 
 __all__ = ("Environment",)
 
 
-@_fin
+@final
 class Environment:
     """Isolated execution environment for running extracted code.
 
@@ -54,11 +23,11 @@ class Environment:
     environment and collect their exports.
     """
 
-    ENV_NAME: _ClsVar = "__env__"
-    ENTRY: _ClsVar = f"_{_UUID.replace('-', '_')}"
-    ENTRY_TEMPLATE: _ClsVar = f"""async def {ENTRY}(): pass
+    ENV_NAME: ClassVar = "__env__"
+    ENTRY: ClassVar = f"_{UUID.replace('-', '_')}"
+    ENTRY_TEMPLATE: ClassVar = f"""async def {ENTRY}(): pass
 {ENV_NAME}.{ENTRY} = {ENTRY}"""
-    __slots__: _ClsVar = (
+    __slots__: ClassVar = (
         "__closure",
         "__context",
         "__env",
@@ -67,26 +36,26 @@ class Environment:
     )
 
     @classmethod
-    def transform_code(cls, ast: _ASTMod):
-        template = _parse(cls.ENTRY_TEMPLATE, "<string>", "exec", type_comments=True)
+    def transform_code(cls, ast: Module):
+        template = parse(cls.ENTRY_TEMPLATE, "<string>", "exec", type_comments=True)
         if ast.body:
-            _cast(_ASTAFunDef, template.body[0]).body = ast.body
+            cast(AsyncFunctionDef, template.body[0]).body = ast.body
         return template
 
     def __init__(
         self,
         *,
-        env: _Map[str, _Any] = {},
-        globals: _Map[str, _Any] = globals(),
-        locals: _Map[str, object] = locals(),
-        closure: tuple[_Cell, ...] | None = None,
-        context: _Call[[], _AACtxMgr[_Any]] | None = None,
+        env: Mapping[str, Any] = {},
+        globals: Mapping[str, Any] = globals(),
+        locals: Mapping[str, object] = locals(),
+        closure: tuple[CellType, ...] | None = None,
+        context: Callable[[], AbstractAsyncContextManager[Any]] | None = None,
     ):
-        self.__env = _FrozenMap(dict(env))
-        self.__globals = _FrozenMap(dict(globals))
-        self.__locals = _FrozenMap(dict(locals))
+        self.__env = MappingProxyType(dict(env))
+        self.__globals = MappingProxyType(dict(globals))
+        self.__locals = MappingProxyType(dict(locals))
         self.__closure = closure
-        self.__context = context if context else lambda: _nullctx()
+        self.__context = context if context else lambda: nullcontext()
         assert self.ENV_NAME not in self.globals
         assert self.ENV_NAME not in self.locals
 
@@ -94,10 +63,10 @@ class Environment:
         return f"{type(self).__qualname__}(env={self.__env!r}, globals={self.__globals!r}, locals={self.__locals!r})"
 
     def __str__(self):
-        def filter(map: _Map[str, _Any]):
+        def filter(map_: Mapping[str, Any]):
             return {
                 key: val
-                for key, val in map.items()
+                for key, val in map_.items()
                 if not (key.startswith("__") and key.endswith("__"))
             }
 
@@ -125,9 +94,9 @@ class Environment:
     def closure(self):
         return self.__closure
 
-    async def exec(self, code: _Code, *init_codes: _Code) -> _Any:
+    async def exec(self, code: CodeType, *init_codes: CodeType) -> Any:
         """Execute `code` and optional `init_codes` in this environment and return any exported result."""
-        env = _SimpNS(result=None, **self.env)
+        env = SimpleNamespace(result=None, **self.env)
         globals = {**self.globals, self.ENV_NAME: env}
         locals = (
             globals
@@ -136,7 +105,7 @@ class Environment:
         )
         async with self.__context():
             for init_code in init_codes:
-                exec(init_code, globals, locals)
+                exec(init_code, globals, locals, closure=self.closure)
                 export = await getattr(env, self.ENTRY)()
                 if export is not None:
                     globals.update(export)

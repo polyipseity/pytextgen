@@ -4,32 +4,21 @@ Provides default tokens and flashcard separator settings used by the
 `virenv` IO helpers.
 """
 
-from dataclasses import dataclass as _dc
-from dataclasses import field as _field
+from dataclasses import dataclass, field
 from typing import (
-    Callable as _Call,
-)
-from typing import (
-    ClassVar as _ClsVar,
-)
-from typing import (
-    Mapping as _Map,
-)
-from typing import (
-    MutableMapping as _MMap,
-)
-from typing import (
-    Self as _Self,
-)
-from typing import (
-    final as _fin,
+    Callable,
+    ClassVar,
+    Mapping,
+    MutableMapping,
+    Self,
+    final,
 )
 
 __all__ = ("FlashcardSeparatorType", "Configuration", "CONFIG")
 
 
-@_fin
-@_dc(
+@final
+@dataclass(
     init=True,
     repr=True,
     eq=True,
@@ -47,7 +36,7 @@ class FlashcardSeparatorType:
     `multiline`; parsing is provided via :meth:`parse`.
     """
 
-    OPTIONS: _ClsVar[_Map[str, _Call[[_Self, bool], None]]] = {
+    OPTIONS: ClassVar[Mapping[str, Callable[[Self, bool], None]]] = {
         "r": lambda self, value: object.__setattr__(self, "reversible", value),
         "m": lambda self, value: object.__setattr__(self, "multiline", value),
     }
@@ -56,7 +45,7 @@ class FlashcardSeparatorType:
     multiline: bool
 
     @classmethod
-    def parse(cls, options: str | _Self):
+    def parse(cls, options: str | Self):
         if not isinstance(options, str):
             return options
         self = cls(reversible=False, multiline=False)
@@ -77,8 +66,8 @@ class FlashcardSeparatorType:
         return self
 
 
-@_fin
-@_dc(
+@final
+@dataclass(
     init=True,
     repr=True,
     eq=True,
@@ -96,7 +85,7 @@ class Configuration:
     """
 
     cloze_token: tuple[str, str] = (R"{@{", R"}@}")
-    flashcard_separators: _MMap[FlashcardSeparatorType, str] = _field(
+    flashcard_separators: MutableMapping[FlashcardSeparatorType, str] = field(
         default_factory=lambda: {
             FlashcardSeparatorType.parse(""): R":@:",
             FlashcardSeparatorType.parse("r"): R"::@::",

@@ -7,13 +7,10 @@ package-level exports are explicit, easy to test, and reduce import-time
 costs and accidental cycles.
 """
 
-from datetime import datetime as _dt
-from logging import getLogger as _getLogger
-from re import NOFLAG as _NOFLAG
-from re import compile as _re_comp
-from typing import Literal as _Lit
-from typing import TypedDict as _TDict
-from typing import final as _fin
+import re
+from datetime import datetime
+from logging import getLogger
+from typing import Literal, TypedDict, final
 
 __all__ = (
     "NAME",
@@ -29,15 +26,15 @@ __all__ = (
 )
 
 
-@_fin
-class _OpenOptions(_TDict):
+@final
+class _OpenOptions(TypedDict):
     """Typed dict describing options used when opening text files.
 
     Matches the arguments accepted by `open(..., encoding=..., errors=..., newline=...)`.
     """
 
     encoding: str
-    errors: _Lit[
+    errors: Literal[
         "strict",
         "ignore",
         "replace",
@@ -46,7 +43,7 @@ class _OpenOptions(_TDict):
         "backslashreplace",
         "namereplace",
     ]
-    newline: _Lit["", "\n", "\r", "\r\n"] | None
+    newline: Literal["", "\n", "\r", "\r\n"] | None
 
 
 # update `pyproject.toml`
@@ -55,17 +52,17 @@ VERSION = "7.0.0"
 
 FLASHCARD_EASE_DEFAULT = 250
 FLASHCARD_STATES_FORMAT = "<!--SR:{states}-->"
-FLASHCARD_STATES_REGEX = _re_comp(r"<!--SR:(.*?)-->", _NOFLAG)
+FLASHCARD_STATES_REGEX = re.compile(r"<!--SR:(.*?)-->", re.NOFLAG)
 GENERATE_COMMENT_FORMAT = "<!-- The following content is generated at {now}. Any edits will be overridden! -->"
-GENERATE_COMMENT_REGEX = _re_comp(
+GENERATE_COMMENT_REGEX = re.compile(
     r"^<!-- The following content is generated at (\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}\+\d{2}:\d{2}). Any edits will be overridden! -->",
-    _NOFLAG,
+    re.NOFLAG,
 )
 assert GENERATE_COMMENT_REGEX.search(
-    GENERATE_COMMENT_FORMAT.format(now=_dt.now().astimezone().isoformat())
+    GENERATE_COMMENT_FORMAT.format(now=datetime.now().astimezone().isoformat())
 )
 
-LOGGER = _getLogger(NAME)
+LOGGER = getLogger(NAME)
 OPEN_TEXT_OPTIONS = _OpenOptions(
     encoding="UTF-8",
     errors="strict",

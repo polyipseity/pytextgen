@@ -1,48 +1,14 @@
 """Utility helpers for the virtual environment IO layer."""
 
-from abc import ABCMeta as _ABCM
-from abc import abstractmethod as _amethod
-from dataclasses import KW_ONLY as _KW_ONLY
-from dataclasses import dataclass as _dc
-from dataclasses import field as _field
-from datetime import date as _date
-from re import (
-    NOFLAG as _NOFLAG,
-)
-from re import (
-    Pattern as _Pattern,
-)
-from re import (
-    compile as _re_comp,
-)
-from re import (
-    escape as _re_esc,
-)
-from typing import (
-    Any as _Any,
-)
-from typing import (
-    Callable as _Call,
-)
-from typing import (
-    ClassVar as _ClsVar,
-)
-from typing import (
-    Iterator as _Itor,
-)
-from typing import (
-    Sequence as _Seq,
-)
-from typing import (
-    final as _fin,
-)
+import datetime
+from abc import ABCMeta, abstractmethod
+from dataclasses import KW_ONLY, dataclass, field
+from datetime import date
+from re import NOFLAG, Pattern, escape
+from re import compile as re_compile
+from typing import Any, Callable, ClassVar, Iterator, Sequence, final
 
-from ...meta import (
-    FLASHCARD_STATES_FORMAT as _FC_ST_FMT,
-)
-from ...meta import (
-    FLASHCARD_STATES_REGEX as _FC_ST_RE,
-)
+from ...meta import FLASHCARD_STATES_FORMAT, FLASHCARD_STATES_REGEX
 from ...util import (  # explicit imports (avoid star-imports)
     IteratorSequence,
     TypedTuple,
@@ -58,8 +24,7 @@ from ...util import (  # explicit imports (avoid star-imports)
 )
 
 # from ..util import *  # intentionally removed star-import; no names from ..util are required here
-from .config import CONFIG as _CFG
-from .config import FlashcardSeparatorType as _FcSepT
+from .config import CONFIG, FlashcardSeparatorType
 
 __all__ = (
     "export_seq",
@@ -81,7 +46,7 @@ __all__ = (
 )
 
 
-def export_seq(*seq: _Call[..., _Any] | type) -> dict[str, _Any]:
+def export_seq(*seq: Callable[..., Any] | type) -> dict[str, Any]:
     """Return a mapping of symbol names to callables or types.
 
     Returns a dict suitable for populating export maps used by package
@@ -90,16 +55,16 @@ def export_seq(*seq: _Call[..., _Any] | type) -> dict[str, _Any]:
     return {val.__name__: val for val in seq}
 
 
-class FlashcardGroup(_Seq[str], metaclass=_ABCM):
+class FlashcardGroup(Sequence[str], metaclass=ABCMeta):
     """Abstract sequence-like representing a flashcard.
 
     Concrete implementations must implement `__str__` to render the
     flashcard as text.
     """
 
-    __slots__: _ClsVar = ()
+    __slots__: ClassVar = ()
 
-    @_amethod
+    @abstractmethod
     def __str__(self) -> str:
         raise NotImplementedError(self)
 
@@ -110,9 +75,9 @@ class FlashcardGroup(_Seq[str], metaclass=_ABCM):
         )
 
 
-@_fin
+@final
 @FlashcardGroup.register
-@_dc(
+@dataclass(
     init=True,
     repr=True,
     eq=True,
@@ -128,12 +93,12 @@ class TwoSidedFlashcard:
 
     left: str
     right: str
-    _: _KW_ONLY
+    _: KW_ONLY
     reversible: bool
 
     def __str__(self):
-        return _CFG.flashcard_separators[
-            _FcSepT(
+        return CONFIG.flashcard_separators[
+            FlashcardSeparatorType(
                 reversible=self.reversible,
                 multiline="\n" in self.left or "\n" in self.right,
             )
@@ -154,9 +119,9 @@ class TwoSidedFlashcard:
 assert issubclass(TwoSidedFlashcard, FlashcardGroup)
 
 
-@_fin
+@final
 @FlashcardGroup.register
-@_dc(
+@dataclass(
     init=True,
     repr=True,
     eq=True,
@@ -174,20 +139,20 @@ class ClozeFlashcardGroup:
     via sequence protocol.
     """
 
-    __pattern_cache: _ClsVar = dict[tuple[str, str], _Pattern[str]]()
+    __pattern_cache: ClassVar = dict[tuple[str, str], Pattern[str]]()
 
     context: str
-    _: _KW_ONLY
-    token: tuple[str, str] = _CFG.cloze_token
-    _clozes: _Seq[str] = _field(init=False, repr=False, hash=False, compare=False)
+    _: KW_ONLY
+    token: tuple[str, str] = CONFIG.cloze_token
+    _clozes: Sequence[str] = field(init=False, repr=False, hash=False, compare=False)
 
     def __post_init__(self):
         try:
             pattern = self.__pattern_cache[self.token]
         except KeyError:
-            e_token = (_re_esc(self.token[0]), _re_esc(self.token[1]))
-            self.__pattern_cache[self.token] = pattern = _re_comp(
-                rf"{e_token[0]}((?:(?!{e_token[1]}).)+){e_token[1]}", _NOFLAG
+            e_token = (escape(self.token[0]), escape(self.token[1]))
+            self.__pattern_cache[self.token] = pattern = re_compile(
+                rf"{e_token[0]}((?:(?!{e_token[1]}).)+){e_token[1]}", NOFLAG
             )
         object.__setattr__(
             self, "_clozes", tuple(match[1] for match in pattern.finditer(self.context))
@@ -206,8 +171,8 @@ class ClozeFlashcardGroup:
 assert issubclass(ClozeFlashcardGroup, FlashcardGroup)
 
 
-@_fin
-@_dc(
+@final
+@dataclass(
     init=True,
     repr=True,
     eq=True,
@@ -221,10 +186,10 @@ assert issubclass(ClozeFlashcardGroup, FlashcardGroup)
 class FlashcardState:
     """Represents a single flashcard state entry (date, interval, ease)."""
 
-    FORMAT: _ClsVar = "!{date},{interval},{ease}"
-    REGEX: _ClsVar = _re_comp(r"!(\d{4}-\d{2}-\d{2}),(\d+),(\d+)", _NOFLAG)
+    FORMAT: ClassVar = "!{date},{interval},{ease}"
+    REGEX: ClassVar = re_compile(r"!(\d{4}-\d{2}-\d{2}),(\d+),(\d+)", NOFLAG)
 
-    date: _date
+    date: datetime.date
     interval: int
     ease: int
 
@@ -234,11 +199,11 @@ class FlashcardState:
         )
 
     @classmethod
-    def compile_many(cls, text: str) -> _Itor["FlashcardState"]:
+    def compile_many(cls, text: str) -> Iterator["FlashcardState"]:
         """Yield parsed `FlashcardState` objects found in `text`."""
         for match in cls.REGEX.finditer(text):
             yield cls(
-                date=_date.fromisoformat(match[1]),
+                date=date.fromisoformat(match[1]),
                 interval=int(match[2]),
                 ease=int(match[3]),
             )
@@ -262,13 +227,13 @@ class FlashcardState:
         return ret
 
 
-@_fin
+@final
 class FlashcardStateGroup(TypedTuple[FlashcardState], element_type=FlashcardState):
     """A group of `FlashcardState` objects serialized as a single section."""
 
-    __slots__: _ClsVar = ()
-    FORMAT: _ClsVar = _FC_ST_FMT
-    REGEX: _ClsVar = _FC_ST_RE
+    __slots__: ClassVar = ()
+    FORMAT: ClassVar = FLASHCARD_STATES_FORMAT
+    REGEX: ClassVar = FLASHCARD_STATES_REGEX
 
     def __str__(self):
         if self:
@@ -276,7 +241,7 @@ class FlashcardStateGroup(TypedTuple[FlashcardState], element_type=FlashcardStat
         return ""
 
     @classmethod
-    def compile_many(cls, text: str) -> _Itor["FlashcardStateGroup"]:
+    def compile_many(cls, text: str) -> Iterator["FlashcardStateGroup"]:
         """Yield parsed `FlashcardStateGroup` objects found in `text`."""
         for match in cls.REGEX.finditer(text):
             yield cls(FlashcardState.compile_many(text[match.start() : match.end()]))
@@ -300,8 +265,8 @@ class FlashcardStateGroup(TypedTuple[FlashcardState], element_type=FlashcardStat
         return ret
 
 
-@_fin
-@_dc(
+@final
+@dataclass(
     init=True,
     repr=True,
     eq=True,

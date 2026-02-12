@@ -4,20 +4,18 @@ Defines `ClearType`, `ClearOpts`, and `GenOpts` dataclasses used to
 control behaviour of the `clear` and `generate` pipelines.
 """
 
-from dataclasses import dataclass as _dc
-from enum import StrEnum as _StrEnum
-from enum import unique as _unq
-from typing import AbstractSet as _ASet
-from typing import final as _fin
+from dataclasses import dataclass
+from enum import StrEnum, unique
+from typing import AbstractSet, final
 
-from ..util import Compiler as _Compiler
+from ..util import Compiler
 
 __all__ = ("ClearType", "ClearOpts", "GenOpts")
 
 
-@_fin
-@_unq
-class ClearType(_StrEnum):
+@final
+@unique
+class ClearType(StrEnum):
     """Types of data that can be cleared from inputs.
 
     - CONTENT: remove generated content blocks
@@ -28,8 +26,8 @@ class ClearType(_StrEnum):
     FLASHCARD_STATE = "fc_state"
 
 
-@_fin
-@_dc(
+@final
+@dataclass(
     init=True,
     repr=True,
     eq=True,
@@ -47,14 +45,14 @@ class ClearOpts:
         types: a set of `ClearType` values selecting what to clear.
     """
 
-    types: _ASet[ClearType]
+    types: AbstractSet[ClearType]
 
     def __post_init__(self):
         object.__setattr__(self, "types", frozenset(self.types))
 
 
-@_fin
-@_dc(
+@final
+@dataclass(
     init=True,
     repr=True,
     eq=True,
@@ -76,4 +74,4 @@ class GenOpts:
 
     timestamp: bool
     init_flashcards: bool
-    compiler: _Compiler
+    compiler: Compiler

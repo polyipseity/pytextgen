@@ -4,89 +4,42 @@ Contains `Location` protocols, `FileSection` logic for extracting and
 updating named file sections, and small helpers used by readers/writers.
 """
 
-from abc import ABCMeta as _ABCM
-from abc import abstractmethod as _amethod
+import re
+from abc import ABCMeta, abstractmethod
 from asyncio import TaskGroup, create_task
-from collections import defaultdict as _defdict
-from contextlib import (
-    AbstractAsyncContextManager as _AACtxMgr,
-)
-from contextlib import (
-    asynccontextmanager as _actxmgr,
-)
-from dataclasses import dataclass as _dc
-from functools import cache as _cache
-from io import StringIO as _StrIO
-from itertools import islice as _islice
-from os import stat as _stat
-from os.path import splitext as _splitext
-from re import (
-    DOTALL as _DOTALL,
-)
-from re import (
-    NOFLAG as _NOFLAG,
-)
-from re import (
-    Match as _Match,
-)
-from re import (
-    Pattern as _Pattern,
-)
-from re import (
-    compile as _re_comp,
-)
-from threading import Lock as _TLock
-from types import MappingProxyType as _FrozenMap
-from types import TracebackType as _Tb
+from collections import defaultdict
+from contextlib import AbstractAsyncContextManager, asynccontextmanager
+from dataclasses import dataclass
+from functools import cache
+from io import StringIO
+from itertools import islice
+from os import stat
+from os.path import splitext
+from threading import Lock
+from types import MappingProxyType, TracebackType
 from typing import (
-    Any as _Any,
+    Any,
+    AsyncIterator,
+    Awaitable,
+    Callable,
+    ClassVar,
+    Iterable,
+    Mapping,
+    Self,
+    TextIO,
+    TypeGuard,
+    final,
 )
-from typing import (
-    AsyncIterator as _AItor,
-)
-from typing import (
-    Awaitable as _Await,
-)
-from typing import (
-    Callable as _Call,
-)
-from typing import (
-    ClassVar as _ClsVar,
-)
-from typing import (
-    Iterable as _Iter,
-)
-from typing import (
-    Mapping as _Map,
-)
-from typing import (
-    Self as _Self,
-)
-from typing import (
-    TextIO as _TxtIO,
-)
-from typing import (
-    TypeGuard as _TGuard,
-)
-from typing import (
-    final as _fin,
-)
-from weakref import WeakKeyDictionary as _WkKDict
+from weakref import WeakKeyDictionary
 
 from aioshutil import sync_to_async
-from anyio import AsyncFile as _AFile
-from anyio import Path as _Path
+from anyio import AsyncFile, Path
 
-from ..meta import NAME as _NAME
-from ..meta import OPEN_TEXT_OPTIONS as _OPEN_TXT_OPTS
+from ..meta import NAME, OPEN_TEXT_OPTIONS
 from ..util import (
-    abc_subclasshook_check as _abc_sch_chk,
-)
-from ..util import (
-    async_lock as _a_lock,
-)
-from ..util import (
-    wrap_async as _wrap_a,
+    abc_subclasshook_check,
+    async_lock,
+    wrap_async,
 )
 
 __all__ = (
@@ -100,42 +53,44 @@ __all__ = (
     "Result",
 )
 
-AnyTextIO = _TxtIO | _AFile[str]
-_FILE_LOCKS = _defdict[_Path, _TLock](_TLock)
-_stat_a = sync_to_async(_stat)
+AnyTextIO = TextIO | AsyncFile[str]
+_FILE_LOCKS = defaultdict[Path, Lock](Lock)
+_stat_a = sync_to_async(stat)
 
 
-@_actxmgr
-async def lock_file(path: _Path) -> _AItor[None]:
+@asynccontextmanager
+async def lock_file(path: Path) -> AsyncIterator[None]:
     """Async context manager that acquires a per-path lock for safe writes."""
-    async with _a_lock(_FILE_LOCKS[await path.resolve(strict=True)]):
+    async with async_lock(_FILE_LOCKS[await path.resolve(strict=True)]):
         yield
 
 
-class Location(metaclass=_ABCM):
+class Location(metaclass=ABCMeta):
     """Protocol representing a location that can be opened for IO.
 
     Concrete implementations should provide an async `open` context manager
     returning an async text file-like object and a `path` property.
     """
 
-    __slots__: _ClsVar = ()
+    __slots__: ClassVar = ()
 
-    @_amethod
-    def open(self) -> _AACtxMgr[AnyTextIO]:
+    @abstractmethod
+    def open(self) -> AbstractAsyncContextManager[AnyTextIO]:
         raise NotImplementedError(self)
 
     @property
-    @_amethod
-    def path(self) -> _Path | None:
+    @abstractmethod
+    def path(self) -> Path | None:
         raise NotImplementedError(self)
 
     @classmethod
     def __subclasshook__(cls, subclass: type):
-        return _abc_sch_chk(Location, cls, subclass, names=("path", cls.open.__name__))
+        return abc_subclasshook_check(
+            Location, cls, subclass, names=("path", cls.open.__name__)
+        )
 
 
-@_fin
+@final
 @Location.register
 class NullLocation:
     """A `Location` that provides an in-memory, transient I/O buffer.
@@ -143,12 +98,12 @@ class NullLocation:
     Useful for testing or representing missing targets.
     """
 
-    __slots__: _ClsVar = ()
+    __slots__: ClassVar = ()
 
-    @_actxmgr
-    async def open(self) -> _AItor[AnyTextIO]:
+    @asynccontextmanager
+    async def open(self) -> AsyncIterator[AnyTextIO]:
         """Return an async context manager yielding a transient text buffer."""
-        yield _StrIO()
+        yield StringIO()
 
     @property
     def path(self) -> None:
@@ -159,9 +114,9 @@ assert issubclass(NullLocation, Location)
 NULL_LOCATION = NullLocation()
 
 
-@_fin
+@final
 @Location.register
-@_dc(
+@dataclass(
     init=True,
     repr=True,
     eq=True,
@@ -175,21 +130,21 @@ NULL_LOCATION = NullLocation()
 class PathLocation:
     """A `Location` backed by a filesystem path."""
 
-    path: _Path
+    path: Path
 
-    @_actxmgr
-    async def open(self) -> _AItor[AnyTextIO]:
+    @asynccontextmanager
+    async def open(self) -> AsyncIterator[AnyTextIO]:
         """Open the underlying filesystem path for read/write access."""
-        async with await self.path.open(mode="r+t", **_OPEN_TXT_OPTS) as file:
+        async with await self.path.open(mode="r+t", **OPEN_TEXT_OPTIONS) as file:
             yield file
 
 
 assert issubclass(PathLocation, Location)
 
 
-@_fin
+@final
 @Location.register
-@_dc(
+@dataclass(
     init=True,
     repr=True,
     eq=True,
@@ -207,8 +162,8 @@ class FileSection:
     the contained data using a context manager that persists changes.
     """
 
-    @_fin
-    @_dc(
+    @final
+    @dataclass(
         init=True,
         repr=True,
         eq=True,
@@ -220,52 +175,52 @@ class FileSection:
         slots=True,
     )
     class SectionFormat:
-        start_regex: _Pattern[str]
-        end_regex: _Pattern[str]
+        start_regex: re.Pattern[str]
+        end_regex: re.Pattern[str]
         start: str
         stop: str
-        data: _Call[[_Match[str]], str]
+        data: Callable[[re.Match[str]], str]
 
-    SECTION_FORMATS: _ClsVar = {
+    SECTION_FORMATS: ClassVar = {
         "": SectionFormat(
-            start_regex=_re_comp(rf"\[{_NAME},generate,([^,\]]*?)\]", _NOFLAG),
-            end_regex=_re_comp(rf"\[{_NAME},end\]", _NOFLAG),
-            start=f"[{_NAME},generate,{{section}}]",
-            stop=f"[{_NAME},end]",
+            start_regex=re.compile(rf"\[{NAME},generate,([^,\]]*?)\]", re.NOFLAG),
+            end_regex=re.compile(rf"\[{NAME},end\]", re.NOFLAG),
+            start=f"[{NAME},generate,{{section}}]",
+            stop=f"[{NAME},end]",
             data=lambda match: match[1],
         ),
         ".md": SectionFormat(
-            start_regex=_re_comp(
-                rf"""<!--{_NAME} generate section=(["'])(.*?)\1-->""", _DOTALL
+            start_regex=re.compile(
+                rf"""<!--{NAME} generate section=(['"])(.*?)\1-->""", re.DOTALL
             ),
-            end_regex=_re_comp(rf"<!--/{_NAME}-->", _NOFLAG),
-            start=f'<!--{_NAME} generate section="{{section}}"-->',
-            stop=f"<!--/{_NAME}-->",
+            end_regex=re.compile(rf"<!--/{NAME}-->", re.NOFLAG),
+            start=f'<!--{NAME} generate section="{{section}}"-->',
+            stop=f"<!--/{NAME}-->",
             data=lambda match: match[2],
         ),
     }
 
-    path: _Path
+    path: Path
     section: str
 
     @classmethod
-    async def find(cls, path: _Path) -> _Iter[str]:
+    async def find(cls, path: Path) -> Iterable[str]:
         """Return an iterable of section names present in `path`."""
         return (await _FILE_SECTION_CACHE[path]).sections.keys()
 
-    @_actxmgr
-    async def open(self) -> _AItor[AnyTextIO]:
+    @asynccontextmanager
+    async def open(self) -> AsyncIterator[AnyTextIO]:
         """Return an async context manager for editing this file section."""
         async with (
             _FileSectionIO(self)
             if self.section
-            else await self.path.open(mode="r+t", **_OPEN_TXT_OPTS)
+            else await self.path.open(mode="r+t", **OPEN_TEXT_OPTIONS)
         ) as file:
             yield file
 
 
-@_fin
-@_dc(
+@final
+@dataclass(
     init=True,
     repr=True,
     eq=True,
@@ -277,40 +232,40 @@ class FileSection:
     slots=True,
 )
 class _FileSectionCacheData:
-    EMPTY: _ClsVar[_Self]
+    EMPTY: ClassVar[Self]
     mod_time: int
-    sections: _Map[str, tuple[slice, str]]
+    sections: Mapping[str, tuple[slice, str]]
 
     def __post_init__(self):
-        object.__setattr__(self, "sections", _FrozenMap(dict(self.sections)))
+        object.__setattr__(self, "sections", MappingProxyType(dict(self.sections)))
 
 
 _FileSectionCacheData.EMPTY = _FileSectionCacheData(mod_time=-1, sections={})
 
 
-class _FileSectionCache(dict[_Path, _Await[_FileSectionCacheData]]):
-    __slots__: _ClsVar = ("__locks",)
+class _FileSectionCache(dict[Path, Awaitable[_FileSectionCacheData]]):
+    __slots__: ClassVar = ("__locks",)
 
     def __init__(self):
         super().__init__()
-        self.__locks = _WkKDict[_Path, _Call[[], _TLock]]()
+        self.__locks = WeakKeyDictionary[Path, Callable[[], Lock]]()
 
-    async def __getitem__(self, key: _Path):
+    async def __getitem__(self, key: Path):
         key = await key.resolve(strict=True)
-        _, ext = _splitext(key)
+        _, ext = splitext(key)
         try:
             format = FileSection.SECTION_FORMATS[ext]
         except KeyError as ex:
             raise ValueError(f"Unknown extension: {key}") from ex
-        async with _a_lock(self.__locks.setdefault(key, _cache(_TLock))()):
+        async with async_lock(self.__locks.setdefault(key, cache(Lock))()):
             try:
-                cache = await super().__getitem__(key)
+                cache_ = await super().__getitem__(key)
             except KeyError:
-                cache = _FileSectionCacheData.EMPTY
+                cache_ = _FileSectionCacheData.EMPTY
             try:
                 mod_time = (await _stat_a(key)).st_mtime_ns
-                if mod_time != cache.mod_time:
-                    async with await key.open(mode="rt", **_OPEN_TXT_OPTS) as file:
+                if mod_time != cache_.mod_time:
+                    async with await key.open(mode="rt", **OPEN_TEXT_OPTIONS) as file:
                         text = await file.read()
                     sections = dict[str, tuple[slice, str]]()
                     read_to = 0
@@ -333,30 +288,30 @@ class _FileSectionCache(dict[_Path, _Await[_FileSectionCacheData]]):
                         slice0 = slice(start_idx + len(start[0]), end_idx)
                         sections[section] = (slice0, text[slice0])
                         read_to = end_idx + len(end_str)
-                    for end in _islice(
+                    for end in islice(
                         format.end_regex.finditer(text), len(sections), None
                     ):
                         raise ValueError(
                             f"Too many closings at char {end.start()}: {key}"
                         )
-                    cache = _FileSectionCacheData(
+                    cache_ = _FileSectionCacheData(
                         mod_time=mod_time,
                         sections=sections,
                     )
             finally:
-                super().__setitem__(key, _wrap_a(cache))  # Replenish awaitable
-        return cache
+                super().__setitem__(key, wrap_async(cache_))  # Replenish awaitable
+        return cache_
 
-    def __setitem__(self, key: _Path, value: _Await[_FileSectionCacheData]):
+    def __setitem__(self, key: Path, value: Awaitable[_FileSectionCacheData]):
         raise TypeError("Unsupported")
 
 
 _FILE_SECTION_CACHE = _FileSectionCache()
 
 
-@_fin
-class _FileSectionIO(_StrIO):
-    __slots__: _ClsVar = ("__closure", "__file", "__slice", "__initial_value")
+@final
+class _FileSectionIO(StringIO):
+    __slots__: ClassVar = ("__closure", "__file", "__slice", "__initial_value")
 
     def __init__(self, closure: FileSection, /):
         self.__closure = closure
@@ -368,7 +323,7 @@ class _FileSectionIO(_StrIO):
         self,
         exc_type: type[BaseException] | None,
         exc_value: BaseException | None,
-        traceback: _Tb | None,
+        traceback: TracebackType | None,
     ):
         raise TypeError("Unsupported")
 
@@ -401,7 +356,7 @@ class _FileSectionIO(_StrIO):
             super().close()
 
     async def __aenter__(self) -> "_FileSectionIO":
-        self.__file = await self.__closure.path.open(mode="r+t", **_OPEN_TXT_OPTS)
+        self.__file = await self.__closure.path.open(mode="r+t", **OPEN_TEXT_OPTIONS)
         try:
             self.__slice, self.__initial_value = (
                 await _FILE_SECTION_CACHE[self.__closure.path]
@@ -417,7 +372,7 @@ class _FileSectionIO(_StrIO):
         self,
         exc_type: type[BaseException] | None,
         exc_value: BaseException | None,
-        traceback: _Tb | None,
+        traceback: TracebackType | None,
     ):
         await self.aclose()
 
@@ -425,8 +380,8 @@ class _FileSectionIO(_StrIO):
 assert issubclass(FileSection, Location)
 
 
-@_fin
-@_dc(
+@final
+@dataclass(
     init=True,
     repr=True,
     eq=True,
@@ -449,7 +404,7 @@ class Result:
     text: str
 
     @classmethod
-    def isinstance(cls, any: _Any) -> _TGuard[_Self]:
+    def isinstance(cls, any: Any) -> TypeGuard[Self]:
         try:
             return isinstance(any.location, Location) and isinstance(any.text, str)
         except AttributeError:

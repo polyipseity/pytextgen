@@ -1,19 +1,17 @@
 """Small enums used by text code generation and templating."""
 
-from enum import StrEnum as _StrEnum
-from enum import unique as _unq
-from typing import ClassVar as _ClsVar
-from typing import final as _fin
+from enum import StrEnum, unique
+from typing import ClassVar, final
 
 __all__ = ("Tag",)
 
 
-@_fin
-@_unq
-class Tag(_StrEnum):
+@final
+@unique
+class Tag(StrEnum):
     """Tag values used by `TextCode` based helpers."""
 
-    __slots__: _ClsVar = ()
+    __slots__: ClassVar = ()
 
     CLOZE_SEPARATOR = "cloze sep"
     COMMENT = "cmt"

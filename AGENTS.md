@@ -160,7 +160,7 @@ Quick checklist (run before committing or opening a PR):
 
 Repository-specific patterns & gotchas:
 
-- Top-level imports only: avoid runtime imports inside functions. See `src/pytextgen/util.py` (import aliasing with leading underscore, e.g., `from typing import Self as _Self`).
+- Top-level imports only: avoid runtime imports inside functions. Import names normally and avoid aliasing with a leading underscore; for example: `from typing import Self`. Prefer clear, unambiguous imports or import the module when needed to avoid name collisions.
 - Use explicit `__all__` for export-control and set `__all__ = ()` in tests. See `tests/pytextgen/test___init__.py` for the version parity test pattern.
 - Preferred typing styles: PEP 585 (`list[int]`) and PEP 604 (`str | None`). Use `Self`/`TypedDict` where appropriate.
 - Async-first patterns: favor `async def` and `@pytest.mark.asyncio` in tests; use `anyio`/`async` I/O patterns (see `CompileCache` in `src/pytextgen/util.py`).

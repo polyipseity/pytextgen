@@ -4,112 +4,61 @@ Provides a pluggable `Reader` interface and a Markdown reader which
 extracts embedded Python code blocks for later execution.
 """
 
-from abc import ABCMeta as _ABCM
-from abc import abstractmethod as _amethod
-from ast import parse as _parse
-from asyncio import (
-    AbstractEventLoop as _AEvtLoop,
-)
-from asyncio import (
-    Lock as _ALock,
-)
-from asyncio import (
-    get_running_loop as _run_loop,
-)
-from builtins import __dict__ as _builtins_dict
-from collections import defaultdict as _defdict
+import builtins
+import re
+from abc import ABCMeta, abstractmethod
+from ast import parse
+from asyncio import AbstractEventLoop, get_running_loop
+from asyncio import Lock as AsyncLock
+from collections import defaultdict
+from collections.abc import Iterable
 from contextlib import (
-    AbstractContextManager as _ACtxMgr,
+    AbstractContextManager,
+    asynccontextmanager,
+    contextmanager,
+    nullcontext,
 )
-from contextlib import (
-    asynccontextmanager as _actxmgr,
-)
-from contextlib import (
-    contextmanager as _ctxmgr,
-)
-from contextlib import (
-    nullcontext as _nullctx,
-)
-from dataclasses import replace as _dc_repl
-from datetime import date as _date
-from functools import cache as _cache
-from functools import partial as _partial
-from functools import wraps as _wraps
-from importlib import import_module as _import
-from itertools import chain as _chain
-from itertools import repeat as _repeat
-from os.path import splitext as _splitext
-from re import MULTILINE as _MULTILINE
-from re import NOFLAG as _NOFLAG
-from re import compile as _re_comp
-from sys import modules as _mods
-from threading import Lock as _TLock
-from types import CodeType as _Code
-from types import MappingProxyType as _FrozenMap
-from types import ModuleType as _Mod
+from dataclasses import replace
+from datetime import date
+from functools import cache, partial, wraps
+from importlib import import_module
+from itertools import chain, repeat
+from os.path import splitext
+from sys import modules
+from threading import Lock as ThreadLock
+from types import CodeType, MappingProxyType, ModuleType
 from typing import (
-    Any as _Any,
+    Any,
+    AsyncIterator,
+    Callable,
+    ClassVar,
+    Collection,
+    Iterator,
+    Mapping,
+    Self,
+    Sequence,
 )
-from typing import (
-    AsyncIterator as _AItor,
-)
-from typing import (
-    Callable as _Call,
-)
-from typing import (
-    ClassVar as _ClsVar,
-)
-from typing import (
-    Collection as _Collect,
-)
-from typing import (
-    Iterable as _Iter,
-)
-from typing import (
-    Iterator as _Itor,
-)
-from typing import (
-    Mapping as _Map,
-)
-from typing import (
-    Self as _Self,
-)
-from typing import (
-    Sequence as _Seq,
-)
-from unittest import mock as _mock
-from weakref import WeakKeyDictionary as _WkKDict
+from unittest import mock
+from weakref import WeakKeyDictionary
 
-from anyio import Path as _Path
-from asyncstdlib import chain as _achain
-from asyncstdlib import tuple as _atuple
-from more_itertools import unique_everseen as _unq_eseen
+from anyio import Path
+from asyncstdlib import chain as achain
+from asyncstdlib import tuple as atuple
+from more_itertools import unique_everseen
 
-from ..meta import FLASHCARD_EASE_DEFAULT as _FC_EASE_DEF
-from ..meta import NAME as _NAME
-from ..meta import OPEN_TEXT_OPTIONS as _OPEN_TXT_OPTS
+from ..meta import FLASHCARD_EASE_DEFAULT, NAME, OPEN_TEXT_OPTIONS
 from ..util import (
-    abc_subclasshook_check as _abc_sch_chk,
+    abc_subclasshook_check,
+    async_lock,
+    copy_module,
+    deep_foreach_module,
+    ignore_args,
 )
-from ..util import (
-    async_lock as _a_lock,
-)
-from ..util import (
-    copy_module as _cpy_mod,
-)
-from ..util import (
-    deep_foreach_module as _deep_foreach_mod,
-)
-from ..util import (
-    ignore_args as _i_args,
-)
-from ._env import Environment as _Env
-from ._options import GenOpts as _GenOpts
-from ._write import PythonWriter as _PyWriter
-from ._write import Writer as _Writer
-from .util import NULL_LOCATION as _NULL_LOC
-from .util import FileSection as _FSect
-from .virenv.util import StatefulFlashcardGroup as _StFcGrp
+from ._env import Environment
+from ._options import GenOpts
+from ._write import PythonWriter, Writer
+from .util import NULL_LOCATION, FileSection
+from .virenv.util import StatefulFlashcardGroup
 
 __all__ = ("Reader", "CodeLibrary", "MarkdownReader")
 
@@ -117,29 +66,30 @@ _PYTHON_ENV_BUILTINS_EXCLUDE = frozenset[str](
     # constants: https://docs.python.org/library/constants.html
     # functions: https://docs.python.org/library/functions.html
 )
-_PYTHON_ENV_MODULE_LOCKS = _WkKDict[_AEvtLoop, _Call[[], _ALock]]()
-_PYTHON_ENV_MODULE_CACHE = _WkKDict[
-    _AEvtLoop,
-    tuple[_Mod, _Map[str, _Mod]],
-]()
+_PYTHON_ENV_MODULE_LOCKS: WeakKeyDictionary[
+    AbstractEventLoop, Callable[[], AsyncLock]
+] = WeakKeyDictionary()
+_PYTHON_ENV_MODULE_CACHE: WeakKeyDictionary[
+    AbstractEventLoop, tuple[ModuleType, Mapping[str, ModuleType]]
+] = WeakKeyDictionary()
 
 
-class Reader(metaclass=_ABCM):
+class Reader(metaclass=ABCMeta):
     """Abstract reader interface for file-like inputs.
 
     Subclasses should implement `read` and `pipe`. Use `Reader.register2`
     to register file extensions handled by concrete readers.
     """
 
-    __slots__: _ClsVar = ()
-    REGISTRY: _ClsVar = dict[str, type[_Self]]()
-    __CACHE: _ClsVar = dict[_Path, _Self]()
-    __CACHE_LOCKS: _ClsVar = _defdict[_Path, _TLock](_TLock)
+    __slots__: ClassVar = ()
+    REGISTRY: ClassVar = dict[str, type[Self]]()
+    __CACHE: ClassVar = dict[Path, Self]()
+    __CACHE_LOCKS: ClassVar = defaultdict[Path, ThreadLock](ThreadLock)  # type: ignore[assignment]
 
     @classmethod
     def register2(cls, *extensions: str):
-        @_wraps(cls.register)
-        def register(subclass: type[_Self]) -> type[_Self]:
+        @wraps(cls.register)
+        def register(subclass: type[Self]) -> type[Self]:
             ret = cls.register(subclass)
             for ext in extensions:
                 cls.REGISTRY[ext] = subclass
@@ -148,48 +98,48 @@ class Reader(metaclass=_ABCM):
         return register
 
     @classmethod
-    async def new(cls, *, path: _Path, options: _GenOpts):
-        _, ext = _splitext(path)
+    async def new(cls, *, path: Path, options: GenOpts):
+        _, ext = splitext(path)
         ret = cls.REGISTRY[ext](path=path, options=options)
-        async with await path.open(mode="rt", **_OPEN_TXT_OPTS) as io:
+        async with await path.open(mode="rt", **OPEN_TEXT_OPTIONS) as io:
             await ret.read(await io.read())
         return ret
 
     @classmethod
-    async def cached(cls, *, path: _Path, options: _GenOpts):
+    async def cached(cls, *, path: Path, options: GenOpts):
         path = await path.resolve(strict=True)
-        async with _a_lock(cls.__CACHE_LOCKS[path]):
+        async with async_lock(cls.__CACHE_LOCKS[path]):
             try:
                 return cls.__CACHE[path]
             except KeyError:
                 ret = cls.__CACHE[path] = await cls.new(path=path, options=options)
         return ret
 
-    @_amethod
-    def __init__(self, *, path: _Path, options: _GenOpts):
+    @abstractmethod
+    def __init__(self, *, path: Path, options: GenOpts):
         raise NotImplementedError(self)
 
     @property
-    @_amethod
-    def path(self) -> _Path:
+    @abstractmethod
+    def path(self) -> Path:
         raise NotImplementedError(self)
 
     @property
-    @_amethod
-    def options(self) -> _GenOpts:
+    @abstractmethod
+    def options(self) -> GenOpts:
         raise NotImplementedError(self)
 
-    @_amethod
+    @abstractmethod
     async def read(self, text: str, /) -> None:
         raise NotImplementedError(self)
 
-    @_amethod
-    def pipe(self) -> _Collect[_Writer]:
+    @abstractmethod
+    def pipe(self) -> Collection[Writer]:
         raise NotImplementedError(self)
 
     @classmethod
     def __subclasshook__(cls, subclass: type):
-        return _abc_sch_chk(
+        return abc_subclasshook_check(
             Reader,
             cls,
             subclass,
@@ -202,48 +152,47 @@ class Reader(metaclass=_ABCM):
         )
 
 
-class CodeLibrary(metaclass=_ABCM):
+class CodeLibrary(metaclass=ABCMeta):
     """Interface for readers that contain library code.
 
     Implementors expose a `codes` property returning sequences of code
     objects used by `MarkdownReader` when composing generated modules.
     """
 
-    __slots__: _ClsVar = ()
+    __slots__: ClassVar = ()
 
     @property
-    @_amethod
-    def codes(self) -> _Collect[_Seq[_Code]]: ...
+    @abstractmethod
+    def codes(self) -> Collection[Sequence[CodeType]]: ...
 
     @classmethod
     def __subclasshook__(cls, subclass: type):
-        return _abc_sch_chk(CodeLibrary, cls, subclass, names=("codes",))
+        return abc_subclasshook_check(CodeLibrary, cls, subclass, names=("codes",))
 
 
 def _Python_env(
     reader: Reader,
     modifier: (
-        _Call[
-            [_Mod, _Map[str, _Mod]],
-            _ACtxMgr[_Any],
-        ]
+        Callable[[ModuleType, Mapping[str, ModuleType]], AbstractContextManager[Any]]
         | None
     ) = None,
-) -> _Env:
+) -> Environment:
     """Create an execution environment for running extracted Python code.
 
     The environment ensures import isolation and provides helpers such as
     `cwf` (current working file) and `cwf_sect` to locate file sections.
     """
     if modifier is None:
-        modifier = _i_args(_nullctx)
+        modifier = ignore_args(nullcontext)
 
     def cwf_sect(section: str | None):
         return (
-            _NULL_LOC if section is None else _FSect(path=reader.path, section=section)
+            NULL_LOCATION
+            if section is None
+            else FileSection(path=reader.path, section=section)
         )
 
-    def cwf_sects0(sections: _Iter[str | None]):
+    def cwf_sects0(sections: Iterable[str | None]):
         return (cwf_sect(sect) for sect in sections)
 
     def cwf_sects(*sections: str | None):
@@ -252,42 +201,42 @@ def _Python_env(
     vars = {
         "__builtins__": {
             k: v
-            for k, v in _builtins_dict.items()
+            for k, v in builtins.__dict__.items()
             if k not in _PYTHON_ENV_BUILTINS_EXCLUDE
         }
     }
 
-    @_actxmgr
+    @asynccontextmanager
     async def context():
-        loop = _run_loop()
-        async with _PYTHON_ENV_MODULE_LOCKS.setdefault(loop, _cache(_ALock))():
+        loop = get_running_loop()
+        async with _PYTHON_ENV_MODULE_LOCKS.setdefault(loop, cache(AsyncLock))():
             try:
-                module, modules = _PYTHON_ENV_MODULE_CACHE[loop]
+                module, module_map = _PYTHON_ENV_MODULE_CACHE[loop]
             except KeyError:
-                module = _cpy_mod(_import(".virenv", __package__))
-                modules = dict[str, _Mod]()
+                module = copy_module(import_module(".virenv", __package__))
+                module_map = dict[str, ModuleType]()
                 old_name = module.__name__
-                for mod in _deep_foreach_mod(module):
-                    mod.__name__ = new_name = mod.__name__.replace(old_name, _NAME, 1)
+                for mod in deep_foreach_module(module):
+                    mod.__name__ = new_name = mod.__name__.replace(old_name, NAME, 1)
                     new_name_parts = new_name.split(".")
                     new_basename = new_name_parts.pop()
                     try:
-                        delattr(modules[".".join(new_name_parts)], new_basename)
+                        delattr(module_map[".".join(new_name_parts)], new_basename)
                     except KeyError:
                         pass
-                    modules[new_name] = mod
-                modules = _FrozenMap(modules)
+                    module_map[new_name] = mod
+                module_map = MappingProxyType(module_map)
             try:
-                with modifier(module, modules), _mock.patch.dict(_mods, modules):
+                with modifier(module, module_map), mock.patch.dict(modules, module_map):
                     yield
             finally:
                 # Do not rely on package-level re-exports. Check package
                 # configuration dirtiness via its `meta` module instead of
                 # `module.dirty()` so `__init__` can remain non-exporting.
-                if not _import(".virenv.meta", __package__).dirty():
-                    _PYTHON_ENV_MODULE_CACHE[loop] = (module, modules)
+                if not import_module(".virenv.meta", __package__).dirty():
+                    _PYTHON_ENV_MODULE_CACHE[loop] = (module, module_map)
 
-    return _Env(
+    return Environment(
         env={
             "cwf": reader.path,
             "cwd": reader.path.parent,
@@ -311,32 +260,34 @@ class MarkdownReader(Reader):
     `pipe` method which yields configured `Writer` instances.
     """
 
-    __slots__: _ClsVar = ("__codes", "__library_codes", "__options", "__path")
+    __slots__: ClassVar = ("__codes", "__library_codes", "__options", "__path")
 
-    START: _ClsVar = _re_comp(rf"```Python\n# {_NAME} generate (data|module)", _NOFLAG)
-    STOP: _ClsVar = _re_comp(r"```", _NOFLAG)
-    IMPORT: _ClsVar = _re_comp(r"# import (.+)$", _MULTILINE)
+    START: ClassVar = re.compile(
+        rf"```Python\n# {NAME} generate (data|module)", re.NOFLAG
+    )
+    STOP: ClassVar = re.compile(r"```", re.NOFLAG)
+    IMPORT: ClassVar = re.compile(r"# import (.+)$", re.MULTILINE)
 
     @property
-    def path(self) -> _Path:
+    def path(self) -> Path:
         return self.__path
 
     @property
-    def options(self) -> _GenOpts:
+    def options(self) -> GenOpts:
         return self.__options
 
     @property
-    def codes(self) -> list[_Seq[_Code]]:
+    def codes(self) -> list[Sequence[CodeType]]:
         return self.__library_codes
 
-    def __init__(self, *, path: _Path, options: _GenOpts) -> None:
+    def __init__(self, *, path: Path, options: GenOpts) -> None:
         self.__path = path
         self.__options = options
-        self.__library_codes = list[_Seq[_Code]]()
-        self.__codes = dict[_Code, _Seq[_Code]]()
+        self.__library_codes: list[Sequence[CodeType]] = []
+        self.__codes: dict[CodeType, Sequence[CodeType]] = {}
 
     async def read(self, text: str, /) -> None:
-        compiler = _partial(
+        compiler = partial(
             self.options.compiler,
             filename=self.path,
             mode="exec",
@@ -350,8 +301,8 @@ class MarkdownReader(Reader):
             if stop is None:
                 raise ValueError(f"Unenclosure at char {start.start()}")
             code = text[start.end() : stop.start()]
-            ast = _Env.transform_code(
-                _parse(
+            ast = Environment.transform_code(
+                parse(
                     ("\n" * text.count("\n", 0, start.end())) + code,
                     self.path,
                     "exec",
@@ -359,54 +310,54 @@ class MarkdownReader(Reader):
                 )
             )
 
-            async def imports0() -> _AItor[_Itor[_Code]]:
+            async def imports0() -> AsyncIterator[Iterator[CodeType]]:
                 for imp in self.IMPORT.finditer(code):
                     reader = await Reader.cached(
                         path=self.path / imp[1], options=self.options
                     )
                     if not isinstance(reader, CodeLibrary):
                         raise TypeError(reader)
-                    yield _chain.from_iterable(reader.codes)
+                    yield chain.from_iterable(reader.codes)
 
-            imports: _achain[_Code] = _achain.from_iterable(imports0())  # type: ignore[reportUnknownMemberType,reportUnknownVariableType]
+            imports: achain[CodeType] = achain.from_iterable(imports0())  # type: ignore[reportUnknownMemberType,reportUnknownVariableType]
             type_ = start[1]
             if type_ == "data":
-                self.__codes[compiler(ast)] = await _atuple(imports)
+                self.__codes[compiler(ast)] = await atuple(imports)
             elif type_ == "module":
                 self.__library_codes.append(
-                    await _atuple(_achain(imports, (compiler(ast),)))
+                    await atuple(achain(imports, (compiler(ast),)))
                 )
             else:
                 raise ValueError(type_)
             start = self.START.search(text, stop.end())
 
-    def pipe(self) -> tuple[_Writer, ...]:
+    def pipe(self) -> tuple[Writer, ...]:
         assert isinstance(self, Reader)
 
-        @_ctxmgr
-        def modifier(module: _Mod, modules: _Map[str, _Mod]):
-            finals = list[_Call[[], None]]()
+        @contextmanager
+        def modifier(module: ModuleType, module_map: Mapping[str, ModuleType]):
+            finals: list[Callable[[], None]] = []
             try:
                 if self.options.init_flashcards:
-                    cls: type[_StFcGrp] = modules[
+                    cls: type[StatefulFlashcardGroup] = module_map[
                         f"{module.__name__}.util"
                     ].StatefulFlashcardGroup
                     old = cls.__str__
 
-                    @_wraps(old)
-                    def new(self: _StFcGrp) -> str:
+                    @wraps(old)
+                    def new(self: StatefulFlashcardGroup) -> str:
                         diff: int = len(self.flashcard) - len(self.state)
                         if diff > 0:
-                            self = _dc_repl(
+                            self = replace(
                                 self,
                                 state=type(self.state)(
-                                    _chain(
+                                    chain(
                                         self.state,
-                                        _repeat(
+                                        repeat(
                                             type(self.state).element_type(
-                                                date=_date.today(),
+                                                date=date.today(),
                                                 interval=1,
-                                                ease=_FC_EASE_DEF,
+                                                ease=FLASHCARD_EASE_DEFAULT,
                                             ),
                                             diff,
                                         ),
@@ -427,13 +378,13 @@ class MarkdownReader(Reader):
 
         def ret_gen():
             for code, library in self.__codes.items():
-                ret = _PyWriter(
+                ret = PythonWriter(
                     code,
-                    init_codes=_unq_eseen(_chain(library, *self.codes)),
+                    init_codes=unique_everseen(chain(library, *self.codes)),
                     env=_Python_env(self, modifier),
                     options=self.options,
                 )
-                assert isinstance(ret, _Writer)
+                assert isinstance(ret, Writer)
                 yield ret
 
         return tuple(ret_gen())

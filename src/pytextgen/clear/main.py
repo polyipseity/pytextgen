@@ -4,62 +4,37 @@ Provide an async `main` entry point and a `parser` factory wired into the
 top-level CLI.
 """
 
-from argparse import (
-    ONE_OR_MORE as _ONE_OR_MORE,
-)
-from argparse import (
-    ArgumentParser as _ArgParser,
-)
-from argparse import (
-    Namespace as _NS,
-)
-from asyncio import gather as _gather
-from dataclasses import dataclass as _dc
-from enum import IntFlag as _IntFlg
-from enum import auto as _auto
-from enum import unique as _unq
-from functools import partial as _partial
-from functools import reduce as _reduce
-from functools import wraps as _wraps
-from sys import exit as _exit
-from typing import (
-    AbstractSet as _ASet,
-)
-from typing import (
-    Callable as _Call,
-)
-from typing import (
-    Sequence as _Seq,
-)
-from typing import (
-    final as _fin,
-)
+from argparse import ONE_OR_MORE, ArgumentParser, Namespace
+from asyncio import gather
+from dataclasses import dataclass
+from enum import IntFlag, auto, unique
+from functools import partial, reduce, wraps
+from sys import exit
+from typing import AbstractSet, Callable, Sequence, final
 
-from anyio import Path as _Path
+from anyio import Path
 
-from ..io._options import ClearOpts as _ClrOpts
-from ..io._options import ClearType as _ClrT
-from ..io._write import ClearWriter as _ClrWriter
-from ..meta import LOGGER as _LOGGER
-from ..meta import VERSION as _VER
+from ..io._options import ClearOpts, ClearType
+from ..io._write import ClearWriter
+from ..meta import LOGGER, VERSION
 
 __all__ = ("ExitCode", "Arguments", "main", "parser")
 
 
-@_fin
-@_unq
-class ExitCode(_IntFlg):
+@final
+@unique
+class ExitCode(IntFlag):
     """Exit flags used by the `clear` subcommand.
 
     Values are combinable using bitwise-or to signal multiple error
     conditions to the process exit code.
     """
 
-    ERROR = _auto()
+    ERROR = auto()
 
 
-@_fin
-@_dc(
+@final
+@dataclass(
     init=True,
     repr=True,
     eq=True,
@@ -78,8 +53,8 @@ class Arguments:
         types: Set of `ClearType` values indicating what to clear.
     """
 
-    inputs: _Seq[_Path]
-    types: _ASet[_ClrT]
+    inputs: Sequence[Path]
+    types: AbstractSet[ClearType]
 
     def __post_init__(self):
         object.__setattr__(self, "inputs", tuple(self.inputs))
@@ -93,26 +68,26 @@ async def main(args: Arguments):
     disk. Returns by calling `sys.exit` with an `ExitCode` value.
     """
     exit_code = ExitCode(0)
-    options = _ClrOpts(types=args.types)
+    options = ClearOpts(types=args.types)
 
-    async def write(input: _Path):
+    async def write(input: Path):
         try:
-            async with _ClrWriter(input, options=options).write():
+            async with ClearWriter(input, options=options).write():
                 pass
         except Exception:
-            _LOGGER.exception(f"Exception writing file: {input}")
+            LOGGER.exception(f"Exception writing file: {input}")
             return ExitCode.ERROR
         return ExitCode(0)
 
-    exit_code = _reduce(
+    exit_code = reduce(
         lambda left, right: left | right,
-        await _gather(*map(write, args.inputs)),
+        await gather(*map(write, args.inputs)),
         exit_code,
     )
-    _exit(exit_code)
+    exit(exit_code)
 
 
-def parser(parent: _Call[..., _ArgParser] | None = None):
+def parser(parent: Callable[..., ArgumentParser] | None = None):
     """Create an `ArgumentParser` for the `clear` subcommand.
 
     The returned parser is configured to parse `inputs` and the `--type`
@@ -120,7 +95,7 @@ def parser(parent: _Call[..., _ArgParser] | None = None):
     """
     prog = __package__ or __name__
 
-    parser = (_ArgParser if parent is None else parent)(
+    parser = (ArgumentParser if parent is None else parent)(
         prog=f"python -m {prog}",
         description="clear generated text in input",
         add_help=True,
@@ -131,35 +106,35 @@ def parser(parent: _Call[..., _ArgParser] | None = None):
         "-v",
         "--version",
         action="version",
-        version=f"{prog} v{_VER}",
+        version=f"{prog} v{VERSION}",
         help="print version and exit",
     )
     parser.add_argument(
         "-t",
         "--type",
         action="store",
-        nargs=_ONE_OR_MORE,
-        choices=_ClrT.__members__.values(),
-        type=_ClrT,
-        default=frozenset({_ClrT.CONTENT}),
+        nargs=ONE_OR_MORE,
+        choices=ClearType.__members__.values(),
+        type=ClearType,
+        default=frozenset({ClearType.CONTENT}),
         dest="types",
         help="list of type(s) of data to clear",
     )
     parser.add_argument(
         "inputs",
         action="store",
-        nargs=_ONE_OR_MORE,
-        type=_Path,
+        nargs=ONE_OR_MORE,
+        type=Path,
         help="sequence of input(s) to read",
     )
 
-    @_wraps(main)
-    async def invoke(args: _NS):
+    @wraps(main)
+    async def invoke(args: Namespace):
         await main(
             Arguments(
-                inputs=await _gather(
+                inputs=await gather(
                     *map(
-                        _partial(_Path.resolve, strict=True),
+                        partial(Path.resolve, strict=True),
                         args.inputs,
                     )
                 ),

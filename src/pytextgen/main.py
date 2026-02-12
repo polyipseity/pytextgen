@@ -4,34 +4,22 @@ This module wires together sub-commands from the `clear` and `generate`
 subpackages and exposes a `parser` factory function used by `__main__`.
 """
 
-from argparse import ArgumentParser as _ArgParser
-from functools import partial as _partial
-from typing import Callable as _Call
+from argparse import ArgumentParser
+from functools import partial
+from typing import Callable
 
-from .clear.main import (
-    __name__ as _clear_name,
-)
-from .clear.main import (
-    __package__ as _clear_package,
-)
-from .clear.main import (
-    parser as _clear_parser,
-)
-from .generate.main import (
-    __name__ as _generate_name,
-)
-from .generate.main import (
-    __package__ as _generate_package,
-)
-from .generate.main import (
-    parser as _generate_parser,
-)
-from .meta import VERSION as _VER
+from .clear.main import __name__ as clear_name
+from .clear.main import __package__ as clear_package
+from .clear.main import parser as clear_parser
+from .generate.main import __name__ as generate_name
+from .generate.main import __package__ as generate_package
+from .generate.main import parser as generate_parser
+from .meta import VERSION
 
 __all__ = ("parser",)
 
 
-def parser(parent: _Call[..., _ArgParser] | None = None):
+def parser(parent: Callable[..., ArgumentParser] | None = None):
     """Create the top-level `ArgumentParser` for the CLI.
 
     Returns a configured `ArgumentParser` with subparsers for the
@@ -39,7 +27,7 @@ def parser(parent: _Call[..., _ArgParser] | None = None):
     """
     prog = __package__ or __name__
 
-    parser = (_ArgParser if parent is None else parent)(
+    parser = (ArgumentParser if parent is None else parent)(
         prog=f"python -m {prog}",
         description="tools for notes",
         add_help=True,
@@ -50,22 +38,22 @@ def parser(parent: _Call[..., _ArgParser] | None = None):
         "-v",
         "--version",
         action="version",
-        version=f"{prog} v{_VER}",
+        version=f"{prog} v{VERSION}",
         help="print version and exit",
     )
     subparsers = parser.add_subparsers(
         required=True,
     )
-    _clear_parser(
-        _partial(
+    clear_parser(
+        partial(
             subparsers.add_parser,
-            (_clear_package or _clear_name).replace(f"{prog}.", ""),
+            (clear_package or clear_name).replace(f"{prog}.", ""),
         )
     )
-    _generate_parser(
-        _partial(
+    generate_parser(
+        partial(
             subparsers.add_parser,
-            (_generate_package or _generate_name).replace(f"{prog}.", ""),
+            (generate_package or generate_name).replace(f"{prog}.", ""),
         )
     )
     return parser

@@ -1,55 +1,27 @@
 """Helpers for constructing and formatting flashcards used by generators."""
 
-from dataclasses import dataclass as _dc
-from itertools import chain as _chain
-from itertools import cycle as _cycle
-from itertools import repeat as _repeat
+from dataclasses import dataclass
+from itertools import chain, cycle, repeat
 from typing import (
-    Any as _Any,
-)
-from typing import (
-    Callable as _Call,
-)
-from typing import (
-    Iterable as _Iter,
-)
-from typing import (
-    Iterator as _Itor,
-)
-from typing import (
-    final as _fin,
+    Any,
+    Callable,
+    Iterable,
+    Iterator,
+    final,
 )
 
-from ..config import CONFIG as _CFG
+from ..config import CONFIG
 from ..util import (
-    ClozeFlashcardGroup as _CzFcGrp,
-)
-from ..util import (
-    FlashcardGroup as _FcGrp,
-)
-from ..util import (
-    FlashcardStateGroup as _FcStGrp,
-)
-from ..util import (
-    IteratorSequence as _IterSeq,
-)
-from ..util import (
-    StatefulFlashcardGroup as _StFcGrp,
-)
-from ..util import (
-    TwoSidedFlashcard as _2SidedFc,
-)
-from ..util import (
-    constant as _const,
-)
-from ..util import (
-    identity as _id,
-)
-from ..util import (
-    ignore_args as _ig_args,
-)
-from ..util import (
-    split_by_punctuations as _spt_by_puncts,
+    ClozeFlashcardGroup,
+    FlashcardGroup,
+    FlashcardStateGroup,
+    IteratorSequence,
+    StatefulFlashcardGroup,
+    TwoSidedFlashcard,
+    constant,
+    identity,
+    ignore_args,
+    split_by_punctuations,
 )
 
 __all__ = (
@@ -64,18 +36,20 @@ __all__ = (
 )
 
 
-def attach_flashcard_states(flashcards: _Iter[_FcGrp], /, *, states: _Iter[_FcStGrp]):
+def attach_flashcard_states(
+    flashcards: Iterable[FlashcardGroup], /, *, states: Iterable[FlashcardStateGroup]
+):
     """Pair flashcards with provided state entries.
 
     Yields `StatefulFlashcardGroup` instances by zipping flashcards with
     the provided `states` sequence, filling missing states with empty groups.
     """
-    for fc, st in zip(flashcards, _chain(states, _repeat(_FcStGrp()))):
-        yield _StFcGrp(flashcard=fc, state=st)
+    for fc, st in zip(flashcards, chain(states, repeat(FlashcardStateGroup()))):
+        yield StatefulFlashcardGroup(flashcard=fc, state=st)
 
 
 def listify_flashcards(
-    flashcards: _Iter[_StFcGrp],
+    flashcards: Iterable[StatefulFlashcardGroup],
     /,
     *,
     ordered: bool = False,
@@ -104,8 +78,8 @@ def listify_flashcards(
     return "".join(ret_gen())
 
 
-@_fin
-@_dc(
+@final
+@dataclass(
     init=True,
     repr=True,
     eq=True,
@@ -123,19 +97,19 @@ class _HintedStr:
 
 
 def memorize_two_sided0(
-    strs: _Iter[str],
+    strs: Iterable[str],
     /,
     *,
-    offsets: _Call[[int], int | None] = _const(1),
+    offsets: Callable[[int], int | None] = constant(1),
     reversible: bool = True,
-    hinter: _Call[[int, str], tuple[str, str]] = _const(("", "")),
-) -> _Itor[_FcGrp]:
+    hinter: Callable[[int, str], tuple[str, str]] = constant(("", "")),
+) -> Iterator[FlashcardGroup]:
     """Turn a sequence of strings into paired two-sided flashcards.
 
     `offsets` controls how input indices are grouped, and `hinter` may add
     per-item annotations to the left/right parts.
     """
-    strs_seq = _IterSeq(iter(strs))  # Handles infinite sequences
+    strs_seq = IteratorSequence(iter(strs))  # Handles infinite sequences
 
     def offseted():
         index = -1
@@ -152,20 +126,20 @@ def memorize_two_sided0(
 
     iter_ = offseted()
     for left, right in zip(iter_, iter_):
-        ret = _2SidedFc(
+        ret = TwoSidedFlashcard(
             left.str_ + right.left,
             left.right + right.str_,
             reversible=reversible,
         )
-        assert isinstance(ret, _FcGrp)
+        assert isinstance(ret, FlashcardGroup)
         yield ret
 
 
 def memorize_linked_seq0(
-    strs: _Iter[str],
+    strs: Iterable[str],
     /,
-    hinter: _Call[[int, str], tuple[str, str]] = _const(("→", "←")),
-    **kwargs: _Any,
+    hinter: Callable[[int, str], tuple[str, str]] = constant(("→", "←")),
+    **kwargs: Any,
 ):
     """Create linked-sequence two-sided flashcards from `strs`.
 
@@ -173,17 +147,17 @@ def memorize_linked_seq0(
     """
     return memorize_two_sided0(
         strs,
-        offsets=_ig_args(_chain((1,), _cycle((1, 0))).__next__),
+        offsets=ignore_args(chain((1,), cycle((1, 0))).__next__),
         hinter=hinter,
         **kwargs,
     )
 
 
 def memorize_indexed_seq0(
-    strs: _Iter[str],
+    strs: Iterable[str],
     /,
     *,
-    indices: _Call[[int], int | None] = int(1).__add__,
+    indices: Callable[[int], int | None] = int(1).__add__,
     reversible: bool = True,
 ):
     """Create indexed two-sided flashcards from `strs` using `indices`.
@@ -195,25 +169,29 @@ def memorize_indexed_seq0(
         index = indices(idx)
         if index is None:
             continue
-        ret: _2SidedFc = _2SidedFc(str(index), str_, reversible=reversible)
-        assert isinstance(ret, _FcGrp)
+        ret: TwoSidedFlashcard = TwoSidedFlashcard(
+            str(index), str_, reversible=reversible
+        )
+        assert isinstance(ret, FlashcardGroup)
         yield ret
 
 
-def semantics_seq_map0(map: _Iter[tuple[str, str]], /, *, reversible: bool = False):
+def semantics_seq_map0(map: Iterable[tuple[str, str]], /, *, reversible: bool = False):
     """Turn an iterator of ``(text, sem)`` pairs into flashcard groups.
 
     Each pair becomes a two-sided flashcard with `text` as the prompt and
     `sem` as the semantic value.
     """
     for text, sem in map:
-        ret = _2SidedFc(text, sem, reversible=reversible)
-        assert isinstance(ret, _FcGrp)
+        ret = TwoSidedFlashcard(text, sem, reversible=reversible)
+        assert isinstance(ret, FlashcardGroup)
         yield ret
 
 
 def punctuation_hinter(
-    hinted: _Call[[int], bool] = _const(True), *, sanitizer: _Call[[str], str] = _id
+    hinted: Callable[[int], bool] = constant(True),
+    *,
+    sanitizer: Callable[[str], str] = identity,
 ):
     """Return a hinter function that annotates hints using punctuation counts.
 
@@ -223,16 +201,18 @@ def punctuation_hinter(
 
     def ret(index: int, str: str):
         if hinted(index):
-            count: int = sum(1 for _ in _spt_by_puncts(sanitizer(str)))
+            count: int = sum(1 for _ in split_by_punctuations(sanitizer(str)))
             return (f"→{count}", f"{count}←")
         return ("→", "←")
 
     return ret
 
 
-def cloze_texts(texts: _Iter[str], /, *, token: tuple[str, str] = _CFG.cloze_token):
+def cloze_texts(
+    texts: Iterable[str], /, *, token: tuple[str, str] = CONFIG.cloze_token
+):
     """Yield cloze-style flashcard groups for each input text using `token`."""
     for text in texts:
-        ret: _CzFcGrp = _CzFcGrp(text, token=token)
-        assert isinstance(ret, _FcGrp)
+        ret: ClozeFlashcardGroup = ClozeFlashcardGroup(text, token=token)
+        assert isinstance(ret, FlashcardGroup)
         yield ret

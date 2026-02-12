@@ -38,7 +38,7 @@ Checklist before opening a PR ✅
 
 Repo-specific patterns & examples (do not assume standard patterns):
 
-- Top-level imports only: avoid runtime imports inside functions. See `src/pytextgen/util.py` for the prevalent pattern of aliasing imports with a leading underscore (for example: `from typing import Self as _Self`).
+- Top-level imports only: avoid runtime imports inside functions. Prefer importing names directly (for example: `from typing import Self`) and avoid aliasing with a leading underscore. When a name collision would occur, prefer importing the module (for example `import json`) and referencing `json.loads`.
 - Export control: Public modules that export a surface must define an explicit `__all__` tuple (not a list); test modules must set `__all__ = ()`.
 
   Export-control policy (detailed):

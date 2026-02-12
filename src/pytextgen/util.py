@@ -4,124 +4,58 @@ This module provides small composable helpers (sync/async wrappers),
 protocols, and a small compile cache used by the `generate` path.
 """
 
-from abc import ABCMeta as _ABCM
-from ast import (
-    AST as _AST,
-)
-from ast import (
-    Expression as _ASTExpr,
-)
-from ast import (
-    Interactive as _ASTInter,
-)
-from ast import (
-    Module as _ASTMod,
-)
-from ast import (
-    unparse as _unparse,
-)
-from asyncio import gather as _gather
-from asyncio import get_running_loop as _run_loop
-from concurrent.futures import Executor as _Executor
-from concurrent.futures import ThreadPoolExecutor as _TPExecutor
-from contextlib import asynccontextmanager as _actxmgr
-from contextlib import suppress
-from dataclasses import asdict as _asdict
-from dataclasses import dataclass as _dc
-from functools import cache as _cache
-from functools import partial as _partial
-from functools import wraps as _wraps
-from importlib import import_module as _import
+import json
+import marshal
+from abc import ABCMeta
+from ast import AST, Expression, Interactive, Module, unparse
+from asyncio import gather, get_running_loop
+from concurrent.futures import Executor, ThreadPoolExecutor
+from contextlib import asynccontextmanager, suppress
+from dataclasses import asdict, dataclass
+from functools import cache, partial, wraps
+from importlib import import_module
 from importlib.util import MAGIC_NUMBER
-from inspect import isawaitable as _isawait
-from itertools import islice as _islice
-from itertools import starmap as _smap
-from json import JSONDecodeError as _JSONDecErr
-from json import dumps as _dumps
-from json import loads as _loads
-from marshal import dumps as _m_dumps
-from marshal import loads as _m_loads
-from operator import attrgetter as _attrgetter
-from os import PathLike as _PathL
-from os import remove as _rm
-from re import escape as _re_esc
-from sys import maxunicode as _maxunicode
-from sys import modules as _mods
-from threading import Lock as _TLock
-from time import time as _time
-from types import CodeType as _Code
-from types import ModuleType
-from types import ModuleType as _Mod
-from types import TracebackType as _Tb
+from inspect import isawaitable
+from itertools import islice, starmap
+from json import JSONDecodeError
+from operator import attrgetter
+from os import PathLike, remove
+from re import escape
+from sys import maxunicode, modules
+from threading import Lock
+from time import time
+from types import CodeType, ModuleType, TracebackType
 from typing import (
-    TYPE_CHECKING as _TYPE_CHECKING,
+    TYPE_CHECKING,
+    Any,
+    AsyncIterator,
+    Awaitable,
+    Callable,
+    ClassVar,
+    Collection,
+    Generic,
+    Iterable,
+    Iterator,
+    Literal,
+    Protocol,
+    Self,
+    Sequence,
+    TypedDict,
+    TypeVar,
+    cast,
+    final,
+    overload,
 )
-from typing import (
-    Any as _Any,
-)
-from typing import (
-    AsyncIterator as _AItor,
-)
-from typing import (
-    Awaitable as _Await,
-)
-from typing import (
-    Callable as _Call,
-)
-from typing import (
-    ClassVar as _ClsVar,
-)
-from typing import (
-    Collection as _Collect,
-)
-from typing import (
-    Generic as _Genic,
-)
-from typing import (
-    Iterable as _Iter,
-)
-from typing import (
-    Iterator as _Itor,
-)
-from typing import (
-    Literal as _Lit,
-)
-from typing import (
-    Protocol as _Proto,
-)
-from typing import (
-    Self as _Self,
-)
-from typing import (
-    Sequence as _Seq,
-)
-from typing import (
-    TypedDict as _TDict,
-)
-from typing import (
-    TypeVar as _TVar,
-)
-from typing import (
-    cast as _cast,
-)
-from typing import (
-    final as _fin,
-)
-from typing import (
-    overload as _overload,
-)
-from unicodedata import category as _utf_cat
-from unittest import mock as _mock
-from uuid import uuid4 as _uuid4
-from weakref import WeakKeyDictionary as _WkKDict
+from unicodedata import category
+from unittest import mock
+from uuid import uuid4
+from weakref import WeakKeyDictionary
 
+import regex
 from aioshutil import sync_to_async
-from anyio import Path as _Path
-from regex import VERSION0 as _REX_VER0
-from regex import compile as _rex_comp
+from anyio import Path
 
-from .meta import LOGGER as _LOGGER
-from .meta import OPEN_TEXT_OPTIONS as _OPEN_TXT_OPTS
+from .meta import LOGGER, OPEN_TEXT_OPTIONS
 
 __all__ = (
     "wrap_async",
@@ -144,45 +78,47 @@ __all__ = (
     "split_by_punctuations",
 )
 
-if _TYPE_CHECKING:
-    from _typeshed import ReadableBuffer as _ReadBuf
+if TYPE_CHECKING:
+    from _typeshed import ReadableBuffer
 
-_T = _TVar("_T")
-_T_co = _TVar("_T_co", covariant=True)
-_T1_co = _TVar("_T1_co", covariant=True)
-_ExtendsUnit = _TVar("_ExtendsUnit", bound="Unit[_Any]")
+_T = TypeVar("_T")
+_T_co = TypeVar("_T_co", covariant=True)
+_T1_co = TypeVar("_T1_co", covariant=True)
+_ExtendsUnit = TypeVar("_ExtendsUnit", bound="Unit[Any]")
 _PUNCTUATIONS = tuple(
-    char for char in map(chr, range(_maxunicode + 1)) if _utf_cat(char).startswith("P")
+    char for char in map(chr, range(maxunicode + 1)) if category(char).startswith("P")
 )
-_PUNCTUATION_REGEX = _rex_comp(
+_PUNCTUATION_REGEX = regex.compile(
     r"(?<={delims})(?<!^(?:{delims})+)(?!$|{delims})".format(
-        delims=r"|".join(map(_re_esc, _PUNCTUATIONS))
+        delims=r"|".join(map(escape, _PUNCTUATIONS))
     ),
-    _REX_VER0,
+    regex.VERSION0,
 )
-_ASYNC_LOCK_THREAD_POOLS = _WkKDict[_TLock, _Call[[], _Executor]]()
-_rm_a = sync_to_async(_rm)
+_ASYNC_LOCK_THREAD_POOLS: WeakKeyDictionary[Lock, Callable[[], Executor]] = (
+    WeakKeyDictionary()
+)
+rm_a = sync_to_async(remove)
 
 
-@_overload
-async def wrap_async(value: _Await[_T]) -> _T:
+@overload
+async def wrap_async(value: Awaitable[_T]) -> _T:
     """Await and return the underlying value when awaitable (overload)."""
     ...
 
 
-@_overload
-async def wrap_async(value: _Await[_T] | _T) -> _T:
+@overload
+async def wrap_async(value: Awaitable[_T] | _T) -> _T:
     """Await and return the underlying value when awaitable (overload)."""
     ...
 
 
-async def wrap_async(value: _Await[_T] | _T):
+async def wrap_async(value: Awaitable[_T] | _T):
     """Await and return the underlying value when awaitable.
 
     This helper ensures that both plain values and awaitable values may
     be handled transparently in async contexts.
     """
-    if _isawait(value):
+    if isawaitable(value):
         return await value
     return value
 
@@ -192,27 +128,27 @@ def identity(var: _T) -> _T:
     return var
 
 
-def constant(var: _T) -> _Call[..., _T]:
+def constant(var: _T) -> Callable[..., _T]:
     """Return a callable that always returns `var`.
 
     Useful for providing default callbacks or constant factories.
     """
 
-    def func(*_: _Any) -> _T:
+    def func(*_: Any) -> _T:
         return var
 
     return func
 
 
-def ignore_args(func: _Call[[], _T]) -> _Call[..., _T]:
+def ignore_args(func: Callable[[], _T]) -> Callable[..., _T]:
     """Wrap a no-argument callable so it can accept and ignore extra args.
 
     The returned function forwards no positional or keyword arguments to
     the underlying `func` and returns its result.
     """
 
-    @_wraps(func)
-    def func0(*_: _Any) -> _T:
+    @wraps(func)
+    def func0(*_: Any) -> _T:
         return func()
 
     return func0
@@ -226,15 +162,17 @@ def tuple1(var: _T) -> tuple[_T]:
     return (var,)
 
 
-@_actxmgr
-async def async_lock(lock: _TLock) -> _AItor[_TLock]:
+@asynccontextmanager
+async def async_lock(lock: Lock) -> AsyncIterator[Lock]:
     """Async context manager to acquire and release a threading lock.
 
     This runs the blocking `lock.acquire` in a threadpool so it may be
     used from async code.
     """
-    await _run_loop().run_in_executor(
-        _ASYNC_LOCK_THREAD_POOLS.setdefault(lock, _cache(_partial(_TPExecutor, 1)))(),
+    await get_running_loop().run_in_executor(
+        _ASYNC_LOCK_THREAD_POOLS.setdefault(
+            lock, cache(partial(ThreadPoolExecutor, 1))
+        )(),
         lock.acquire,
     )
     try:
@@ -243,14 +181,14 @@ async def async_lock(lock: _TLock) -> _AItor[_TLock]:
         lock.release()
 
 
-def deep_foreach_module(module: _Mod):
+def deep_foreach_module(module: ModuleType):
     """Yield modules from a package and its submodules, recursively.
 
     Prevents revisiting modules by keeping track of seen module names.
     """
     names = set[str]()
 
-    def impl(mod: _Mod) -> _Itor[_Mod]:
+    def impl(mod: ModuleType) -> Iterator[ModuleType]:
         name = mod.__name__
         if name in names:
             return
@@ -258,7 +196,7 @@ def deep_foreach_module(module: _Mod):
         yield mod
         for attr_name in dir(mod):
             attr = getattr(mod, attr_name)
-            if isinstance(attr, _Mod) and attr.__name__.startswith(name):
+            if isinstance(attr, ModuleType) and attr.__name__.startswith(name):
                 yield from impl(attr)
 
     return impl(module)
@@ -271,27 +209,27 @@ def copy_module(module: ModuleType) -> ModuleType:
     re-imports the requested module so consumers have a clean copy.
     """
     names = discover_module_names(module)
-    with _mock.patch.dict(
-        _mods,
-        {key: val for key, val in _mods.items() if key not in names},
+    with mock.patch.dict(
+        modules,
+        {key: val for key, val in modules.items() if key not in names},
         clear=True,
     ):
-        return _import(module.__name__)
+        return import_module(module.__name__)
 
 
-def discover_module_names(module: _Mod) -> _Seq[str]:
+def discover_module_names(module: ModuleType) -> Sequence[str]:
     """Return a sequence of full module names for `module` and submodules."""
-    return tuple(map(_attrgetter("__name__"), deep_foreach_module(module)))
+    return tuple(map(attrgetter("__name__"), deep_foreach_module(module)))
 
 
 def abc_subclasshook_check(
-    impl_cls: _ABCM,
-    cls: _ABCM,
+    impl_cls: ABCMeta,
+    cls: ABCMeta,
     subclass: type,
     /,
     *,
-    names: _Collect[str],
-    typing: _Lit["nominal", "structural"] = "nominal",
+    names: Collection[str],
+    typing: Literal["nominal", "structural"] = "nominal",
 ):
     """Helper used in `__subclasshook__` implementations.
 
@@ -331,15 +269,15 @@ def abc_subclasshook_check(
     return NotImplemented
 
 
-@_fin
-class Unit(_Genic[_T_co]):
+@final
+class Unit(Generic[_T_co]):
     """A tiny container type wrapping a single value.
 
     Provides monadic-style helpers: `counit`, `bind`, `map`, `join` and
     `duplicate` for simple composition in utility code and tests.
     """
 
-    __slots__: _ClsVar = ("__value",)
+    __slots__: ClassVar = ("__value",)
 
     def __init__(self, value: _T_co):
         self.__value: _T_co = value
@@ -348,15 +286,15 @@ class Unit(_Genic[_T_co]):
         """Return the wrapped value."""
         return self.__value
 
-    def bind(self, func: _Call[[_T_co], _ExtendsUnit]):
+    def bind(self, func: Callable[[_T_co], _ExtendsUnit]):
         """Apply `func` to the wrapped value and return its result."""
         return func(self.counit())
 
-    def extend(self, func: _Call[[_Self], _T1_co]) -> "Unit[_T1_co]":
+    def extend(self, func: Callable[[Self], _T1_co]) -> "Unit[_T1_co]":
         """Extend the current `Unit` using `func` producing a new `Unit`."""
         return Unit(func(self))
 
-    def map(self, func: _Call[[_T_co], _T1_co]) -> "Unit[_T1_co]":
+    def map(self, func: Callable[[_T_co], _T1_co]) -> "Unit[_T1_co]":
         """Map `func` over the contained value and wrap the result."""
         return Unit(func(self.counit()))
 
@@ -369,47 +307,47 @@ class Unit(_Genic[_T_co]):
         return Unit(self)
 
 
-class TypedTuple(_Genic[_T], tuple[_T, ...]):
+class TypedTuple(Generic[_T], tuple[_T, ...]):
     """A typed tuple with a fixed element type provided at subclassing.
 
     Subclass by providing `element_type` to ensure the tuple contains only
     elements of that type at construction time.
     """
 
-    __slots__: _ClsVar = ()
+    __slots__: ClassVar = ()
     element_type: type[_T]
 
-    def __init_subclass__(cls, element_type: type[_T], **kwargs: _Any):
+    def __init_subclass__(cls, element_type: type[_T], **kwargs: Any):
         super().__init_subclass__(**kwargs)
         cls.element_type = element_type
 
-    @_overload
-    def __new__(cls, iterable: _Iter[_T], /) -> _Self: ...
+    @overload
+    def __new__(cls, iterable: Iterable[_T], /) -> Self: ...
 
-    @_overload
-    def __new__(cls, *items: _T) -> _Self: ...
+    @overload
+    def __new__(cls, *items: _T) -> Self: ...
 
-    def __new__(cls, *items: _Iter[_T] | _T):
+    def __new__(cls, *items: Iterable[_T] | _T):
         if len(items) == 1 and not isinstance(items[0], cls.element_type):
-            return super().__new__(cls, _cast(_Iter[_T], items[0]))
-        return super().__new__(cls, _cast(_Iter[_T], items))
+            return super().__new__(cls, cast(Iterable[_T], items[0]))
+        return super().__new__(cls, cast(Iterable[_T], items))
 
     def __repr__(self):
         return type(self).__qualname__ + super().__repr__()
 
 
-@_fin
-class IteratorSequence(_Genic[_T_co], _Seq[_T_co]):
+@final
+class IteratorSequence(Generic[_T_co], Sequence[_T_co]):
     """A sequence view over an iterator that supports len() and indexing.
 
     Caches yielded values under a lock so the sequence can be iterated and
     randomly accessed safely from multiple callers.
     """
 
-    __slots__: _ClsVar = ("__cache", "__done", "__iterator", "__lock")
+    __slots__: ClassVar = ("__cache", "__done", "__iterator", "__lock")
 
-    def __init__(self, iterator: _Itor[_T_co]):
-        self.__lock = _TLock()
+    def __init__(self, iterator: Iterator[_T_co]):
+        self.__lock = Lock()
         self.__iterator = iterator
         self.__cache = list[_T_co]()
         self.__done = False
@@ -426,17 +364,17 @@ class IteratorSequence(_Genic[_T_co], _Seq[_T_co]):
         with self.__lock:
             extend = length - len(self.__cache)
             if extend > 0:
-                self.__cache.extend(_islice(self.__iterator, extend))
+                self.__cache.extend(islice(self.__iterator, extend))
         new_len = len(self.__cache)
         if new_len < cur_len + extend:
             self.__done = True
         return new_len
 
-    @_overload
+    @overload
     def __getitem__(self, index: int) -> _T_co: ...
 
-    @_overload
-    def __getitem__(self, index: slice) -> _Self: ...
+    @overload
+    def __getitem__(self, index: slice) -> Self: ...
 
     def __getitem__(self, index: int | slice):
         if isinstance(index, int):
@@ -444,17 +382,17 @@ class IteratorSequence(_Genic[_T_co], _Seq[_T_co]):
             if index >= available:
                 raise IndexError(index)
             return self.__cache[index]
-        return type(self)(_islice(self, index.start, index.stop, index.step))
+        return type(self)(islice(self, index.start, index.stop, index.step))
 
     def __len__(self):
         return self.__cache_to(None)
 
 
-assert issubclass(IteratorSequence, _Seq)
+assert issubclass(IteratorSequence, Sequence)
 
 
-@_fin
-class Compiler(_Proto):
+@final
+class Compiler(Protocol):
     """Protocol for a callable compatible with the built-in `compile`.
 
     Represents an object that accepts source and compilation parameters
@@ -463,20 +401,16 @@ class Compiler(_Proto):
 
     def __call__(
         self,
-        source: """str
-        | _ReadBuf
-        | _ASTMod
-        | _ASTExpr
-        | _ASTInter""",
-        filename: "str | bytes | _PathL[_Any]",
+        source: "str | ReadableBuffer | Module | Expression | Interactive",
+        filename: "str | bytes | PathLike[Any]",
         mode: str,
         flags: int,
         dont_inherit: bool = ...,
         optimize: int = ...,
-    ) -> _Code: ...
+    ) -> CodeType: ...
 
 
-@_fin
+@final
 class CompileCache:
     """A small on-disk/memory cache for compiled Python code objects.
 
@@ -485,13 +419,13 @@ class CompileCache:
     kept in-memory for the context lifetime.
     """
 
-    __slots__: _ClsVar = ("__cache", "__cache_names", "__folder")
-    __METADATA_FILENAME: _ClsVar = "metadata.json"
-    __CACHE_NAME_FORMAT: _ClsVar = "{}.pyc"
-    __TIMEOUT: _ClsVar = 86400
+    __slots__: ClassVar = ("__cache", "__cache_names", "__folder")
+    __METADATA_FILENAME: ClassVar = "metadata.json"
+    __CACHE_NAME_FORMAT: ClassVar = "{}.pyc"
+    __TIMEOUT: ClassVar = 86400
 
-    @_fin
-    class MetadataKey(_TDict):
+    @final
+    class MetadataKey(TypedDict):
         source: str
         filename: str
         magic_number: int
@@ -500,18 +434,18 @@ class CompileCache:
         dont_inherit: bool
         optimize: int
 
-    @_fin
-    class MetadataValue(_TDict):
+    @final
+    class MetadataValue(TypedDict):
         cache_name: str
         access_time: int
 
-    @_fin
-    class MetadataEntry(_TDict):
+    @final
+    class MetadataEntry(TypedDict):
         key: "CompileCache.MetadataKey"
         value: "CompileCache.MetadataValue"
 
-    @_fin
-    @_dc(
+    @final
+    @dataclass(
         init=True,
         repr=True,
         eq=True,
@@ -536,10 +470,10 @@ class CompileCache:
             return cls(**data)
 
         def to_metadata(self):
-            return CompileCache.MetadataKey(**_asdict(self))
+            return CompileCache.MetadataKey(**asdict(self))
 
-    @_fin
-    @_dc(
+    @final
+    @dataclass(
         init=True,
         repr=True,
         eq=True,
@@ -552,20 +486,20 @@ class CompileCache:
     )
     class CacheEntry:
         value: "CompileCache.MetadataValue"
-        code: _Code
+        code: CodeType
 
     @classmethod
     def __time(cls):
-        return int(_time())
+        return int(time())
 
     def __gen_cache_name(self):
-        ret: str = self.__CACHE_NAME_FORMAT.format(str(_uuid4()))
+        ret: str = self.__CACHE_NAME_FORMAT.format(str(uuid4()))
         while ret in self.__cache_names:
-            ret = self.__CACHE_NAME_FORMAT.format(str(_uuid4()))
+            ret = self.__CACHE_NAME_FORMAT.format(str(uuid4()))
         return ret
 
-    def __init__(self, *, folder: _Path | None):
-        self.__folder = folder
+    def __init__(self, *, folder: PathLike[Any] | None):
+        self.__folder = None if folder is None else Path(folder)
         self.__cache = dict[CompileCache.CacheKey, CompileCache.CacheEntry]()
         self.__cache_names = set[str]()
 
@@ -575,19 +509,17 @@ class CompileCache:
             return self
         await folder.mkdir(parents=True, exist_ok=True)
 
-        async def read_metadata() -> _Collect[CompileCache.MetadataEntry]:
+        async def read_metadata() -> Collection[CompileCache.MetadataEntry]:
             metadata_path = folder / self.__METADATA_FILENAME
             if not await metadata_path.exists():
-                await metadata_path.write_text("[]", **_OPEN_TXT_OPTS)
+                await metadata_path.write_text("[]", **OPEN_TEXT_OPTIONS)
             async with await metadata_path.open(
-                mode="rt", **_OPEN_TXT_OPTS
+                mode="rt", **OPEN_TEXT_OPTIONS
             ) as metadata_file:
                 try:
-                    return _loads(await metadata_file.read())
-                except _JSONDecErr:
+                    return json.loads(await metadata_file.read())
+                except JSONDecodeError:
                     return []
-
-        metadata = read_metadata()
 
         async def read_entry(entry: CompileCache.MetadataEntry):
             try:
@@ -595,42 +527,42 @@ class CompileCache:
                 value: CompileCache.MetadataValue = entry["value"]
                 cache_name: str = value["cache_name"]
             except KeyError:
-                _LOGGER.exception(f"Cannot read entry: {entry}")
+                LOGGER.exception(f"Cannot read entry: {entry}")
                 return
             path = folder / cache_name
             try:
                 key2 = CompileCache.CacheKey.from_metadata(key)
             except TypeError:
-                _LOGGER.exception(f"Cannot parse key: {key}")
+                LOGGER.exception(f"Cannot parse key: {key}")
                 with suppress(FileNotFoundError, OSError):
-                    await _rm_a(path)
+                    await rm_a(path)
                 return
             try:
                 file = await path.open(mode="rb")
             except (OSError, ValueError):
-                _LOGGER.exception(f"Cannot open code cache: {path}")
+                LOGGER.exception(f"Cannot open code cache: {path}")
                 with suppress(FileNotFoundError, OSError):
-                    await _rm_a(path)
+                    await rm_a(path)
                 return
             async with file:
                 try:
-                    code: _Code | None = _m_loads(await file.read())
+                    code: CodeType | None = marshal.loads(await file.read())
                     if code is None:
                         raise ValueError
                 except (EOFError, ValueError, TypeError):
-                    _LOGGER.exception(f"Cannot load code cache: {path}")
+                    LOGGER.exception(f"Cannot load code cache: {path}")
                     return
             self.__cache_names.add(cache_name)
             self.__cache[key2] = CompileCache.CacheEntry(value=value, code=code)
 
-        await _gather(*map(read_entry, await metadata))
+        await gather(*map(read_entry, await read_metadata()))
         return self
 
     async def __aexit__(
         self,
         exc_type: type[BaseException] | None,
         exc_value: BaseException | None,
-        traceback: _Tb | None,
+        traceback: TracebackType | None,
     ):
         folder = self.__folder
         if folder is None:
@@ -644,33 +576,33 @@ class CompileCache:
             cache_path = folder / cache.value["cache_name"]
             if cur_time - cache.value["access_time"] >= self.__TIMEOUT:
                 with suppress(FileNotFoundError, OSError):
-                    await _rm_a(cache_path)
+                    await rm_a(cache_path)
                 return
             ret = CompileCache.MetadataEntry(key=key.to_metadata(), value=cache.value)
             if await cache_path.exists():
                 return ret
             async with await cache_path.open(mode="wb") as cache_file:
                 try:
-                    await cache_file.write(_m_dumps(cache.code))
+                    await cache_file.write(marshal.dumps(cache.code))
                 except ValueError:
-                    _LOGGER.exception(f"Cannot save cache with key: {key}")
+                    LOGGER.exception(f"Cannot save cache with key: {key}")
                     await cache_file.aclose()
                     try:
-                        await _rm_a(cache_path)
+                        await rm_a(cache_path)
                     except FileNotFoundError:
                         pass
                     return
             return ret
 
         async with await (folder / self.__METADATA_FILENAME).open(
-            mode="wt", **_OPEN_TXT_OPTS
+            mode="wt", **OPEN_TEXT_OPTIONS
         ) as metadata_file:
             await metadata_file.write(
-                _dumps(
+                json.dumps(
                     tuple(
                         filter(
                             lambda x: x is not None,
-                            await _gather(*_smap(save_cache, self.__cache.items())),
+                            await gather(*starmap(save_cache, self.__cache.items())),
                         )
                     ),
                     ensure_ascii=False,
@@ -681,18 +613,14 @@ class CompileCache:
 
     def compile(
         self,
-        source: """str
-        | _ReadBuf
-        | _ASTMod
-        | _ASTExpr
-        | _ASTInter""",
-        filename: "str | bytes | _PathL[_Any]",
+        source: "str | ReadableBuffer | Module | Expression | Interactive",
+        filename: "str | bytes | PathLike[Any]",
         mode: str,
         flags: int = 0,
         dont_inherit: bool = False,
         optimize: int = -1,
     ):
-        compile0 = _partial(
+        compile0 = partial(
             compile,
             source=source,
             filename=filename,
@@ -705,7 +633,7 @@ class CompileCache:
         if folder is None:
             return compile0()
         key = CompileCache.CacheKey(
-            source=_unparse(source) if isinstance(source, _AST) else repr(source),
+            source=unparse(source) if isinstance(source, AST) else repr(source),
             filename=repr(filename),
             magic_number=int.from_bytes(MAGIC_NUMBER),
             mode=mode,
