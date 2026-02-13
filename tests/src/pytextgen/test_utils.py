@@ -135,7 +135,7 @@ def test_Unit_and_TypedTuple_and_IteratorSequence():
         return Unit(x * 2)
 
     assert u.bind(dbl).counit() == 6
-    assert u.duplicate().counit().counit() == 3
+    assert u.duplicate().join().counit() == 3
 
     class Ints(TypedTuple[int], element_type=int):
         pass

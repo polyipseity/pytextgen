@@ -10,6 +10,7 @@ from ast import AST, Expression, Interactive, Module, unparse
 from asyncio import gather, get_running_loop
 from concurrent.futures import Executor, ThreadPoolExecutor
 from contextlib import asynccontextmanager, suppress
+from dataclasses import dataclass
 from functools import cache, partial, wraps
 from importlib import import_module
 from importlib.util import MAGIC_NUMBER
@@ -131,7 +132,8 @@ def constant(var: _T) -> Callable[..., _T]:
     Useful for providing default callbacks or constant factories.
     """
 
-    def func(*_: Any) -> _T:
+    def func(*args: Any, **kwargs: Any) -> _T:
+        """Ignore all arguments and return the captured `var`."""
         return var
 
     return func
@@ -145,7 +147,8 @@ def ignore_args(func: Callable[[], _T]) -> Callable[..., _T]:
     """
 
     @wraps(func)
-    def func0(*_: Any) -> _T:
+    def func0(*args: Any, **kwargs: Any) -> _T:
+        """Ignore all arguments and return the result of the underlying `func`."""
         return func()
 
     return func0
@@ -267,26 +270,30 @@ def abc_subclasshook_check(
 
 
 @final
+@dataclass(frozen=True, slots=True)
 class Unit(Generic[_T_co]):
-    """A tiny container type wrapping a single value.
+    """A tiny, immutable container wrapping a single value.
 
-    Provides monadic-style helpers: `counit`, `bind`, `map`, `join` and
-    `duplicate` for simple composition in utility code and tests.
+    Reimplemented as a frozen `dataclass` for clarity and correctness while
+    preserving the original public API used by the codebase and tests.
+
+    Methods:
+    - `counit()` — return the wrapped value
+    - `bind(func)` — apply `func` to the wrapped value (expects a `Unit` result)
+    - `map(func)` — map a pure function over the value and wrap the result
+    - `join()` — flatten one level of `Unit`
+    - `duplicate()` — return `Unit(self)` (useful for composition/tests)
     """
 
-    __slots__: ClassVar = ("__value",)
+    value: _T_co
 
-    def __init__(self, value: _T_co):
-        """Store the wrapped value inside the `Unit` container."""
-        self.__value: _T_co = value
-
-    def counit(self):
+    def counit(self) -> _T_co:
         """Return the wrapped value."""
-        return self.__value
+        return self.value
 
-    def bind(self, func: Callable[[_T_co], _ExtendsUnit]):
+    def bind(self, func: Callable[[_T_co], _ExtendsUnit]) -> _ExtendsUnit:
         """Apply `func` to the wrapped value and return its result."""
-        return func(self.counit())
+        return func(self.value)
 
     def extend(self, func: Callable[[Self], _T1_co]) -> "Unit[_T1_co]":
         """Extend the current `Unit` using `func` producing a new `Unit`."""
@@ -294,13 +301,13 @@ class Unit(Generic[_T_co]):
 
     def map(self, func: Callable[[_T_co], _T1_co]) -> "Unit[_T1_co]":
         """Map `func` over the contained value and wrap the result."""
-        return Unit(func(self.counit()))
+        return Unit(func(self.value))
 
-    def join(self: "Unit[_ExtendsUnit]"):
+    def join(self: "Unit[_ExtendsUnit]") -> _ExtendsUnit:
         """Flatten one level of `Unit` by returning the inner value."""
-        return self.counit()
+        return self.value
 
-    def duplicate(self):
+    def duplicate(self) -> 'Unit["Unit[_T_co]"]':
         """Return a new `Unit` that wraps this `Unit`."""
         return Unit(self)
 
