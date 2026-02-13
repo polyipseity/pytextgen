@@ -107,7 +107,7 @@ async def test_modules_and_exported_objects_have_docstrings() -> None:
     for path in await _find_py_files():
         text = await path.read_text(encoding="utf-8")
         try:
-            node = ast.parse(text, filename=str(path))
+            node = ast.parse(text, filename=path)
         except SyntaxError as exc:
             failures.append(f"{path}: SyntaxError: {exc}")
             continue

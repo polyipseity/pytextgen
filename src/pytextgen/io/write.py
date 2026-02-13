@@ -85,15 +85,10 @@ class ClearWriter:
             async def process(io: AnyTextIO) -> None:
                 """Strip flashcard state markers from the section content."""
                 read = await wrap_async(io.read())
-                seek = create_task(wrap_async(io.seek(0)))
-                try:
-                    if (text := FLASHCARD_STATES_REGEX.sub("", read)) != read:
-                        await seek
-                        await wrap_async(io.write(text))
-                        await wrap_async(io.truncate())
-                finally:
-                    seek.cancel()
-
+                await wrap_async(io.seek(0))
+                if (text := self.__FLASHCARD_STATES_REGEX.sub("", read)) != read:
+                    await wrap_async(io.write(text))
+                    await wrap_async(io.truncate())
         else:
 
             async def process(io: AnyTextIO) -> None:

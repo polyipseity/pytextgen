@@ -31,7 +31,7 @@ async def test_pyproject_and_init_version_match():
     py_version = pyproject["project"]["version"]
 
     meta_path = Path("src/pytextgen/meta.py")
-    spec = importlib.util.spec_from_file_location("pytextgen.meta", str(meta_path))
+    spec = importlib.util.spec_from_file_location("pytextgen.meta", meta_path)
     assert spec is not None and spec.loader is not None, (
         f"Could not load module from {meta_path}"
     )

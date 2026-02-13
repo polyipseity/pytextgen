@@ -359,7 +359,7 @@ class MarkdownReader(Reader):
                         raise TypeError(reader)
                     yield chain.from_iterable(reader.codes)
 
-            imports: achain[CodeType] = achain.from_iterable(imports0())  # type: ignore[reportUnknownMemberType, reportUnknownVariableType]
+            imports = achain[CodeType].from_iterable(imports0())
             type_ = start[1]
             if type_ == "data":
                 self.__codes[compiler(ast)] = await atuple(imports)

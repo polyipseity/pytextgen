@@ -97,7 +97,7 @@ async def test_all_tuple_present_and_is_tuple() -> None:
         # ignore compiled or cache files (shouldn't be any), and exclude vendored/third-party code
         text = await path.read_text(encoding="utf-8")
         try:
-            node = ast.parse(text, filename=str(path))
+            node = ast.parse(text, filename=path)
         except SyntaxError as exc:
             failures.append(f"{path}: SyntaxError: {exc}")
             continue
