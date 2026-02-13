@@ -7,7 +7,7 @@ sections (`ClearWriter`) or write generated Python-based output
 
 import re
 from abc import ABCMeta, abstractmethod
-from asyncio import create_task, gather
+from asyncio import gather
 from collections.abc import AsyncIterator, Iterable
 from contextlib import AbstractAsyncContextManager, asynccontextmanager, nullcontext
 from datetime import datetime
@@ -169,43 +169,43 @@ class PythonWriter:
         try:
             yield
         finally:
+            # Group results by their target path and write combined content per
+            # target. Multiple `Result` objects for the same location should
+            # result in a single write containing their concatenation (in the
+            # returned order); empty-result entries are ignored.
+            results = tuple(results)
+            groups: dict[object, list[Result]] = {}
+            for r in results:
+                groups.setdefault(r.location.path, []).append(r)
 
-            async def process(result: Result) -> None:
-                """Write a single `Result` to its location, preserving timestamps.
-
-                This coroutine updates the target section only when the generated
-                text differs from existing content (accounting for the timestamp
-                header when present).
-                """
-                loc = result.location
+            async def process_group(group: list[Result]) -> None:
+                loc = group[0].location
                 path = loc.path
                 async with nullcontext() if path is None else lock_file(path):
                     async with loc.open() as io:
                         read = await wrap_async(io.read())
-                        seek = create_task(wrap_async(io.seek(0)))
-                        try:
-                            timestamp = GENERATE_COMMENT_REGEX.search(read)
-                            if result.text != (
-                                read[: timestamp.start()] + read[timestamp.end() :]
+                        await wrap_async(io.seek(0))
+                        timestamp = GENERATE_COMMENT_REGEX.search(read)
+                        compare = (
+                            read[: timestamp.start()] + read[timestamp.end() :]
+                            if timestamp
+                            else read
+                        )
+                        combined = "".join(r.text for r in group if r.text != "")
+                        if combined and combined != compare:
+                            text = (
+                                GENERATE_COMMENT_FORMAT.format(
+                                    now=datetime.now().astimezone().isoformat()
+                                )
+                                if self.__options.timestamp
+                                else timestamp[0]
                                 if timestamp
-                                else read
-                            ):
-                                text = (
-                                    GENERATE_COMMENT_FORMAT.format(
-                                        now=datetime.now().astimezone().isoformat()
-                                    )
-                                    if self.__options.timestamp
-                                    else timestamp[0]
-                                    if timestamp
-                                    else ""
-                                ) + result.text
-                                await seek
-                                await wrap_async(io.write(text))
-                                await wrap_async(io.truncate())
-                        finally:
-                            seek.cancel()
+                                else ""
+                            ) + combined
+                            await wrap_async(io.write(text))
+                            await wrap_async(io.truncate())
 
-            await gather(*map(process, results))
+            await gather(*map(process_group, groups.values()))
 
 
 assert issubclass(PythonWriter, Writer)
