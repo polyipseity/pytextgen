@@ -6,13 +6,13 @@ used by the top-level CLI.
 
 from argparse import ONE_OR_MORE, ArgumentParser, Namespace
 from asyncio import gather
-from collections.abc import MutableSequence
+from collections.abc import Callable, Iterable, MutableSequence, Sequence
 from dataclasses import dataclass
 from enum import IntFlag, auto, unique
 from functools import partial, reduce, wraps
 from itertools import chain
 from sys import exit
-from typing import Callable, Iterable, Sequence, final
+from typing import final
 
 from anyio import Path
 

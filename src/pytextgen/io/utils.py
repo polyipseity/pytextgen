@@ -8,6 +8,7 @@ import re
 from abc import ABCMeta, abstractmethod
 from asyncio import TaskGroup, create_task
 from collections import defaultdict
+from collections.abc import AsyncIterator, Iterable, Mapping
 from contextlib import AbstractAsyncContextManager, asynccontextmanager
 from dataclasses import dataclass
 from functools import cache
@@ -19,12 +20,9 @@ from threading import Lock
 from types import MappingProxyType, TracebackType
 from typing import (
     Any,
-    AsyncIterator,
     Awaitable,
     Callable,
     ClassVar,
-    Iterable,
-    Mapping,
     Self,
     TextIO,
     TypeGuard,

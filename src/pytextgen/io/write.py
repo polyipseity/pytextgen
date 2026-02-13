@@ -8,10 +8,11 @@ sections (`ClearWriter`) or write generated Python-based output
 import re
 from abc import ABCMeta, abstractmethod
 from asyncio import create_task, gather
+from collections.abc import AsyncIterator, Iterable
 from contextlib import AbstractAsyncContextManager, asynccontextmanager, nullcontext
 from datetime import datetime
 from types import CodeType
-from typing import Any, AsyncIterator, ClassVar, Iterable, cast
+from typing import Any, ClassVar, cast
 
 from anyio import Path
 

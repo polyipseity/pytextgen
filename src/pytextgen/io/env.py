@@ -5,9 +5,10 @@ initialization step to return exported values from executed code.
 """
 
 from ast import AsyncFunctionDef, Module, parse
+from collections.abc import Callable, Mapping
 from contextlib import AbstractAsyncContextManager, nullcontext
 from types import CellType, CodeType, MappingProxyType, SimpleNamespace
-from typing import Any, Callable, ClassVar, Mapping, cast, final
+from typing import Any, ClassVar, cast, final
 
 from ..meta import UUID
 

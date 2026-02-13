@@ -6,12 +6,12 @@ top-level CLI.
 
 from argparse import ONE_OR_MORE, ArgumentParser, Namespace
 from asyncio import gather
-from collections.abc import Set
+from collections.abc import Callable, Sequence, Set
 from dataclasses import dataclass
 from enum import IntFlag, auto, unique
 from functools import partial, reduce, wraps
 from sys import exit
-from typing import Callable, Sequence, final
+from typing import final
 
 from anyio import Path
 

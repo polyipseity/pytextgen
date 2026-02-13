@@ -11,7 +11,14 @@ from ast import parse
 from asyncio import AbstractEventLoop, get_running_loop
 from asyncio import Lock as AsyncLock
 from collections import defaultdict
-from collections.abc import Iterable
+from collections.abc import (
+    AsyncIterator,
+    Collection,
+    Iterable,
+    Iterator,
+    Mapping,
+    Sequence,
+)
 from contextlib import (
     AbstractContextManager,
     asynccontextmanager,
@@ -29,14 +36,9 @@ from threading import Lock as ThreadLock
 from types import CodeType, MappingProxyType, ModuleType
 from typing import (
     Any,
-    AsyncIterator,
     Callable,
     ClassVar,
-    Collection,
-    Iterator,
-    Mapping,
     Self,
-    Sequence,
 )
 from unittest import mock
 from weakref import WeakKeyDictionary

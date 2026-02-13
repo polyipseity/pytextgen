@@ -12,10 +12,11 @@ import json
 import string
 import tempfile
 from abc import ABCMeta
+from collections.abc import Iterator
 from os import PathLike
 from threading import Lock
 from types import ModuleType
-from typing import Any, Iterator, List, Literal, cast
+from typing import Any, Literal, cast
 
 import pytest
 from anyio import Path, TemporaryDirectory
@@ -230,7 +231,7 @@ def test_affix_strip_and_split():
     prefix=st.text(max_size=5),
     suffix=st.text(max_size=5),
 )
-def test_affix_lines_property(lines: List[str], prefix: str, suffix: str):
+def test_affix_lines_property(lines: list[str], prefix: str, suffix: str):
     text = "\n".join(lines)
     out = affix_lines(text, prefix=prefix, suffix=suffix)
     split_lines = text.splitlines()
@@ -264,7 +265,7 @@ def test_split_by_punctuations_returns_nonpunct_parts(s: str):
 @given(
     lst=st.lists(st.integers(min_value=-1000, max_value=1000), min_size=0, max_size=50)
 )
-def test_iteratorsequence_property(lst: List[int]):
+def test_iteratorsequence_property(lst: list[int]):
     seq = IteratorSequence(iter(lst))
     assert list(seq) == lst
     if len(lst) > 0:
@@ -298,7 +299,7 @@ async def test_compilecache_cache_hits_property(n: int):
 )
 @pytest.mark.asyncio
 async def test_PythonWriter_writes_generated_results(
-    values: List[str], timestamp: bool
+    values: list[str], timestamp: bool
 ):
     async with TemporaryDirectory() as td:
         out_path = Path(td) / "out.txt"
@@ -311,7 +312,7 @@ async def test_PythonWriter_writes_generated_results(
 
         env = Environment(globals={"make_result": make_result})
 
-        def _mk_source_returning_results(values: List[str]) -> str:
+        def _mk_source_returning_results(values: list[str]) -> str:
             if len(values) == 1:
                 return f"return make_result({values[0]!r})"
             return "return [" + ",".join(f"make_result({v!r})" for v in values) + "]"

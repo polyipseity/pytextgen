@@ -5,8 +5,8 @@ subpackages and exposes a `parser` factory function used by `__main__`.
 """
 
 from argparse import ArgumentParser
+from collections.abc import Callable
 from functools import partial
-from typing import Callable
 
 from .clear.main import __name__ as clear_name
 from .clear.main import __package__ as clear_package

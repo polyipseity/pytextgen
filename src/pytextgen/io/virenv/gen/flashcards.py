@@ -1,12 +1,11 @@
 """Helpers for constructing and formatting flashcards used by generators."""
 
+from collections.abc import Iterable, Iterator
 from dataclasses import dataclass
 from itertools import chain, cycle, repeat
 from typing import (
     Any,
     Callable,
-    Iterable,
-    Iterator,
     final,
 )
 

@@ -8,6 +8,7 @@ import marshal
 from abc import ABCMeta
 from ast import AST, Expression, Interactive, Module, unparse
 from asyncio import gather, get_running_loop
+from collections.abc import AsyncIterator, Collection, Iterable, Iterator, Sequence
 from concurrent.futures import Executor, ThreadPoolExecutor
 from contextlib import asynccontextmanager, suppress
 from dataclasses import dataclass
@@ -26,18 +27,13 @@ from types import CodeType, ModuleType, TracebackType
 from typing import (
     TYPE_CHECKING,
     Any,
-    AsyncIterator,
     Awaitable,
     Callable,
     ClassVar,
-    Collection,
     Generic,
-    Iterable,
-    Iterator,
     Literal,
     Protocol,
     Self,
-    Sequence,
     TypeVar,
     cast,
     final,
@@ -506,7 +502,7 @@ class CompileCache:
 
         @classmethod
         def from_metadata(cls, data: "CompileCache.MetadataKey"):
-            return cls.model_validate(data)
+            return cls.model_validate(data.model_dump())
 
         def to_metadata(self):
             return CompileCache.MetadataKey(**self.model_dump())

@@ -2,11 +2,12 @@
 
 import datetime
 from abc import ABCMeta, abstractmethod
+from collections.abc import Callable, Iterator, Sequence
 from dataclasses import KW_ONLY, dataclass, field
 from datetime import date
 from re import NOFLAG, Pattern, escape
 from re import compile as re_compile
-from typing import Any, Callable, ClassVar, Iterator, Sequence, final
+from typing import Any, ClassVar, final
 
 from ...meta import FLASHCARD_STATES_FORMAT, FLASHCARD_STATES_REGEX
 from ...utils import (  # explicit imports (avoid star-imports)

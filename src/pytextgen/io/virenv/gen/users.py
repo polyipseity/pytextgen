@@ -5,6 +5,7 @@ representations for quoting, flashcards, tables, and other formatted
 outputs used by the project.
 """
 
+from collections.abc import Iterable, Iterator, Mapping, Sequence
 from dataclasses import dataclass
 from functools import partial
 from html import unescape
@@ -14,11 +15,7 @@ from re import compile as re_compile
 from typing import (
     Any,
     Callable,
-    Iterable,
-    Iterator,
     Literal,
-    Mapping,
-    Sequence,
     TypeVar,
     final,
 )
