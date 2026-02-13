@@ -22,6 +22,7 @@ Important invariants:
 - Follow the `src/` layout so source files are importable only when installed or
   in a test environment.
 - Tests mirror the module layout; one test file per module is preferred.
+- New-folder rule: when creating any new directory that will contain Python code (source or tests), include an `__init__.py` file (it may be empty). This ensures package semantics, reliable imports, and pytest discovery.
 - Use `uv` (astral-sh) for Python dependency management and `uv.lock` for
   reproducible installs.
 

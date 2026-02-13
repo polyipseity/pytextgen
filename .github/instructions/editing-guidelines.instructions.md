@@ -24,6 +24,8 @@ Python style & typing:
 - Add module-level docstrings and type annotations for public APIs.
 - Add `__all__` tuples to modules that export a public surface and keep test modules explicit with `__all__ = ()`.
 
+  - New-folder rule: when creating any new directory that will contain Python code (production or tests), include an `__init__.py` file in that directory (it may be empty). This applies to both `src/` packages and `tests/` packages to ensure imports, test discovery, and tooling behavior are consistent.
+
   Details and best practices:
 
   - Use a tuple literal for `__all__` and place it immediately after imports at the top of the module.
