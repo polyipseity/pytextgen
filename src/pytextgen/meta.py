@@ -63,6 +63,7 @@ assert GENERATE_COMMENT_REGEX.search(
 )
 
 LOGGER = getLogger(NAME)
+# keep exported `OPEN_TEXT_OPTIONS` as a plain dict for `**`-unpacking
 OPEN_TEXT_OPTIONS = _OpenOptions(
     encoding="UTF-8",
     errors="strict",

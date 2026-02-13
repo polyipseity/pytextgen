@@ -4,20 +4,17 @@ This module provides small composable helpers (sync/async wrappers),
 protocols, and a small compile cache used by the `generate` path.
 """
 
-import json
 import marshal
 from abc import ABCMeta
 from ast import AST, Expression, Interactive, Module, unparse
 from asyncio import gather, get_running_loop
 from concurrent.futures import Executor, ThreadPoolExecutor
 from contextlib import asynccontextmanager, suppress
-from dataclasses import asdict, dataclass
 from functools import cache, partial, wraps
 from importlib import import_module
 from importlib.util import MAGIC_NUMBER
 from inspect import isawaitable
-from itertools import islice, starmap
-from json import JSONDecodeError
+from itertools import islice
 from operator import attrgetter
 from os import PathLike, remove
 from re import escape
@@ -40,7 +37,6 @@ from typing import (
     Protocol,
     Self,
     Sequence,
-    TypedDict,
     TypeVar,
     cast,
     final,
@@ -54,6 +50,7 @@ from weakref import WeakKeyDictionary
 import regex
 from aioshutil import sync_to_async
 from anyio import Path
+from pydantic import BaseModel, ConfigDict, TypeAdapter
 
 from .meta import LOGGER, OPEN_TEXT_OPTIONS
 
@@ -447,7 +444,11 @@ class CompileCache:
     __TIMEOUT: ClassVar = 86400
 
     @final
-    class MetadataKey(TypedDict):
+    class MetadataKey(BaseModel):
+        """Model used to validate on-disk metadata `key` values."""
+
+        model_config = ConfigDict(frozen=True)
+
         source: str
         filename: str
         magic_number: int
@@ -457,28 +458,37 @@ class CompileCache:
         optimize: int
 
     @final
-    class MetadataValue(TypedDict):
+    class MetadataValue(BaseModel):
+        """Model for metadata `value` objects stored alongside cache files.
+
+        Frozen to make metadata entries immutable; updates replace the stored
+        model rather than mutating it in-place.
+        """
+
+        model_config = ConfigDict(frozen=True)
+
         cache_name: str
         access_time: int
 
     @final
-    class MetadataEntry(TypedDict):
+    class MetadataEntry(BaseModel):
+        """Model wrapping a metadata entry (key + value)."""
+
+        model_config = ConfigDict(frozen=True)
+
         key: "CompileCache.MetadataKey"
         value: "CompileCache.MetadataValue"
 
     @final
-    @dataclass(
-        init=True,
-        repr=True,
-        eq=True,
-        order=False,
-        unsafe_hash=False,
-        frozen=True,
-        match_args=True,
-        kw_only=True,
-        slots=True,
-    )
-    class CacheKey:
+    class CacheKey(BaseModel):
+        """Pydantic model representing a cache key used for on-disk metadata.
+
+        Frozen so it remains hashable and may be used as dict keys like the
+        original dataclass-based implementation.
+        """
+
+        model_config = ConfigDict(frozen=True)
+
         source: str
         filename: str
         magic_number: int
@@ -489,24 +499,17 @@ class CompileCache:
 
         @classmethod
         def from_metadata(cls, data: "CompileCache.MetadataKey"):
-            return cls(**data)
+            return cls.model_validate(data)
 
         def to_metadata(self):
-            return CompileCache.MetadataKey(**asdict(self))
+            return CompileCache.MetadataKey(**self.model_dump())
 
     @final
-    @dataclass(
-        init=True,
-        repr=True,
-        eq=True,
-        order=False,
-        unsafe_hash=False,
-        frozen=True,
-        match_args=True,
-        kw_only=True,
-        slots=True,
-    )
-    class CacheEntry:
+    class CacheEntry(BaseModel):
+        """Pydantic model holding cached code and its metadata value."""
+
+        model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
+
         value: "CompileCache.MetadataValue"
         code: CodeType
 
@@ -535,53 +538,49 @@ class CompileCache:
             return self
         await folder.mkdir(parents=True, exist_ok=True)
 
-        async def read_metadata() -> Collection[CompileCache.MetadataEntry]:
-            metadata_path = folder / self.__METADATA_FILENAME
-            if not await metadata_path.exists():
-                await metadata_path.write_text("[]", **OPEN_TEXT_OPTIONS)
-            async with await metadata_path.open(
-                mode="rt", **OPEN_TEXT_OPTIONS
-            ) as metadata_file:
-                try:
-                    return json.loads(await metadata_file.read())
-                except JSONDecodeError:
-                    return []
+        metadata_path = folder / self.__METADATA_FILENAME
+        if not await metadata_path.exists():
+            await metadata_path.write_text("[]", **OPEN_TEXT_OPTIONS)
 
-        async def read_entry(entry: CompileCache.MetadataEntry):
-            try:
-                key: CompileCache.MetadataKey = entry["key"]
-                value: CompileCache.MetadataValue = entry["value"]
-                cache_name: str = value["cache_name"]
-            except KeyError:
-                LOGGER.exception(f"Cannot read entry: {entry}")
-                return
+        # Read + validate metadata JSON directly into Pydantic models
+        async with await metadata_path.open(
+            mode="rt", **OPEN_TEXT_OPTIONS
+        ) as metadata_file:
+            text = await metadata_file.read()
+        try:
+            entries = TypeAdapter(list[CompileCache.MetadataEntry]).validate_json(text)
+        except Exception:
+            LOGGER.exception(f"Cannot parse metadata file: {metadata_path}")
+            entries = []
+
+        async def _process_entry(entry: CompileCache.MetadataEntry):
+            """Load a single metadata entry into the in-memory cache.
+
+            Runs inside asyncio.gather to parallelise disk I/O.
+            """
+            key_model = entry.key
+            value_model = entry.value
+            cache_name = value_model.cache_name
             path = folder / cache_name
+
             try:
-                key2 = CompileCache.CacheKey.from_metadata(key)
-            except TypeError:
-                LOGGER.exception(f"Cannot parse key: {key}")
-                with suppress(FileNotFoundError, OSError):
-                    await rm_a(path)
-                return
-            try:
-                file = await path.open(mode="rb")
-            except (OSError, ValueError):
-                LOGGER.exception(f"Cannot open code cache: {path}")
-                with suppress(FileNotFoundError, OSError):
-                    await rm_a(path)
-                return
-            async with file:
-                try:
+                async with await path.open(mode="rb") as file:
                     code: CodeType | None = marshal.loads(await file.read())
                     if code is None:
                         raise ValueError
-                except (EOFError, ValueError, TypeError):
-                    LOGGER.exception(f"Cannot load code cache: {path}")
-                    return
-            self.__cache_names.add(cache_name)
-            self.__cache[key2] = CompileCache.CacheEntry(value=value, code=code)
+            except (OSError, ValueError, EOFError, TypeError) as exc:
+                LOGGER.exception(f"Cannot load code cache: {path} ({exc})")
+                with suppress(FileNotFoundError, OSError):
+                    await rm_a(path)
+                return
 
-        await gather(*map(read_entry, await read_metadata()))
+            self.__cache_names.add(cache_name)
+            self.__cache[self.CacheKey.from_metadata(key_model)] = (
+                CompileCache.CacheEntry(value=value_model, code=code)
+            )
+
+        # process entries concurrently to improve start-up latency
+        await gather(*(_process_entry(e) for e in entries))
         return self
 
     async def __aexit__(
@@ -596,47 +595,45 @@ class CompileCache:
             return
         cur_time = self.__time()
 
-        async def save_cache(
-            key: CompileCache.CacheKey,
-            cache: CompileCache.CacheEntry,
-        ):
-            cache_path = folder / cache.value["cache_name"]
-            if cur_time - cache.value["access_time"] >= self.__TIMEOUT:
+        async def _save_one(key: CompileCache.CacheKey, cache: CompileCache.CacheEntry):
+            cache_path = folder / cache.value.cache_name
+            # drop expired cache files
+            if cur_time - cache.value.access_time >= self.__TIMEOUT:
                 with suppress(FileNotFoundError, OSError):
                     await rm_a(cache_path)
-                return
-            ret = CompileCache.MetadataEntry(key=key.to_metadata(), value=cache.value)
-            if await cache_path.exists():
-                return ret
-            async with await cache_path.open(mode="wb") as cache_file:
+                return None
+
+            # return the Pydantic model (do not individually serialise here)
+            entry_model = CompileCache.MetadataEntry(
+                key=key.to_metadata(), value=cache.value
+            )
+
+            # ensure the on-disk cache exists; write only when missing
+            if not await cache_path.exists():
                 try:
-                    await cache_file.write(marshal.dumps(cache.code))
-                except ValueError:
-                    LOGGER.exception(f"Cannot save cache with key: {key}")
-                    await cache_file.aclose()
-                    try:
+                    async with await cache_path.open(mode="wb") as cache_file:
+                        await cache_file.write(marshal.dumps(cache.code))
+                except (OSError, ValueError) as exc:
+                    LOGGER.exception(f"Cannot save cache with key: {key} ({exc})")
+                    with suppress(FileNotFoundError, OSError):
                         await rm_a(cache_path)
-                    except FileNotFoundError:
-                        pass
-                    return
-            return ret
+                    return None
+
+            return entry_model
+
+        # write metadata entries concurrently and collect the `MetadataEntry` models
+        results = await gather(*(_save_one(k, v) for k, v in self.__cache.items()))
+        entries_models = tuple(filter(None, results))
+
+        # use Pydantic to emit the final JSON for the whole list of models
+        entries_json = TypeAdapter(tuple[CompileCache.MetadataEntry, ...]).dump_json(
+            entries_models, indent=2
+        )
 
         async with await (folder / self.__METADATA_FILENAME).open(
-            mode="wt", **OPEN_TEXT_OPTIONS
+            mode="wb"
         ) as metadata_file:
-            await metadata_file.write(
-                json.dumps(
-                    tuple(
-                        filter(
-                            lambda x: x is not None,
-                            await gather(*starmap(save_cache, self.__cache.items())),
-                        )
-                    ),
-                    ensure_ascii=False,
-                    sort_keys=True,
-                    indent=2,
-                )
-            )
+            await metadata_file.write(entries_json)
 
     def compile(
         self,
@@ -675,7 +672,14 @@ class CompileCache:
         )
         try:
             entry = self.__cache[key]
-            entry.value["access_time"] = self.__time()
+            # MetadataValue is frozen — replace the CacheEntry with an updated
+            # MetadataValue instance that has a fresh access_time.
+            new_value = CompileCache.MetadataValue(
+                cache_name=entry.value.cache_name,
+                access_time=self.__time(),
+            )
+            entry = CompileCache.CacheEntry(value=new_value, code=entry.code)
+            self.__cache[key] = entry
         except KeyError:
             cache_name = self.__gen_cache_name()
             self.__cache_names.add(cache_name)

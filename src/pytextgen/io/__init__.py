@@ -6,7 +6,7 @@ subcommands, along with helpers to operate on file sections.
 
 # Public surface for the `io` package is intentionally minimal.
 # Prefer importing directly from the defining modules, for example:
-#   from pytextgen.io._read import Reader
-#   from pytextgen.io._options import GenOpts
+#   from pytextgen.io.read import Reader
+#   from pytextgen.io.options import GenOpts
 
 __all__ = ()

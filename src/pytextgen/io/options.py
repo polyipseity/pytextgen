@@ -4,9 +4,10 @@ Defines `ClearType`, `ClearOpts`, and `GenOpts` dataclasses used to
 control behaviour of the `clear` and `generate` pipelines.
 """
 
+from collections.abc import Set
 from dataclasses import dataclass
 from enum import StrEnum, unique
-from typing import AbstractSet, final
+from typing import final
 
 from ..utils import Compiler
 
@@ -45,7 +46,7 @@ class ClearOpts:
         types: a set of `ClearType` values selecting what to clear.
     """
 
-    types: AbstractSet[ClearType]
+    types: Set[ClearType]
 
     def __post_init__(self):
         """Normalize `types` to a frozenset after dataclass initialization."""

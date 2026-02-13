@@ -11,6 +11,8 @@ import tomllib
 import pytest
 from anyio import Path
 
+from pytextgen.meta import OPEN_TEXT_OPTIONS
+
 __all__ = ()
 
 
@@ -41,3 +43,8 @@ async def test_pyproject_and_init_version_match():
     assert py_version == meta_version, (
         f"Version mismatch: pyproject.toml has {py_version!r} but src/pytextgen/meta.py has {meta_version!r}"
     )
+
+
+def test_open_text_options_shape():
+    assert isinstance(OPEN_TEXT_OPTIONS, dict)
+    assert OPEN_TEXT_OPTIONS["encoding"] == "UTF-8"

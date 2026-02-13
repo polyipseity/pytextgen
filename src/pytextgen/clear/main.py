@@ -6,11 +6,12 @@ top-level CLI.
 
 from argparse import ONE_OR_MORE, ArgumentParser, Namespace
 from asyncio import gather
+from collections.abc import Set
 from dataclasses import dataclass
 from enum import IntFlag, auto, unique
 from functools import partial, reduce, wraps
 from sys import exit
-from typing import AbstractSet, Callable, Sequence, final
+from typing import Callable, Sequence, final
 
 from anyio import Path
 
@@ -54,7 +55,7 @@ class Arguments:
     """
 
     inputs: Sequence[Path]
-    types: AbstractSet[ClearType]
+    types: Set[ClearType]
 
     def __post_init__(self):
         """Normalize container attributes after dataclass initialization.
