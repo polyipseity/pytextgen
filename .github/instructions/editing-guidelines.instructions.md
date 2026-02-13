@@ -20,7 +20,7 @@ Markdown:
 
 Python style & typing:
 
-- Prefer PEP 585/PEP 604 styles in annotations (e.g., `list[int]`, `str | None`). Do not use `from __future__ import annotations`; prefer explicit forward references or runtime-compatible annotations when needed.
+- Prefer PEP 585/PEP 604 styles in annotations (e.g., `list[int]`, `str | None`). For abstract collection and iterable protocols (for example `Iterable`, `Iterator`, `Sequence`, `Mapping`, `Collection`, `AsyncIterator`) import from `collections.abc` rather than `typing` (example: `from collections.abc import Iterable, Mapping`). Do not use `from __future__ import annotations`; prefer explicit forward references or runtime-compatible annotations when needed.
 - Add module-level docstrings and type annotations for public APIs.
 - Add `__all__` tuples to modules that export a public surface and keep test modules explicit with `__all__ = ()`.
 
