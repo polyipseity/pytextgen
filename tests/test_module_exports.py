@@ -109,3 +109,56 @@ async def test_all_tuple_present_and_is_tuple() -> None:
     if failures:
         joined = "\n".join(failures)
         raise AssertionError(f"__all__ compliance failures:\n{joined}")
+
+
+@pytest.mark.asyncio
+async def test___all___follows_top_level_imports() -> None:
+    """Ensure `__all__` assignment appears after top-level imports.
+
+    For each module, locate the last top-level `import`/`from ... import`
+    statement and ensure the earliest `__all__` assignment comes after it.
+    This prevents reordering issues where `__all__` is defined before
+    imports (which can hide symbols or cause import-time surprises).
+    """
+
+    failures: list[str] = []
+
+    for path in await _find_py_files():
+        text = await path.read_text(encoding="utf-8")
+        try:
+            node = ast.parse(text, filename=path)
+        except SyntaxError as exc:
+            failures.append(f"{path}: SyntaxError: {exc}")
+            continue
+
+        # find line number of the last top-level import (0 if none)
+        last_import_lineno = 0
+        for stmt in node.body:
+            if isinstance(stmt, (ast.Import, ast.ImportFrom)):
+                last_import_lineno = max(last_import_lineno, getattr(stmt, "lineno", 0))
+
+        # find all __all__ assignment linenos (if any)
+        all_linenos: list[int] = []
+        for stmt in node.body:
+            if isinstance(stmt, ast.Assign):
+                for target in stmt.targets:
+                    if isinstance(target, ast.Name) and target.id == "__all__":
+                        all_linenos.append(getattr(stmt, "lineno", 0))
+            elif isinstance(stmt, ast.AnnAssign):
+                target = stmt.target
+                if isinstance(target, ast.Name) and target.id == "__all__":
+                    all_linenos.append(getattr(stmt, "lineno", 0))
+
+        if not all_linenos:
+            # missing __all__ is already reported by the other test
+            continue
+
+        first_all_lineno = min(all_linenos)
+        if first_all_lineno <= last_import_lineno:
+            failures.append(
+                f"{path}: __all__ defined at line {first_all_lineno} "
+                f"but top-level import at line {last_import_lineno}"
+            )
+
+    if failures:
+        raise AssertionError("__all__ ordering failures:\n" + "\n".join(failures))

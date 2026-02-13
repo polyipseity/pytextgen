@@ -11,6 +11,7 @@ that:
 """
 
 import ast
+from collections.abc import Iterator
 
 import pytest
 from anyio import Path
@@ -136,3 +137,93 @@ async def test_modules_and_exported_objects_have_docstrings() -> None:
 
     if failures:
         raise AssertionError("Docstring compliance failures:\n" + "\n".join(failures))
+
+
+@pytest.mark.asyncio
+async def test_all_top_level_definitions_have_docstrings() -> None:
+    """Assert every top-level function/class has a docstring.
+
+    This enforces that all top-level `def`/`class` objects in modules
+    under `src/` and `tests/` include non-empty docstrings — private
+    and public symbols alike.
+    """
+
+    failures: list[str] = []
+
+    for path in await _find_py_files():
+        text = await path.read_text(encoding="utf-8")
+        try:
+            node = ast.parse(text, filename=path)
+        except SyntaxError as exc:
+            failures.append(f"{path}: SyntaxError: {exc}")
+            continue
+
+        for stmt in node.body:
+            if isinstance(stmt, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+                name = getattr(stmt, "name", "<unknown>")
+                doc = ast.get_docstring(stmt)
+                if not (isinstance(doc, str) and doc.strip()):
+                    failures.append(
+                        f"{path}: top-level {name!r} is missing a docstring"
+                    )
+
+    if failures:
+        raise AssertionError("Top-level docstring failures:\n" + "\n".join(failures))
+
+
+def _iter_function_and_class_nodes(
+    node: ast.AST,
+) -> Iterator[ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef]:
+    """Yield every FunctionDef/AsyncFunctionDef/ClassDef node at any depth.
+
+    This walks the AST recursively to find nested functions, methods, and
+    nested classes so tests can assert docstrings for non-top-level defs.
+    """
+
+    for child in ast.iter_child_nodes(node):
+        if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            yield child
+            # recurse into the child to find nested defs inside it
+            yield from _iter_function_and_class_nodes(child)
+        else:
+            yield from _iter_function_and_class_nodes(child)
+
+
+@pytest.mark.asyncio
+async def test_all_defs_at_any_depth_have_docstrings() -> None:
+    """Assert every function/class (at any nesting level) has a docstring.
+
+    This enforces docstrings for class methods, nested (inner) functions,
+    and nested classes across `src/` and `tests/`. It applies to private and
+    dunder names as well (per current request).
+    """
+
+    failures: list[str] = []
+
+    for path in await _find_py_files():
+        text = await path.read_text(encoding="utf-8")
+        try:
+            node = ast.parse(text, filename=path)
+        except SyntaxError as exc:
+            failures.append(f"{path}: SyntaxError: {exc}")
+            continue
+
+        for def_node in _iter_function_and_class_nodes(node):
+            if isinstance(def_node, ast.ClassDef):
+                name = def_node.name
+                doc = ast.get_docstring(def_node)
+                if not (isinstance(doc, str) and doc.strip()):
+                    failures.append(f"{path}: class {name!r} is missing a docstring")
+            else:
+                # FunctionDef or AsyncFunctionDef (methods and nested functions)
+                name = getattr(def_node, "name", "<unknown>")
+                doc = ast.get_docstring(def_node)
+                if not (isinstance(doc, str) and doc.strip()):
+                    failures.append(
+                        f"{path}: function {name!r} (nested/method) is missing a docstring"
+                    )
+
+    if failures:
+        raise AssertionError(
+            "Nested-definition docstring failures:\n" + "\n".join(failures)
+        )
