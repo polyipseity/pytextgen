@@ -17,8 +17,8 @@ from importlib import import_module
 from importlib.util import MAGIC_NUMBER
 from inspect import isawaitable
 from itertools import islice
-from operator import attrgetter
 from os import PathLike, remove
+from pkgutil import walk_packages
 from re import escape
 from sys import maxunicode, modules
 from threading import Lock
@@ -58,9 +58,7 @@ __all__ = (
     "ignore_args",
     "tuple1",
     "async_lock",
-    "deep_foreach_module",
-    "copy_module",
-    "discover_module_names",
+    "deep_copy_package",
     "abc_subclasshook_check",
     "Unit",
     "TypedTuple",
@@ -177,45 +175,45 @@ async def async_lock(lock: Lock) -> AsyncIterator[Lock]:
         lock.release()
 
 
-def deep_foreach_module(module: ModuleType):
-    """Yield modules from a package and its submodules, recursively.
+def deep_copy_package(module: ModuleType | str) -> Iterator[tuple[str, ModuleType]]:
+    """Yield (fullname, fresh-module) for a module or package and its submodules.
 
-    Prevents revisiting modules by keeping track of seen module names.
+    Accepts either a `ModuleType` *or* a module-name `str`. If a string is
+    supplied the module is imported first. For packages the function
+    discovers on-disk submodules via `pkgutil.walk_packages` and returns
+    fresh `(fullname, ModuleType)` tuples for the package and each
+    discovered submodule. For plain modules a single `(name, module)`
+    tuple is returned.
+
+    The real ``sys.modules`` is not modified outside this function's
+    temporary import context (uses ``unittest.mock.patch.dict``).
     """
-    names = set[str]()
+    # allow callers to pass a module *or* a module name
+    if isinstance(module, str):
+        module = import_module(module)
 
-    def impl(mod: ModuleType) -> Iterator[ModuleType]:
-        name = mod.__name__
-        if name in names:
-            return
-        names.add(name)
-        yield mod
-        for attr_name in dir(mod):
-            attr = getattr(mod, attr_name)
-            if isinstance(attr, ModuleType) and attr.__name__.startswith(name):
-                yield from impl(attr)
+    spec = getattr(module, "__spec__", None)
+    root_name = module.__name__
 
-    return impl(module)
+    # collect module names to refresh; single-module for plain modules
+    names = {root_name}
+    if spec is not None and spec.submodule_search_locations is not None:
+        names.update(
+            modname
+            for _, modname, _ in walk_packages(
+                path=spec.submodule_search_locations, prefix=f"{root_name}."
+            )
+        )
 
-
-def copy_module(module: ModuleType) -> ModuleType:
-    """Create a fresh import of `module` with unrelated module cache.
-
-    This temporarily clears unrelated modules from `sys.modules` and
-    re-imports the requested module so consumers have a clean copy.
-    """
-    names = discover_module_names(module)
+    # Temporarily clear unrelated entries so imports are fresh
     with mock.patch.dict(
-        modules,
-        {key: val for key, val in modules.items() if key not in names},
-        clear=True,
+        modules, {k: v for k, v in modules.items() if k not in names}, clear=True
     ):
-        return import_module(module.__name__)
-
-
-def discover_module_names(module: ModuleType) -> Sequence[str]:
-    """Return a sequence of full module names for `module` and submodules."""
-    return tuple(map(attrgetter("__name__"), deep_foreach_module(module)))
+        # import and yield the root first
+        yield (root_name, import_module(root_name))
+        # import remaining discovered names directly (return name + module)
+        for modname in sorted(names - {root_name}):
+            yield (modname, import_module(modname))
 
 
 def abc_subclasshook_check(

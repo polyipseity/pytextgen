@@ -52,8 +52,7 @@ from ..meta import FLASHCARD_EASE_DEFAULT, NAME, OPEN_TEXT_OPTIONS
 from ..utils import (
     abc_subclasshook_check,
     async_lock,
-    copy_module,
-    deep_foreach_module,
+    deep_copy_package,
     ignore_args,
 )
 from .env import Environment
@@ -244,30 +243,34 @@ def _Python_env(
         loop = get_running_loop()
         async with _PYTHON_ENV_MODULE_LOCKS.setdefault(loop, cache(AsyncLock))():
             try:
-                module, module_map = _PYTHON_ENV_MODULE_CACHE[loop]
+                root_mod, module_map = _PYTHON_ENV_MODULE_CACHE[loop]
             except KeyError:
-                module = copy_module(import_module(".virenv", __package__))
+                # obtain fresh copies of the package and its submodules
+                fresh = list(deep_copy_package(import_module(".virenv", __package__)))
+                # `fresh` is a list of (fullname, module) tuples — root first
+                root_fullname, root_mod = fresh[0]
                 module_map = dict[str, ModuleType]()
-                old_name = module.__name__
-                for mod in deep_foreach_module(module):
-                    mod.__name__ = new_name = mod.__name__.replace(old_name, NAME, 1)
-                    new_name_parts = new_name.split(".")
-                    new_basename = new_name_parts.pop()
-                    try:
-                        delattr(module_map[".".join(new_name_parts)], new_basename)
-                    except KeyError:
-                        pass
+                old_root = root_fullname
+
+                for fullname, mod in fresh:
+                    # rename module to the environment-specific prefix
+                    new_name = fullname.replace(old_root, NAME, 1)
+                    mod.__name__ = new_name
                     module_map[new_name] = mod
+
                 module_map = MappingProxyType(module_map)
             try:
-                with modifier(module, module_map), mock.patch.dict(modules, module_map):
+                with (
+                    modifier(root_mod, module_map),
+                    mock.patch.dict(modules, module_map),
+                ):
                     yield
             finally:
                 # Do not rely on package-level re-exports. Check package
                 # configuration dirtiness via its `meta` module instead of
                 # `module.dirty()` so `__init__` can remain non-exporting.
                 if not import_module(".virenv.meta", __package__).dirty():
-                    _PYTHON_ENV_MODULE_CACHE[loop] = (module, module_map)
+                    _PYTHON_ENV_MODULE_CACHE[loop] = (root_mod, module_map)
 
     return Environment(
         env={

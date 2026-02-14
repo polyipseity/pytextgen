@@ -10,6 +10,7 @@ from __future__ import annotations
 import ast
 import json
 import string
+import sys
 import tempfile
 from abc import ABCMeta
 from collections.abc import Iterator
@@ -37,8 +38,7 @@ from pytextgen.utils import (
     affix_lines,
     async_lock,
     constant,
-    deep_foreach_module,
-    discover_module_names,
+    deep_copy_package,
     identity,
     ignore_args,
     split_by_punctuations,
@@ -161,13 +161,52 @@ def test_IteratorSequence_slices():
     assert list(s2) == [1, 2, 3]
 
 
-def test_deep_foreach_and_discover_names():
+def test_deep_copy_package_basic_and_string_accepts():
+    # plain module -> single (name, module) tuple returned
+    mod = __import__("pytextgen.utils", fromlist=["*"])
+    results = list(deep_copy_package(mod))
+    assert len(results) == 1
+    name, new_mod = results[0]
+    assert name == mod.__name__
+    assert isinstance(new_mod, ModuleType)
+    # fresh import should produce a different object than the cached module
+    assert sys.modules.get(name) is not new_mod
+
+    # accept module-name string as input
+    results2 = list(deep_copy_package(mod.__name__))
+    assert results2[0][0] == name
+
+
+def test_deep_copy_package_discovers_virenv_submodules():
     mod = __import__("pytextgen.io.virenv", fromlist=["*"])
-    names = discover_module_names(mod)
-    assert any(n.startswith("pytextgen.io.virenv") for n in names)
-    gen = deep_foreach_module(mod)
-    for m in gen:
-        assert isinstance(m, ModuleType)
+
+    # discover on-disk submodules directly (do not use removed helper)
+    spec = getattr(mod, "__spec__", None)
+    assert spec is not None and spec.submodule_search_locations is not None
+    expected = {mod.__name__}
+    for _finder, nm, _ispkg in __import__("pkgutil").walk_packages(
+        path=spec.submodule_search_locations, prefix=mod.__name__ + "."
+    ):
+        expected.add(nm)
+
+    pairs = list(deep_copy_package(mod))
+    returned_names = {n for n, _ in pairs}
+
+    # ensure all discovered on-disk names are present in the fresh import
+    assert expected <= returned_names
+
+    # root package should be yielded first and tuples are (name, ModuleType)
+    assert pairs[0][0] == mod.__name__
+    for name, ret_mod in pairs:
+        assert isinstance(name, str)
+        assert isinstance(ret_mod, ModuleType)
+        assert ret_mod.__name__ == name
+        # must be fresh (different object than sys.modules entry)
+        assert sys.modules.get(name) is not ret_mod
+
+    # string input yields the same set of names
+    pairs_from_str = list(deep_copy_package(mod.__name__))
+    assert {n for n, _ in pairs_from_str} == returned_names
 
 
 def test_abc_subclasshook_check_structural_and_errors():
