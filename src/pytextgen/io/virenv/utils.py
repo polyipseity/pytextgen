@@ -23,28 +23,43 @@ from ...utils import (
     strip_lines,
     wrap_async,
 )
-from ..utils import Location, Result
+from ..utils import (
+    NULL_LOCATION,
+    AnyTextIO,
+    FileSection,
+    Location,
+    NullLocation,
+    PathLocation,
+    Result,
+    lock_file,
+)
 from .configs import CONFIG, FlashcardSeparatorType
 
 __all__ = (
-    "export_seq",
-    "FlashcardGroup",
-    "TwoSidedFlashcard",
+    "AnyTextIO",
     "ClozeFlashcardGroup",
+    "FileSection",
+    "FlashcardGroup",
     "FlashcardState",
     "FlashcardStateGroup",
-    "StatefulFlashcardGroup",
     "IteratorSequence",
     "Location",
+    "NULL_LOCATION",
+    "NullLocation",
+    "PathLocation",
+    "Result",
+    "StatefulFlashcardGroup",
+    "TwoSidedFlashcard",
     "Unit",
     "affix_lines",
-    "strip_lines",
-    "wrap_async",
     "constant",
+    "export_seq",
     "identity",
     "ignore_args",
-    "Result",
+    "lock_file",
     "split_by_punctuations",
+    "strip_lines",
+    "wrap_async",
 )
 
 

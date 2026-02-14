@@ -1,6 +1,7 @@
 """Compatibility re-exports for the `io.utils` helpers used by the virenv package."""
 
 from ..utils import (
+    NULL_LOCATION,
     ClozeFlashcardGroup,
     FlashcardGroup,
     FlashcardState,
@@ -31,6 +32,8 @@ __all__ = (
     "StatefulFlashcardGroup",
     "IteratorSequence",
     "Location",
+    "NULL_LOCATION",
+    "Result",
     "Unit",
     "affix_lines",
     "strip_lines",
@@ -38,6 +41,5 @@ __all__ = (
     "constant",
     "identity",
     "ignore_args",
-    "Result",
     "split_by_punctuations",
 )
