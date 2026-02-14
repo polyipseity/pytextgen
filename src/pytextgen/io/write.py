@@ -8,7 +8,7 @@ sections (`ClearWriter`) or write generated Python-based output
 import re
 from abc import ABCMeta, abstractmethod
 from asyncio import gather
-from collections.abc import AsyncIterator, Iterable
+from collections.abc import AsyncIterator, Iterable, MutableSequence, Sequence
 from contextlib import AbstractAsyncContextManager, asynccontextmanager, nullcontext
 from datetime import datetime
 from types import CodeType
@@ -24,7 +24,7 @@ from ..meta import (
 from ..utils import abc_subclasshook_check
 from .env import Environment
 from .options import ClearOpts, ClearType, GenOpts
-from .utils import AnyTextIO, FileSection, Result, lock_file, wrap_async
+from .utils import AnyTextIO, FileSection, Location, Result, lock_file, wrap_async
 
 __all__ = ("Writer", "ClearWriter", "PythonWriter")
 
@@ -174,11 +174,11 @@ class PythonWriter:
             # result in a single write containing their concatenation (in the
             # returned order); empty-result entries are ignored.
             results = tuple(results)
-            groups: dict[object, list[Result]] = {}
+            groups: dict[Location, MutableSequence[Result]] = {}
             for r in results:
-                groups.setdefault(r.location.path, []).append(r)
+                groups.setdefault(r.location, []).append(r)
 
-            async def process_group(group: list[Result]) -> None:
+            async def process_group(group: Sequence[Result]) -> None:
                 loc = group[0].location
                 path = loc.path
                 async with nullcontext() if path is None else lock_file(path):
