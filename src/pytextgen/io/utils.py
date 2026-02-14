@@ -320,8 +320,13 @@ class _FileSectionCache(dict[Path, Awaitable[_FileSectionCacheData]]):
                         sections=sections,
                     )
             finally:
-                super().__setitem__(key, wrap_async(cache_))  # Replenish awaitable
-        return cache_
+                cache_ = create_task(
+                    wrap_async(cache_)
+                )  # Use `create_task` to avoid `RuntimeError` on already-awaited awaitables.`
+                super().__setitem__(key, cache_)  # Replenish awaitable
+        return (
+            await cache_
+        )  # Intentionally `await to avoid `RuntimeWarning` on never-awaited awaitables.
 
     def __setitem__(self, key: Path, value: Awaitable[_FileSectionCacheData]):
         """Prevent external assignment — cache entries must be managed internally."""
