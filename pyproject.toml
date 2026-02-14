@@ -62,7 +62,7 @@ dev = [
   "pytest-cov>=7.0.0",
   "pytest-xdist>=3.8.0",
   "ruff>=0.15.0",
-  "rumdl>=0.1.15",
+  "rumdl>=0.1.20",
 ]
 
 [tool.pyright]
@@ -102,8 +102,7 @@ extend-select = ["I", "PLC0415"]
 # rumdl (Markdown linter/formatter) configuration - prefer storing in pyproject
 # so tools discover it when running from subdirectories.
 [tool.rumdl]
-include = ["**/*.md", "**/*.mdoc", "**/*.mdown", "**/*.mdx", "**/*.mkd", "**/*.mkdn", "**/*.markdown", "**/*.rmd"]
-respect-gitignore = true
+extends = ".rumdl.toml" # redirect to .rumdl.toml in the same directory
 
 [tool.uv]
 required-version = ">=0.10.0,<0.11.0"

@@ -3,8 +3,6 @@ name: AI Agent Runbook
 description: Practical, repo-specific guidance for automated contributors and AI agents.
 ---
 
-<!-- markdownlint-disable-file MD013 MD036 -->
-
 # AI Agent Runbook
 
 This page contains concise, actionable steps and repository-specific rules for AI agents (or other automation) before making changes, opening PRs, or touching non-trivial code.

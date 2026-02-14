@@ -1,5 +1,3 @@
-<!-- markdownlint-disable-file MD013 MD036 -->
-
 # pytextgen
 
 Generate text using code.

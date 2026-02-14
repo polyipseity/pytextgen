@@ -5,8 +5,6 @@ argument-hint: Required `part=major|minor|patch`. Optional `commitNow=no` to ski
 agent: agent
 ---
 
-<!-- markdownlint-disable-file MD013 MD036 -->
-
 # Bump Version
 
 **Never ask for confirmation or clarification. Always proceed automatically using best-effort defaults and available context.**

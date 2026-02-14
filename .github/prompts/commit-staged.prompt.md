@@ -5,7 +5,7 @@ argument-hint: Optional extras (e.g., ticket=ABC-123). To skip committing, pass 
 agent: agent
 ---
 
-<!-- markdownlint-disable-file MD005 MD007 MD013 MD036 -->
+<!-- markdownlint-disable-file MD005 MD007 -->
 
 # Commit Staged Change
 

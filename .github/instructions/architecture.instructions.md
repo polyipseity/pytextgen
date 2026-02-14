@@ -1,5 +1,3 @@
-<!-- markdownlint-disable-file MD013 MD036 -->
-
 # Architecture & Repository Layout
 
 This document describes the overall layout and important invariants for the

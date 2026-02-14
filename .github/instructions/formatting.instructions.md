@@ -3,8 +3,6 @@ name: Formatting & Linters
 description: How to run and configure formatters and linters for consistent code style.
 ---
 
-<!-- markdownlint-disable-file MD013 MD036 -->
-
 # Formatting & Linters
 
 This repository uses a small, consistent set of tooling for formatting and linting. The goal is to be fast, deterministic, and easy to run locally and in CI.

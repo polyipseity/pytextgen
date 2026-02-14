@@ -1,5 +1,3 @@
-<!-- markdownlint-disable-file MD013 MD036 -->
-
 # Dependencies & Environment
 
 This document explains how dependencies are managed and how to create a

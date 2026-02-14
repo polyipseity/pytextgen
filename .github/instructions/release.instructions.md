@@ -3,8 +3,6 @@ name: Releases
 description: Release checklist and best practices for publishing new versions.
 ---
 
-<!-- markdownlint-disable-file MD013 MD036 -->
-
 # Releases
 
 This document describes a minimal, reproducible release process for `pytextgen`.

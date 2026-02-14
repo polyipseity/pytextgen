@@ -1,0 +1,5 @@
+[global]
+include = ["**/*.md", "**/*.mdoc", "**/*.mdown", "**/*.mdx", "**/*.mkd", "**/*.mkdn", "**/*.markdown", "**/*.rmd"]
+respect-gitignore = true
+
+disable = ["MD013", "MD033"]
