@@ -44,7 +44,7 @@ CONST = 42
         """
 ```Python
 # pytextgen generate data
-# import ../lib.md
+# import lib.md
 
 def make():
     return CONST
@@ -138,7 +138,7 @@ async def test_MarkdownReader_import_non_codelib_raises(tmp_path: PathLike[str])
         """
 ```Python
 # pytextgen generate data
-# import ../other.txt
+# import other.txt
 x = 1
 ```
 """,

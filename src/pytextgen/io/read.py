@@ -331,7 +331,7 @@ class MarkdownReader(Reader):
         rf"```Python\n# {NAME} generate (data|module)", re.NOFLAG
     )
     STOP: ClassVar = re.compile(r"```", re.NOFLAG)
-    IMPORT: ClassVar = re.compile(r"# import (.+)$", re.MULTILINE)
+    IMPORT: ClassVar = re.compile(r"# *import +(.*?)$", re.MULTILINE)
 
     @property
     def path(self) -> Path:
@@ -393,7 +393,7 @@ class MarkdownReader(Reader):
                 """
                 for imp in self.IMPORT.finditer(code):
                     reader = await Reader.cached(
-                        path=self.path / imp[1], options=self.options
+                        path=self.path.parent / imp[1], options=self.options
                     )
                     if not isinstance(reader, CodeLibrary):
                         raise TypeError(reader)
