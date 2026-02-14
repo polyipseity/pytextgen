@@ -97,6 +97,12 @@ class Reader(metaclass=ABCMeta):
 
         @wraps(cls.register)
         def register(subclass: type[Self]) -> type[Self]:
+            """Register `subclass` for the additional extensions and return it.
+
+            Delegates to :meth:`Reader.register` to perform the canonical
+            registration then records the subclass in ``REGISTRY`` for each
+            extension supplied to ``register2``.
+            """
             ret = cls.register(subclass)
             for ext in extensions:
                 cls.REGISTRY[ext] = subclass
@@ -218,6 +224,12 @@ def _Python_env(
         modifier = ignore_args(nullcontext)
 
     def cwf_sect(section: str | None):
+        """Return a `FileSection` for `section`, or ``NULL_LOCATION`` if None.
+
+        Used by generated environments as the `cwf_sect` helper to map a
+        section name to a concrete ``FileSection`` value or the sentinel
+        ``NULL_LOCATION`` when no section is requested.
+        """
         return (
             NULL_LOCATION
             if section is None
@@ -225,9 +237,19 @@ def _Python_env(
         )
 
     def cwf_sects0(sections: Iterable[str | None]):
+        """Generator yielding `FileSection` objects for an iterable of names.
+
+        Produces the same values as ``map(cwf_sect, sections)`` but keeps a
+        clear name used by the public environment helpers.
+        """
         return (cwf_sect(sect) for sect in sections)
 
     def cwf_sects(*sections: str | None):
+        """Return a tuple of `FileSection` objects for the supplied sections.
+
+        Convenience wrapper around :func:`cwf_sects0` accepting positional
+        arguments instead of an iterable.
+        """
         return tuple(cwf_sects0(sections))
 
     vars = {
@@ -240,6 +262,13 @@ def _Python_env(
 
     @asynccontextmanager
     async def context():
+        """Async context manager that prepares an isolated execution environment.
+
+        Acquires a per-event-loop lock, prepares a fresh copy of the
+        ``pytextgen.io.virenv`` package (and its submodules) and installed a
+        temporary ``modules`` mapping so generated code runs in isolation.
+        The prepared root module is cached per event-loop for reuse.
+        """
         loop = get_running_loop()
         async with _PYTHON_ENV_MODULE_LOCKS.setdefault(loop, cache(AsyncLock))():
             try:
@@ -356,6 +385,12 @@ class MarkdownReader(Reader):
             )
 
             async def imports0() -> AsyncIterator[Iterator[CodeType]]:
+                """Yield compiled code objects from ``# import`` directives found in block.
+
+                Resolves the referenced reader via :meth:`Reader.cached` and yields
+                the code sequences exposed by that reader (which must implement
+                :class:`CodeLibrary`).
+                """
                 for imp in self.IMPORT.finditer(code):
                     reader = await Reader.cached(
                         path=self.path / imp[1], options=self.options
@@ -386,6 +421,13 @@ class MarkdownReader(Reader):
 
         @contextmanager
         def modifier(module: ModuleType, module_map: Mapping[str, ModuleType]):
+            """Temporary module modifier applied while executing generated code.
+
+            When ``init_flashcards`` is enabled this patches the
+            ``StatefulFlashcardGroup.__str__`` implementation to account for
+            missing state entries; any patches are restored when the context
+            exits.
+            """
             finals: list[Callable[[], None]] = []
             try:
                 if self.options.init_flashcards:
@@ -396,6 +438,12 @@ class MarkdownReader(Reader):
 
                     @wraps(old)
                     def new(self: StatefulFlashcardGroup) -> str:
+                        """Return an augmented string representation that synthesizes state.
+
+                        If the flashcard list is longer than the recorded state sequence
+                        synthetic placeholder entries are appended so string output
+                        remains well-formed for consumers.
+                        """
                         diff: int = len(self.flashcard) - len(self.state)
                         if diff > 0:
                             self = replace(
@@ -417,6 +465,7 @@ class MarkdownReader(Reader):
                         return old(self)
 
                     def final():
+                        """Restore the original ``__str__`` implementation on exit."""
                         cls.__str__ = old
 
                     finals.append(final)
@@ -427,6 +476,12 @@ class MarkdownReader(Reader):
                     final()
 
         def ret_gen():
+            """Yield configured `PythonWriter` instances for the reader's data blocks.
+
+            Each yielded writer is initialised with the combined ``init_codes``, an
+            isolated execution ``Environment`` and the reader's generation
+            ``options``.
+            """
             for code, library in self.__codes.items():
                 ret = PythonWriter(
                     code,

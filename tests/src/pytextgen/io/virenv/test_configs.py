@@ -6,6 +6,7 @@ __all__ = ()
 
 
 def test_flashcard_separator_type_parse():
+    """FlashcardSeparatorType.parse accepts short codes and returns flags."""
     t = FlashcardSeparatorType.parse("rm")
     assert t.reversible is True
     assert t.multiline is True
@@ -16,6 +17,7 @@ def test_flashcard_separator_type_parse():
 
 
 def test_config_has_expected_separators():
+    """CONFIG exposes reasonable flashcard separator configurations."""
     keys = tuple(CONFIG.flashcard_separators.keys())
     assert any(k.reversible or k.multiline for k in keys)
     assert CONFIG.cloze_token[0].startswith("{")

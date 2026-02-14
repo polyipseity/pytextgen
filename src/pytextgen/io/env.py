@@ -82,6 +82,7 @@ class Environment:
         """
 
         def filter(map_: Mapping[str, Any]):
+            """Return a mapping with dunder names removed for concise printing."""
             return {
                 key: val
                 for key, val in map_.items()

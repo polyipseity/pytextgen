@@ -59,6 +59,11 @@ def listify_flashcards(
     """
 
     def ret_gen():
+        """Generator which emits the textual pieces used to build the Markdown list.
+
+        Yields fragments that are later joined to produce either an ordered or
+        unordered Markdown list depending on the ``ordered`` flag.
+        """
         newline = ""
         if ordered:
             for index, flashcard in enumerate(flashcards):
@@ -113,6 +118,11 @@ def memorize_two_sided0(
     strs_seq = IteratorSequence(iter(strs))  # Handles infinite sequences
 
     def offseted():
+        """Yield _HintedStr items by advancing through ``strs_seq`` using ``offsets``.
+
+        Advances the sequence by calling ``offsets(index)`` and stops when the
+        callable returns ``None`` or the underlying sequence is exhausted.
+        """
         index = -1
         while True:
             offset = offsets(index)
@@ -201,6 +211,12 @@ def punctuation_hinter(
     """
 
     def ret(index: int, str: str):
+        """Return left/right hint tokens for ``str`` based on punctuation count.
+
+        Uses ``sanitizer`` and ``split_by_punctuations`` to derive an integer
+        hint which is embedded into the left/right tokens. When the item is
+        not hinted the default arrows are returned.
+        """
         if hinted(index):
             count: int = sum(1 for _ in split_by_punctuations(sanitizer(str)))
             return (f"→{count}", f"{count}←")

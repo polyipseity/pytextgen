@@ -46,5 +46,6 @@ async def test_pyproject_and_init_version_match():
 
 
 def test_open_text_options_shape():
+    """OPEN_TEXT_OPTIONS exposes a mapping suitable for file open calls."""
     assert isinstance(OPEN_TEXT_OPTIONS, dict)
     assert OPEN_TEXT_OPTIONS["encoding"] == "UTF-8"

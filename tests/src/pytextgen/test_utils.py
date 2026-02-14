@@ -54,6 +54,7 @@ __all__ = ()
 
 @pytest.mark.asyncio
 async def test_CompileCache_metadata_roundtrip(tmp_path: PathLike[str]):
+    """Compiled cache persists metadata and can be read back."""
     folder = Path(tmp_path) / "cache"
     async with CompileCache(folder=folder) as cache:
         code = cache.compile("a=1\n", filename="test", mode="exec")
@@ -73,6 +74,7 @@ async def test_CompileCache_metadata_roundtrip(tmp_path: PathLike[str]):
 
 @pytest.mark.asyncio
 async def test_CompileCache_inmemory_and_disk(tmp_path: PathLike[str]):
+    """CompileCache operates in-memory and when backed by a folder."""
     # in-memory cache (folder=None)
     async with CompileCache(folder=None) as cache:
         code = cache.compile("a=1", filename="test", mode="exec")
@@ -94,6 +96,7 @@ async def test_CompileCache_inmemory_and_disk(tmp_path: PathLike[str]):
 
 @pytest.mark.asyncio
 async def test_CompileCache_handles_ast_and_expression(tmp_path: PathLike[str]):
+    """CompileCache accepts AST and expression inputs for compilation."""
     folder = Path(tmp_path) / "cc2"
     async with CompileCache(folder=folder) as cache:
         # compile from source string
@@ -110,6 +113,7 @@ async def test_CompileCache_handles_ast_and_expression(tmp_path: PathLike[str]):
 
 
 def test_identity_constant_ignore_tuple1():
+    """Small helper functions behave as identity/constant/ignore_args/tuple1."""
     assert identity(7) == 7
     f = constant(10)
     assert f() == 10 and f(1, 2) == 10
@@ -121,6 +125,7 @@ def test_identity_constant_ignore_tuple1():
 
 @pytest.mark.asyncio
 async def test_async_lock_releases():
+    """async_lock acquires and releases a threading Lock in async contexts."""
     lock = Lock()
     async with async_lock(lock):
         assert lock.locked()
@@ -128,17 +133,21 @@ async def test_async_lock_releases():
 
 
 def test_Unit_and_TypedTuple_and_IteratorSequence():
+    """Unit, TypedTuple and IteratorSequence utility behaviours are correct."""
     u = Unit(3)
     assert u.counit() == 3
     assert u.map(lambda x: x + 1).counit() == 4
 
     def dbl(x: int) -> Unit[int]:
+        """Small helper used with ``Unit.bind`` in unit tests (double the value)."""
         return Unit(x * 2)
 
     assert u.bind(dbl).counit() == 6
     assert u.duplicate().join().counit() == 3
 
     class Ints(TypedTuple[int], element_type=int):
+        """TypedTuple specialization used in tests to exercise TypedTuple behaviour."""
+
         pass
 
     t = Ints([1, 2, 3])
@@ -156,12 +165,14 @@ def test_Unit_and_TypedTuple_and_IteratorSequence():
 
 
 def test_IteratorSequence_slices():
+    """IteratorSequence supports slicing and indexing as a sequence view."""
     seq = IteratorSequence(iter(range(5)))
     s2 = seq[slice(1, 4)]
     assert list(s2) == [1, 2, 3]
 
 
 def test_deep_copy_package_basic_and_string_accepts():
+    """deep_copy_package returns fresh module objects for modules/packages."""
     # plain module -> single (name, module) tuple returned
     mod = __import__("pytextgen.utils", fromlist=["*"])
     results = list(deep_copy_package(mod))
@@ -178,6 +189,7 @@ def test_deep_copy_package_basic_and_string_accepts():
 
 
 def test_deep_copy_package_discovers_virenv_submodules():
+    """deep_copy_package discovers submodules for package imports."""
     mod = __import__("pytextgen.io.virenv", fromlist=["*"])
 
     # discover on-disk submodules directly (do not use removed helper)
@@ -210,6 +222,7 @@ def test_deep_copy_package_discovers_virenv_submodules():
 
 
 def test_abc_subclasshook_check_structural_and_errors():
+    """abc_subclasshook_check raises and returns expected sentinel values."""
     with pytest.raises(ValueError):
         abc_subclasshook_check(
             cast(ABCMeta, object.__class__),
@@ -231,15 +244,21 @@ def test_abc_subclasshook_check_structural_and_errors():
 
 
 def test_abc_subclasshook_check_structural_for_Reader():
+    """Structural `__subclasshook__` checks for `Reader` behave as expected."""
+
     class S:
+        """Structural test helper exposing ``options``/``path``/``read``/``pipe``."""
+
         options = None
 
         path = None
 
         async def read(self, text: str):
+            """Async placeholder used to satisfy structural checks."""
             pass
 
         def pipe(self):
+            """Return an empty sequence for the structural Reader check."""
             return ()
 
     assert (
@@ -255,6 +274,7 @@ def test_abc_subclasshook_check_structural_for_Reader():
 
 
 def test_affix_strip_and_split():
+    """affix_lines, strip_lines and split_by_punctuations provide expected outputs."""
     txt = "one\ntwo"
     assert affix_lines(txt, prefix="<", suffix=">") == "<one>\n<two>"
     assert strip_lines(" a \n b \n") == "a\nb"
@@ -271,6 +291,7 @@ def test_affix_strip_and_split():
     suffix=st.text(max_size=5),
 )
 def test_affix_lines_property(lines: list[str], prefix: str, suffix: str):
+    """Property-based test: `affix_lines` round-trips correctly for many inputs."""
     text = "\n".join(lines)
     out = affix_lines(text, prefix=prefix, suffix=suffix)
     split_lines = text.splitlines()
@@ -280,6 +301,7 @@ def test_affix_lines_property(lines: list[str], prefix: str, suffix: str):
 
 @given(text=st.text())
 def test_strip_lines_property_matches_line_strip(text: str):
+    """strip_lines behaves like invoking str.strip on each line."""
     joined = strip_lines(text)
     expected = "\n".join(line.strip(None) for line in text.splitlines())
     assert joined == expected
@@ -293,6 +315,7 @@ def test_strip_lines_property_matches_line_strip(text: str):
     )
 )
 def test_split_by_punctuations_returns_nonpunct_parts(s: str):
+    """split_by_punctuations divides input into parts with punctuation boundaries."""
     parts = list(split_by_punctuations(s))
     orig_no_punct = "".join(c for c in s if c not in string.punctuation)
     parts_no_punct = "".join(
@@ -305,6 +328,7 @@ def test_split_by_punctuations_returns_nonpunct_parts(s: str):
     lst=st.lists(st.integers(min_value=-1000, max_value=1000), min_size=0, max_size=50)
 )
 def test_iteratorsequence_property(lst: list[int]):
+    """IteratorSequence yields values consistent with the original iterator."""
     seq = IteratorSequence(iter(lst))
     assert list(seq) == lst
     if len(lst) > 0:
@@ -315,6 +339,7 @@ def test_iteratorsequence_property(lst: list[int]):
 @pytest.mark.asyncio
 @given(n=st.integers(min_value=-1000, max_value=1000))
 async def test_compilecache_cache_hits_property(n: int):
+    """CompileCache returns same code object for repeated compilation with same key."""
     folder = None
     async with CompileCache(folder=folder) as cache:
         src = f"x={n}"
@@ -340,11 +365,13 @@ async def test_compilecache_cache_hits_property(n: int):
 async def test_PythonWriter_writes_generated_results(
     values: list[str], timestamp: bool
 ):
+    """PythonWriter writes Results returned from executed code, optionally with a timestamp."""
     async with TemporaryDirectory() as td:
         out_path = Path(td) / "out.txt"
         await out_path.write_text("", encoding="utf-8")
 
         def make_result(text: str):
+            """Factory used in the test to build ``Result`` objects for the writer."""
             return Result(
                 location=cast(Location, PathLocation(path=out_path)), text=text
             )
@@ -352,6 +379,7 @@ async def test_PythonWriter_writes_generated_results(
         env = Environment(globals={"make_result": make_result})
 
         def _mk_source_returning_results(values: list[str]) -> str:
+            """Return source text that, when executed, returns the requested Results."""
             if len(values) == 1:
                 return f"return make_result({values[0]!r})"
             return "return [" + ",".join(f"make_result({v!r})" for v in values) + "]"
@@ -376,6 +404,7 @@ async def test_PythonWriter_writes_generated_results(
         txt = await out_path.read_text(encoding="utf-8")
 
         def norm(s: str) -> str:
+            """Normalise line endings to LF for comparison in assertions."""
             return s.replace("\r\n", "\n").replace("\r", "\n")
 
         for v in values:

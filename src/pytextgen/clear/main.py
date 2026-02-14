@@ -77,6 +77,11 @@ async def main(args: Arguments):
     options = ClearOpts(types=args.types)
 
     async def write(input: Path):
+        """Write a single input using `ClearWriter`; return an ExitCode.
+
+        This inner coroutine is used with `asyncio.gather` to process inputs
+        concurrently and returns `ExitCode.ERROR` on failure.
+        """
         try:
             async with ClearWriter(input, options=options).write():
                 pass
@@ -136,6 +141,7 @@ def parser(parent: Callable[..., ArgumentParser] | None = None):
 
     @wraps(main)
     async def invoke(args: Namespace):
+        """Resolve input paths and invoke `main` with constructed Arguments."""
         await main(
             Arguments(
                 inputs=await gather(

@@ -358,6 +358,12 @@ def markdown_sanitizer(text: str):
     """Sanitize `text` by desugaring limited inline markdown and removing tags."""
 
     def get_and_del_tags(text: str):
+        """Strip simple HTML-like tags and return (text_without_tags, tag_set).
+
+        Scans for tag-like constructs and returns the desugared text together
+        with the set of tag names discovered. The helper ``ret_gen`` yields the
+        fragments between matched tags in original order.
+        """
         tags = set[str]()
         matches = list[Match[str]]()
 
@@ -380,6 +386,7 @@ def markdown_sanitizer(text: str):
         matches.sort(key=Match[str].start)
 
         def ret_gen() -> Iterator[str]:
+            """Yield text segments between the discovered HTML-like tags."""
             prev: int = 0
             match: Match[str]
             for match in matches:
@@ -419,6 +426,7 @@ def seq_to_code(
     """Convert a sequence of strings into a `TextCode` list representation."""
 
     def gen_code():
+        """Yield code fragments composing the compiled sequence `TextCode`."""
         yield prefix
         newline = ""
         for idx, str_ in enumerate(seq):
@@ -451,6 +459,7 @@ def map_to_code(
     value_token = token if value_cloze else ("", "")
 
     def gen_code():
+        """Yield code fragments representing the mapping as Markdown list items."""
         newline = ""
         if name:
             yield name_token[0]
@@ -486,6 +495,7 @@ def maps_to_code(
     """
 
     def codegen():
+        """Yield compiled `TextCode` strings for each mapping in ``maps``."""
         for key, value in maps.items():
             yield str(map_to_code(value, name=key, **kwargs))
 
@@ -510,6 +520,7 @@ def rows_to_table(
     if escape:
 
         def escaper(var: str):
+            """Escape pipe characters in a cell value for Markdown table output."""
             return var.replace("|", "\\|")
 
     else:
@@ -517,6 +528,7 @@ def rows_to_table(
 
     # Prepare headers as a lazily-cached sequence of (escaped_name, align, visible_len) tuples
     def _header_gen():
+        """Yield tuples of (escaped_header, alignment, visible_length) for each header."""
         for name in names:
             if isinstance(name, str):
                 hs, align = escaper(str(name)), "default"
@@ -529,9 +541,11 @@ def rows_to_table(
 
     # Create a lazily-cached sequence of processed rows (escaped strings with visible lengths)
     def _rows_gen():
+        """Yield cached rows where each row is an IteratorSequence of (cell_str, visible_len)."""
         for row in rows:
 
             def _cells():
+                """Produce escaped cell string and its computed display width for a row."""
                 for c in values(row):
                     cs = escaper(str(c))
                     cv = _compute_display_length(cs, use_compiled_len, use_visible_len)
@@ -556,6 +570,11 @@ def rows_to_table(
     )
 
     def make_align_token(align: str, width: int) -> str:
+        """Return a Markdown alignment token for a column of ``width``.
+
+        The returned token has a minimum length of three characters and matches
+        the requested alignment (left/right/center/default).
+        """
         # Build an alignment token with length at least 3 and equal to the column width
         target_len = max(3, width)
         if align == "left":
@@ -570,6 +589,11 @@ def rows_to_table(
 
     # Helper: pad a string to a visible width (use precomputed visible length)
     def pad_visible(s: str, vis: int, width: int) -> str:
+        """Pad string ``s`` with spaces so its visible length equals ``width``.
+
+        ``vis`` is the precomputed visible length of ``s``; when ``vis`` is
+        already >= ``width`` the original string is returned unchanged.
+        """
         if vis >= width:
             return s
         return s + (" " * (width - vis))

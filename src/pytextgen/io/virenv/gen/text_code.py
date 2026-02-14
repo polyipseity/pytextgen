@@ -70,13 +70,16 @@ class TextCode:
 
         @property
         def special(self):
+            """Return True when this ``Block`` is a tagged (special) block."""
             return bool(self.tag)
 
         @property
         def common(self):
+            """Return True when this ``Block`` contains ordinary (non-tagged) text."""
             return not self.special
 
         def __str__(self):
+            """Serialize the block to its textual representation, escaping as needed."""
             if self.special:
                 return f"{{{self.tag}:{TextCode.escape(self.text)}}}"
             if self.text:
@@ -96,6 +99,11 @@ class TextCode:
         slots=True,
     )
     class ByTagValue:
+        """Pair of block index and the corresponding ``TextCode.Block``.
+
+        Used by :attr:`TextCode.by_tag` to expose indexed lookups for a tag.
+        """
+
         idx: int
         block: "TextCode.Block"
 
@@ -149,6 +157,11 @@ class TextCode:
         slots=True,
     )
     class __CompilerState:
+        """Internal state used by :meth:`TextCode.compiler` while parsing input.
+
+        Encapsulates a parser ``tag`` and its associated ``data`` value.
+        """
+
         Tag = Literal["block", "escape", "normal", "tag"]
         __Tag0 = Literal["normal", "tag"]
         __Tag1 = Literal["block"]
@@ -158,42 +171,63 @@ class TextCode:
 
         @overload
         @classmethod
-        def wrap(cls, tag: __Tag0, data: str) -> Self: ...
+        def wrap(cls, tag: __Tag0, data: str) -> Self:
+            """Overload (signature-only): wrap state for normal/tag data (stub)."""
+            ...
 
         @overload
-        def unwrap(self, tag: __Tag0) -> str: ...
+        def unwrap(self, tag: __Tag0) -> str:
+            """Overload (signature-only): unwrap state for normal/tag data (stub)."""
+            ...
 
         @overload
-        def mutate(self, tag: __Tag0, data: str) -> None: ...
-
-        @overload
-        @classmethod
-        def wrap(cls, tag: __Tag1, data: tuple[str, str]) -> Self: ...
-
-        @overload
-        def unwrap(self, tag: __Tag1) -> tuple[str, str]: ...
-
-        @overload
-        def mutate(self, tag: __Tag1, data: tuple[str, str]) -> None: ...
+        def mutate(self, tag: __Tag0, data: str) -> None:
+            """Overload (signature-only): mutate state for normal/tag data (stub)."""
+            ...
 
         @overload
         @classmethod
-        def wrap(cls, tag: __Tag2, data: __Tag0 | __Tag1) -> Self: ...
+        def wrap(cls, tag: __Tag1, data: tuple[str, str]) -> Self:
+            """Overload (signature-only): wrap state for block data (stub)."""
+            ...
 
         @overload
-        def unwrap(self, tag: __Tag2) -> __Tag0 | __Tag1: ...
+        def unwrap(self, tag: __Tag1) -> tuple[str, str]:
+            """Overload (signature-only): unwrap state for block data (stub)."""
+            ...
 
         @overload
-        def mutate(self, tag: __Tag2, data: __Tag0 | __Tag1) -> None: ...
+        def mutate(self, tag: __Tag1, data: tuple[str, str]) -> None:
+            """Overload (signature-only): mutate state for block data (stub)."""
+            ...
+
+        @overload
+        @classmethod
+        def wrap(cls, tag: __Tag2, data: __Tag0 | __Tag1) -> Self:
+            """Overload (signature-only): wrap state for escape/block/normal tags (stub)."""
+            ...
+
+        @overload
+        def unwrap(self, tag: __Tag2) -> __Tag0 | __Tag1:
+            """Overload (signature-only): unwrap state for escape/block/normal tags (stub)."""
+            ...
+
+        @overload
+        def mutate(self, tag: __Tag2, data: __Tag0 | __Tag1) -> None:
+            """Overload (signature-only): mutate state for escape/block/normal tags (stub)."""
+            ...
 
         @classmethod
         def wrap(cls, tag: Tag, data: Any):
+            """Create and return a new compiler state with ``tag`` and ``data``."""
             return cls(tag=tag, data=data)
 
         def unwrap(self, tag: Tag):
+            """Return the state's associated ``data`` (no-op tag validation)."""
             return self.data
 
         def mutate(self, tag: Tag, data: Any):
+            """Mutate the state's ``data`` in-place."""
             self.data = data
 
     @classmethod

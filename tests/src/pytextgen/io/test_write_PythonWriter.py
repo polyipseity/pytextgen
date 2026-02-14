@@ -4,8 +4,6 @@ Verifies that executed code producing `Result` objects writes to the target
 `PathLocation` and respects the `timestamp` option.
 """
 
-__all__ = ()
-
 from ast import parse
 from datetime import datetime
 from os import PathLike, fspath
@@ -21,6 +19,8 @@ from pytextgen.io.utils import Location, PathLocation, Result
 from pytextgen.io.write import PythonWriter
 from pytextgen.meta import GENERATE_COMMENT_FORMAT, GENERATE_COMMENT_REGEX
 
+__all__ = ()
+
 
 def _compile_returning_result(source: str, filename: str) -> CodeType:
     """Helper: compile a small snippet that returns a Result via make_result."""
@@ -32,10 +32,15 @@ def _compile_returning_result(source: str, filename: str) -> CodeType:
 
 @pytest.mark.asyncio
 async def test_PythonWriter_writes_result_to_path(tmp_path: PathLike[str]):
+    """PythonWriter writes returned Result objects to their configured Location."""
     out = Path(tmp_path) / "out.txt"
 
     # factory available in environment will create Result objects pointing to PathLocation
     def make_result(text: str):
+        """Factory used by the executed environment to create ``Result`` objects.
+
+        Returns a ``Result`` that targets the test output ``PathLocation``.
+        """
         return Result(location=cast(Location, PathLocation(path=out)), text=text)
 
     env = Environment(globals={"make_result": make_result})
@@ -60,9 +65,11 @@ async def test_PythonWriter_writes_result_to_path(tmp_path: PathLike[str]):
 
 @pytest.mark.asyncio
 async def test_PythonWriter_respects_timestamp_option(tmp_path: PathLike[str]):
+    """Timestamp option controls whether generated header is written."""
     out = Path(tmp_path) / "out2.txt"
 
     def make_result(text: str):
+        """Factory used by the executed environment to create a ``Result`` for ``out``."""
         return Result(location=cast(Location, PathLocation(path=out)), text=text)
 
     env = Environment(globals={"make_result": make_result})
@@ -91,9 +98,11 @@ async def test_PythonWriter_respects_timestamp_option(tmp_path: PathLike[str]):
 
 @pytest.mark.asyncio
 async def test_PythonWriter_generates_valid_timestamp_format(tmp_path: PathLike[str]):
+    """Generated timestamp is parseable and includes timezone info."""
     out = Path(tmp_path) / "ts_format.txt"
 
     def make_result(text: str):
+        """Return a ``Result`` pointing at ``out``; used by the executed code."""
         return Result(location=cast(Location, PathLocation(path=out)), text=text)
 
     env = Environment(globals={"make_result": make_result})
@@ -127,9 +136,11 @@ async def test_PythonWriter_generates_valid_timestamp_format(tmp_path: PathLike[
 
 @pytest.mark.asyncio
 async def test_PythonWriter_concatenates_multiple_results(tmp_path: PathLike[str]):
+    """Multiple Result objects are concatenated when written to the same file."""
     out = Path(tmp_path) / "multi.txt"
 
     def make_result(text: str):
+        """Create a ``Result`` that targets the ``multi.txt`` output file."""
         return Result(location=cast(Location, PathLocation(path=out)), text=text)
 
     env = Environment(globals={"make_result": make_result})
@@ -156,9 +167,11 @@ async def test_PythonWriter_concatenates_multiple_results(tmp_path: PathLike[str
 async def test_PythonWriter_ignores_empty_result_and_does_not_truncate(
     tmp_path: PathLike[str],
 ):
+    """Empty Result objects do not cause truncation or writes."""
     out = Path(tmp_path) / "ignore_empty.txt"
 
     def make_result(text: str):
+        """Factory returning a ``Result`` for the ignore-empty test file."""
         return Result(location=cast(Location, PathLocation(path=out)), text=text)
 
     env = Environment(globals={"make_result": make_result})
@@ -183,9 +196,11 @@ async def test_PythonWriter_ignores_empty_result_and_does_not_truncate(
 
 @pytest.mark.asyncio
 async def test_PythonWriter_timestamp_only_when_nonempty_write(tmp_path: PathLike[str]):
+    """Timestamp header is added only when a non-empty write occurs."""
     out = Path(tmp_path) / "ts.txt"
 
     def make_result(text: str):
+        """Return a ``Result`` pointed at the timestamp-test output path."""
         return Result(location=cast(Location, PathLocation(path=out)), text=text)
 
     env = Environment(globals={"make_result": make_result})

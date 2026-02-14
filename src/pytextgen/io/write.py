@@ -179,6 +179,11 @@ class PythonWriter:
                 groups.setdefault(r.location, []).append(r)
 
             async def process_group(group: Sequence[Result]) -> None:
+                """Write concatenated `Result` content for a single target `Location`.
+
+                Uses file locking when appropriate and only updates the file when the
+                concatenated text differs from the existing generated section.
+                """
                 loc = group[0].location
                 path = loc.path
                 async with nullcontext() if path is None else lock_file(path):

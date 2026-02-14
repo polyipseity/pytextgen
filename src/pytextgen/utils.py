@@ -500,9 +500,11 @@ class CompileCache:
 
         @classmethod
         def from_metadata(cls, data: "CompileCache.MetadataKey"):
+            """Create a `CacheKey` model from a `MetadataKey` Pydantic model."""
             return cls.model_validate(data.model_dump())
 
         def to_metadata(self):
+            """Return a `MetadataKey` instance representing this cache key."""
             return CompileCache.MetadataKey(**self.model_dump())
 
     @final
@@ -597,7 +599,10 @@ class CompileCache:
         cur_time = self.__time()
 
         async def _save_one(key: CompileCache.CacheKey, cache: CompileCache.CacheEntry):
+            """Persist a single cache entry to disk (or remove if expired)."""
+
             cache_path = folder / cache.value.cache_name
+
             # drop expired cache files
             if cur_time - cache.value.access_time >= self.__TIMEOUT:
                 with suppress(FileNotFoundError, OSError):
@@ -704,6 +709,7 @@ def affix_lines(text: str, /, *, prefix: str = "", suffix: str = ""):
     """
 
     def ret_gen():
+        """Generate pieces used to assemble the affixed lines string."""
         newline: str = ""
         for line in text.splitlines():
             yield newline

@@ -177,6 +177,12 @@ class FileSection:
         slots=True,
     )
     class SectionFormat:
+        """Format description for a named file `FileSection`.
+
+        Holds compiled regexes and the data-extraction callable used to
+        identify and extract section content.
+        """
+
         start_regex: re.Pattern[str]
         end_regex: re.Pattern[str]
         start: str
@@ -368,6 +374,7 @@ class _FileSectionIO(StringIO):
             try:
 
                 async def reader():
+                    """Read the current file contents asynchronously for comparison."""
                     await self.__file.seek(0)
                     return await self.__file.read()
 

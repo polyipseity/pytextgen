@@ -75,6 +75,7 @@ async def main(args: Arguments):
     exit_code = ExitCode(0)
 
     async def read(input: Path):
+        """Read `input` using `Reader.cached` and return writer sequence or an ExitCode."""
         try:
             return (await Reader.cached(path=input, options=args.options)).pipe()
         except Exception:
@@ -85,6 +86,7 @@ async def main(args: Arguments):
         left: tuple[MutableSequence[Iterable[Writer]], ExitCode],
         right: Iterable[Writer] | ExitCode,
     ):
+        """Accumulator combining read results into (writers-seq, exit-code)."""
         seq, code = left
         if isinstance(right, ExitCode):
             code |= right
@@ -100,6 +102,7 @@ async def main(args: Arguments):
     writers = chain.from_iterable(writers0)
 
     async def write(writer: Writer):
+        """Validate and write a single `Writer` instance, returning an ExitCode."""
         write = writer.write()
         try:
             await write.__aenter__()
@@ -202,6 +205,7 @@ def parser(parent: Callable[..., ArgumentParser] | None = None):
 
     @wraps(main)
     async def invoke(args: Namespace):
+        """Create a `CompileCache` context and invoke `main` with prepared args."""
         async with CompileCache(
             folder=(
                 args.code_cache

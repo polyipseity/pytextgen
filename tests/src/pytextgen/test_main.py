@@ -22,6 +22,7 @@ __all__ = ()
 
 
 def test_top_level_parser_has_subcommands_and_version():
+    """Top-level parser exposes expected subcommands and version option."""
     p = top_main.parser()
     # parser must be an ArgumentParser and require a subcommand
     assert isinstance(p, ArgumentParser)
@@ -35,12 +36,17 @@ def test_top_level_parser_has_subcommands_and_version():
 
 
 def test___main___calls_asyncio_run(monkeypatch: pytest.MonkeyPatch):
+    """`__main__` dispatch uses asyncio.run to execute the parser invoke coroutine."""
     called: dict[str, bool] = {}
 
     class DummyParser:
+        """Parser stub that returns a namespace with an async ``invoke`` coroutine."""
+
         def parse_args(self, argv: list[str]):
-            # return a namespace with an async "invoke" coroutine function
+            """Return a namespace exposing an async invoke function used by the test."""
+
             async def invoke(ns: "argparse.Namespace"):
+                """Coroutine that marks the test as executed when run."""
                 called["ran"] = True
 
             return SimpleNamespace(invoke=invoke)
@@ -50,6 +56,11 @@ def test___main___calls_asyncio_run(monkeypatch: pytest.MonkeyPatch):
 
     # capture asyncio.run calls
     def fake_run(coro: Coroutine[Any, Any, Any]):
+        """Replacement for ``asyncio.run`` that executes the coroutine synchronously.
+
+        The stub asserts the passed object is a coroutine and runs it to
+        exercise the parser-invoke flow inside the test harness.
+        """
         # ensure it's the coroutine returned by DummyParser.parse_args
         assert inspect.iscoroutinefunction(coro.__class__) or asyncio.iscoroutine(coro)
         # run the coroutine to set the marker
