@@ -5,6 +5,7 @@ used in generated content.
 """
 
 from collections import defaultdict
+from collections.abc import Iterable, MutableSequence
 from dataclasses import KW_ONLY, dataclass
 from re import NOFLAG
 from re import compile as re_compile
@@ -12,9 +13,7 @@ from re import escape as re_escape
 from typing import (
     Any,
     ClassVar,
-    Iterable,
     Literal,
-    MutableSequence,
     Self,
     final,
     overload,

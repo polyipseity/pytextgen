@@ -8,7 +8,15 @@ import marshal
 from abc import ABCMeta
 from ast import AST, Expression, Interactive, Module, unparse
 from asyncio import gather, get_running_loop
-from collections.abc import AsyncIterator, Collection, Iterable, Iterator, Sequence
+from collections.abc import (
+    AsyncIterator,
+    Awaitable,
+    Callable,
+    Collection,
+    Iterable,
+    Iterator,
+    Sequence,
+)
 from concurrent.futures import Executor, ThreadPoolExecutor
 from contextlib import asynccontextmanager, suppress
 from dataclasses import dataclass
@@ -27,8 +35,6 @@ from types import CodeType, ModuleType, TracebackType
 from typing import (
     TYPE_CHECKING,
     Any,
-    Awaitable,
-    Callable,
     ClassVar,
     Generic,
     Literal,

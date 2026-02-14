@@ -4,10 +4,9 @@ Provides default tokens and flashcard separator settings used by the
 `virenv` IO helpers.
 """
 
-from collections.abc import Mapping, MutableMapping
+from collections.abc import Callable, Mapping, MutableMapping
 from dataclasses import dataclass, field
 from typing import (
-    Callable,
     ClassVar,
     Self,
     final,

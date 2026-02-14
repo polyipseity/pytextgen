@@ -13,6 +13,7 @@ from asyncio import Lock as AsyncLock
 from collections import defaultdict
 from collections.abc import (
     AsyncIterator,
+    Callable,
     Collection,
     Iterable,
     Iterator,
@@ -36,7 +37,6 @@ from threading import Lock as ThreadLock
 from types import CodeType, MappingProxyType, ModuleType
 from typing import (
     Any,
-    Callable,
     ClassVar,
     Self,
 )

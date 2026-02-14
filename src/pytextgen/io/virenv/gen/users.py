@@ -5,20 +5,14 @@ representations for quoting, flashcards, tables, and other formatted
 outputs used by the project.
 """
 
-from collections.abc import Iterable, Iterator, Mapping, Sequence
+from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 from dataclasses import dataclass
 from functools import partial
 from html import unescape
 from itertools import chain
 from re import DOTALL, NOFLAG, Match, Pattern
 from re import compile as re_compile
-from typing import (
-    Any,
-    Callable,
-    Literal,
-    TypeVar,
-    final,
-)
+from typing import Any, Literal, TypeVar, final
 from unicodedata import normalize
 
 from ..configs import CONFIG
