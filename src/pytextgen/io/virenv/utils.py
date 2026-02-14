@@ -10,7 +10,7 @@ from re import compile as re_compile
 from typing import Any, ClassVar, final
 
 from ...meta import FLASHCARD_STATES_FORMAT, FLASHCARD_STATES_REGEX
-from ...utils import (  # explicit imports (avoid star-imports)
+from ...utils import (
     IteratorSequence,
     TypedTuple,
     Unit,
@@ -23,8 +23,7 @@ from ...utils import (  # explicit imports (avoid star-imports)
     strip_lines,
     wrap_async,
 )
-
-# from ..util import *  # intentionally removed star-import; no names from ..util are required here
+from ..utils import Location, Result
 from .configs import CONFIG, FlashcardSeparatorType
 
 __all__ = (
@@ -36,6 +35,7 @@ __all__ = (
     "FlashcardStateGroup",
     "StatefulFlashcardGroup",
     "IteratorSequence",
+    "Location",
     "Unit",
     "affix_lines",
     "strip_lines",
@@ -43,6 +43,7 @@ __all__ = (
     "constant",
     "identity",
     "ignore_args",
+    "Result",
     "split_by_punctuations",
 )
 

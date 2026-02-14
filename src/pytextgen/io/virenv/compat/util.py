@@ -6,6 +6,8 @@ from ..utils import (
     FlashcardState,
     FlashcardStateGroup,
     IteratorSequence,
+    Location,
+    Result,
     StatefulFlashcardGroup,
     TwoSidedFlashcard,
     Unit,
@@ -28,6 +30,7 @@ __all__ = (
     "FlashcardStateGroup",
     "StatefulFlashcardGroup",
     "IteratorSequence",
+    "Location",
     "Unit",
     "affix_lines",
     "strip_lines",
@@ -35,5 +38,6 @@ __all__ = (
     "constant",
     "identity",
     "ignore_args",
+    "Result",
     "split_by_punctuations",
 )
