@@ -2,11 +2,28 @@
 requires = ["uv_build"]
 build-backend = "uv_build"
 
-# update `__init__.py`
+# update `src/pytextgen/meta.py`
 [project]
+name = "pytextgen"
+version = "8.0.0"
+requires-python = ">=3.12.0"
+description = "Generate text using code."
+license = {file = "LICENSE.txt"}
+readme = "README.md"
+dependencies = [
+	"aioshutil>=1.6.0",
+	"anyio>=3.6.2",
+	"asyncstdlib>=3.10.6",
+	"more-itertools>=9.1.0",
+	"pydantic>=2.12.0",
+	"regex>=2022.10.31",
+	"wcwidth>=0.4.0",
+]
+
 authors = [
 	{name = "William So", email = "polyipseity@gmail.com"},
 ]
+keywords = []
 classifiers = [
 	"Development Status :: 5 - Production/Stable",
 	"Framework :: AsyncIO",
@@ -27,22 +44,6 @@ classifiers = [
 	"Topic :: Utilities",
 	"Typing :: Typed",
 ]
-dependencies = [
-	"aioshutil>=1.6.0",
-	"anyio>=3.6.2",
-	"asyncstdlib>=3.10.6",
-	"more-itertools>=9.1.0",
-	"pydantic>=2.12.0",
-	"regex>=2022.10.31",
-	"wcwidth>=0.4.0",
-]
-description = "Generate text using code."
-keywords = []
-license = {file = "LICENSE.txt"}
-name = "pytextgen"
-readme = "README.md"
-requires-python = ">=3.12.0"
-version = "8.0.0"
 
 [project.scripts]
 pytextgen = "pytextgen.__main__:main"
@@ -66,7 +67,12 @@ dev = [
 ]
 
 [tool.pyright]
-exclude = ["**/node_modules", "**/__pycache__", "**/.*", ".venv"]
+exclude = [
+  "**/node_modules",
+  "**/__pycache__",
+  "**/.*",
+  ".venv",
+]
 typeCheckingMode = "strict"
 venv = ".venv"
 venvPath = "."
@@ -79,12 +85,12 @@ strictListInference = true
 strictSetInference = true
 
 [[tool.pyright.executionEnvironments]]
-root = "src"
-
-[[tool.pyright.executionEnvironments]]
 extraPaths = ["src"]
 reportPrivateUsage = "none"
 root = "tests"
+
+[[tool.pyright.executionEnvironments]]
+root = "src"
 
 [tool.pytest.ini_options]
 addopts = ["--cov=./", "--cov-report=term-missing", "--dist=loadscope", "-n=auto", "--strict-markers"]
