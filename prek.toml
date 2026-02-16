@@ -5,6 +5,15 @@
 # This file replaces `.pre-commit-config.yaml`; that file has been removed to avoid duplication.
 # Note: `prek` can read `.pre-commit-config.yaml` for compatibility, but `prek.toml` is preferred.
 
+default_install_hook_types = [
+  "commit-msg",
+  "pre-commit",
+  "pre-push",
+]
+default_stages = [
+  "pre-commit",
+]
+
 [[repos]]
 repo = "https://github.com/pre-commit/pre-commit-hooks"
 rev = "v6.0.0"
@@ -61,5 +70,23 @@ hooks = [
 repo = "https://github.com/alessandrojcm/commitlint-pre-commit-hook"
 rev = "v9.24.0"
 hooks = [
-  { id = "commitlint", stages = ["commit-msg"] },
+  {
+    id = "commitlint",
+    stages = ["commit-msg"],
+    additional_dependencies = ["@commitlint/config-conventional"],
+  },
+]
+
+[[repos]]
+repo = "local"
+hooks = [
+  {
+    id = "pytest-push",
+    name = "Run Pytest on Push",
+    entry = "uv run --locked pytest",
+    language = "system",
+    pass_filenames = false, # Run all tests, not just those with changed files
+    always_run = true, # Ensure tests run on every push, even if no files changed
+    stages = ["pre-push"], # Specify pre-push stage
+  }
 ]
