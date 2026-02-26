@@ -132,7 +132,7 @@ def constant(var: _T) -> Callable[..., _T]:
     Useful for providing default callbacks or constant factories.
     """
 
-    def func(*args: Any, **kwargs: Any) -> _T:
+    def func(*args: object, **kwargs: object) -> _T:
         """Ignore all arguments and return the captured `var`."""
         return var
 
@@ -147,7 +147,7 @@ def ignore_args(func: Callable[[], _T]) -> Callable[..., _T]:
     """
 
     @wraps(func)
-    def func0(*args: Any, **kwargs: Any) -> _T:
+    def func0(*args: object, **kwargs: object) -> _T:
         """Ignore all arguments and return the result of the underlying `func`."""
         return func()
 
