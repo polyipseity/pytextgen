@@ -28,7 +28,7 @@ Local development quick start:
 
 Script & CI conventions:
 
-- Prefer `uv run` for invoking tools when a `pnpm` wrapper is not used.
+- Prefer `uv run` for invoking tools when a `bun` wrapper is not used.
 - CI workflows should install dependencies deterministically (`uv sync --locked --all-extras --dev`).
 - Ensure tests and ruff checks run on PRs; `AGENTS.md` lists the CI expectations.
 
