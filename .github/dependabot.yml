@@ -17,6 +17,20 @@ updates:
         patterns:
           - "*"
 
+  # Git submodules (gitmodules)
+  - package-ecosystem: "gitsubmodule"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    commit-message:
+      prefix: "build"
+      prefix-development: "chore"
+      include: "scope"
+    groups:
+      gitsubmodule:
+        patterns:
+          - "*"
+
   # Python (pyproject.toml - dependency-groups / project.optional-dependencies).
   # We manage Python dependencies with `uv` and commit `uv.lock` for reproducible installs.
   # Dependabot is configured to update Python dependencies (pyproject and `uv.lock`) using the `uv` ecosystem.
