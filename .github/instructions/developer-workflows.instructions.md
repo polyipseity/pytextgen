@@ -31,6 +31,9 @@ Script & CI conventions:
 - Prefer `uv run` for invoking tools when a `bun` wrapper is not used.
 - CI workflows should install dependencies deterministically (`uv sync --locked --all-extras --dev`).
 - Ensure tests and ruff checks run on PRs; `AGENTS.md` lists the CI expectations.
+- Asynchronous code should rely on AnyIO and the Asyncer helpers rather than
+  importing `asyncio` directly; if you add async functionality, update
+  `pyproject.toml` with `anyio` and `asyncer` and run `uv sync` to lock them.
 
 Commit conventions:
 

@@ -13,7 +13,7 @@ from pytextgen.meta import GENERATE_COMMENT_FORMAT, GENERATE_COMMENT_REGEX
 __all__ = ()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_ClearWriter_truncates_content_sections(tmp_path: PathLike[str]):
     """ClearWriter clears content sections while retaining section markers."""
     f = Path(tmp_path) / "doc.md"
@@ -35,7 +35,7 @@ SOME GENERATED
     assert "SOME GENERATED" not in text
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_ClearWriter_strips_flashcard_state(tmp_path: PathLike[str]):
     """ClearWriter strips flashcard state entries when requested."""
     f = Path(tmp_path) / "doc2.md"
@@ -56,7 +56,7 @@ Some text <!--SR:!2023-01-02,5,250--> more
     assert "<!--SR:" not in text
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_ClearWriter_removes_generated_timestamp_on_content_clear(
     tmp_path: PathLike[str],
 ):
@@ -82,7 +82,7 @@ async def test_ClearWriter_removes_generated_timestamp_on_content_clear(
     assert GENERATE_COMMENT_REGEX.search(text) is None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_ClearWriter_does_not_insert_generated_timestamp(tmp_path: PathLike[str]):
     """Clearing flashcard state does not insert a generated timestamp."""
     f = Path(tmp_path) / "doc_no_ts.md"

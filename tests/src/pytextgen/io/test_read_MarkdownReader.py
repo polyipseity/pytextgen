@@ -21,7 +21,7 @@ from pytextgen.io.write import Writer
 __all__ = ()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_MarkdownReader_parses_imports_and_produces_writers(
     tmp_path: PathLike[str],
 ):
@@ -73,7 +73,7 @@ def make():
     assert any(isinstance(c, CodeType) for c in init_codes)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_MarkdownReader_unenclosed_raises(tmp_path: PathLike[str]):
     """Unenclosed code blocks raise a ValueError during read."""
     bad = Path(tmp_path) / "bad.md"
@@ -91,7 +91,7 @@ x = 1
         await Reader.new(path=bad, options=opts)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_MarkdownReader_import_non_codelib_raises(tmp_path: PathLike[str]):
     """MarkdownReader raises TypeError when an imported reader is not a CodeLibrary."""
     # write an "other" file and register a temporary Reader for .txt that

@@ -1,24 +1,36 @@
-"""Executable entry point for the `clear` CLI subcommand.
+"""Module entry-point for command-line invocation.
 
-Runs the `parser` and invokes the selected subcommand.
+This module is executed when the package is run with `python -m pytextgen
+clear`. It configures basic logging and executes the selected CLI
+subcommand.
 """
 
-from asyncio import run
 from logging import INFO, basicConfig
 from sys import argv
+
+from asyncer import runnify
 
 from .main import parser
 
 __all__ = ("main",)
 
 
-def main() -> None:
-    """Entry point for the `pytextgen clear` command-line interface."""
+async def main() -> None:
+    """Main entry point for the pytextgen clear CLI.
+
+    Sets up logging, parses arguments, and invokes the selected action.
+    """
 
     basicConfig(level=INFO)
     entry = parser().parse_args(argv[1:])
-    run(entry.invoke(entry))
+    await entry.invoke(entry)
+
+
+def __main__() -> None:
+    """Synchronous command-line entrypoint exposed by the package."""
+
+    runnify(main, backend_options={"use_uvloop": True})()
 
 
 if __name__ == "__main__":
-    main()
+    __main__()

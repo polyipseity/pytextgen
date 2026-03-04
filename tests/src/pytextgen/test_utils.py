@@ -52,7 +52,7 @@ __all__ = ()
 # ----- small/unit tests -----------------------------------------------------
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_CompileCache_metadata_roundtrip(tmp_path: PathLike[str]):
     """Compiled cache persists metadata and can be read back."""
     folder = Path(tmp_path) / "cache"
@@ -72,7 +72,7 @@ async def test_CompileCache_metadata_roundtrip(tmp_path: PathLike[str]):
     assert "source" in key and "filename" in key
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_CompileCache_inmemory_and_disk(tmp_path: PathLike[str]):
     """CompileCache operates in-memory and when backed by a folder."""
     # in-memory cache (folder=None)
@@ -94,7 +94,7 @@ async def test_CompileCache_inmemory_and_disk(tmp_path: PathLike[str]):
     assert "cache_name" in data or "filename" in data
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_CompileCache_handles_ast_and_expression(tmp_path: PathLike[str]):
     """CompileCache accepts AST and expression inputs for compilation."""
     folder = Path(tmp_path) / "cc2"
@@ -123,7 +123,7 @@ def test_identity_constant_ignore_tuple1():
     assert tuple1(5) == (5,)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_async_lock_releases():
     """async_lock acquires and releases a threading Lock in async contexts."""
     lock = Lock()
@@ -336,7 +336,7 @@ def test_iteratorsequence_property(lst: list[int]):
         assert seq[i] == lst[i]
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 @given(n=st.integers(min_value=-1000, max_value=1000))
 async def test_compilecache_cache_hits_property(n: int):
     """CompileCache returns same code object for repeated compilation with same key."""
@@ -361,7 +361,7 @@ async def test_compilecache_cache_hits_property(n: int):
     values=st.lists(st.text(min_size=0, max_size=40), min_size=1, max_size=5),
     timestamp=st.booleans(),
 )
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_PythonWriter_writes_generated_results(
     values: list[str], timestamp: bool
 ):

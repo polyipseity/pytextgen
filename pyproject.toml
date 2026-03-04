@@ -13,11 +13,14 @@ readme = "README.md"
 dependencies = [
 	"aioshutil>=1.6.0",
 	"anyio>=3.6.2",
+  "asyncer>=0.0.17",
 	"asyncstdlib>=3.10.6",
 	"more-itertools>=9.1.0",
 	"pydantic>=2.12.0",
 	"regex>=2022.10.31",
+	"uvloop>=0.22.0; platform_system != 'Windows'",
 	"wcwidth>=0.4.0",
+	"winloop>=0.5.0; platform_system == 'Windows'",
 ]
 
 authors = [
@@ -46,9 +49,9 @@ classifiers = [
 ]
 
 [project.scripts]
-pytextgen = "pytextgen.__main__:main"
-pytextgen_clear = "pytextgen.clear.__main__:main"
-pytextgen_generate = "pytextgen.generate.__main__:main"
+pytextgen = "pytextgen.__main__:__main__"
+pytextgen_clear = "pytextgen.clear.__main__:__main__"
+pytextgen_generate = "pytextgen.generate.__main__:__main__"
 
 [project.urls]
 repository = "https://github.com/polyipseity/pytextgen.git"
@@ -59,7 +62,6 @@ dev = [
   "prek>=0.3.0",
   "pyright>=1.1.408",
   "pytest>=9.0.0",
-  "pytest-asyncio>=1.3.0",
   "pytest-cov>=7.0.0",
   "pytest-xdist>=3.8.0",
   "ruff>=0.15.0",

@@ -35,6 +35,7 @@ If you add an instructions file, link to it from this `AGENTS.md`.
 ## Agent Code Conventions (important) 🔧
 
 - **Top-level imports only.** Avoid runtime or inline imports. Ruff enforces `import-outside-top-level` (PLC0415).
+- **Async concurrency:** refrain from importing `asyncio`; rely on AnyIO and the Asyncer helper library for structured patterns. Useful helpers include `create_task_group`, `soonify` (with return values), `asyncify` (run sync code in async), `syncify` (call async from sync), and `runnify` (expose async functions to synchronous callers). If you need simple file-path concurrency use `anyio.Path` but prefer Asyncer for all task management to get typing/editor benefits.
 - **Use os.PathLike for file identifiers.** Accept `os.PathLike` and use `os.fspath(path_like)` when a string path is needed.
 - **Timezone-aware datetimes.** Use `datetime.now(timezone.utc)` (avoid `datetime.utcnow()`).
 - **Type hints:** Prefer PEP 585 types (`dict`, `list`) and `X | Y` unions (PEP 604). For abstract collection/iterable types (for example `Iterable`, `Iterator`, `Sequence`, `Mapping`, `Collection`, `AsyncIterator`) import from `collections.abc` rather than `typing` (e.g. `from collections.abc import Iterable, Mapping`). Use built-in generics for concrete containers (`list[int]`, `dict[str, int]`). Use `Self` where appropriate. Aim for `typeCheckingMode: "strict"` compatibility in `pyrightconfig.json`. Do not use `from __future__ import annotations` in this repository; postponed evaluation of annotations is not permitted.
@@ -51,7 +52,7 @@ If you add an instructions file, link to it from this `AGENTS.md`.
   - New-folder rule: when creating any new directory that will contain Python code (production or tests), include an `__init__.py` file in that directory (it may be empty). This applies to `src/` packages and `tests/` packages — it ensures imports, test discovery, and tooling work reliably. Add a short `__all__` (or `__all__ = ()` for test modules) where appropriate.
   - Prefer not to re-export submodules via package `__init__.py`. Callers should import directly from submodules. When a package-level API is necessary and intentionally stable, prefer centralizing the package's exported surface in a `meta.py` module located in the package directory. Put the exported symbols and the `__all__` tuple in `meta.py` and have `__init__.py` import the minimal exported names (or forward `__all__` from `_meta`) so the package-level surface remains small and explicit.
   - When changing public symbols, update `__all__`, update docs, and add or update tests that verify exports. Run `uv run ruff check --fix`, `uv run pyright`, and `uv run pytest` locally before opening a PR.
-- **Async tests:** Prefer `async def` tests with `@pytest.mark.asyncio` and `await` usage. Do not use `asyncio.run` within pytest tests.
+- **Async tests:** Prefer `async def` tests with `@pytest.mark.anyio` and `await` usage. Do not use `asyncio.run` within pytest tests.
 
 ## Formatting & tooling note 💡
 
@@ -167,7 +168,7 @@ Repository-specific patterns & gotchas:
 - Top-level imports only: avoid runtime imports inside functions. Import names normally and avoid aliasing with a leading underscore; for example: `from typing import Self`. Prefer clear, unambiguous imports or import the module when needed to avoid name collisions.
 - Use explicit `__all__` for export-control and set `__all__ = ()` in tests. See `tests/pytextgen/test___init__.py` for the version parity test pattern.
 - Preferred typing styles: PEP 585 (`list[int]`) and PEP 604 (`str | None`). Use `Self`/`TypedDict` where appropriate.
-- Async-first patterns: favor `async def` and `@pytest.mark.asyncio` in tests; use `anyio`/`async` I/O patterns (see `CompileCache` in `src/pytextgen/util.py`).
+- Async-first patterns: favor `async def` and `@pytest.mark.anyio` in tests; use `anyio`/`async` I/O patterns (see `CompileCache` in `src/pytextgen/util.py`).
 - Do not add `black` or `isort` to the toolchain—Ruff is the canonical formatter/linter.
 - When bumping versions: update `pyproject.toml` and `src/pytextgen/__init__.py`, run tests (see version parity test), and run `uv sync --all-extras --dev` to refresh `uv.lock` before committing.
 

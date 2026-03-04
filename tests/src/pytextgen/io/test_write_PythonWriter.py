@@ -30,7 +30,7 @@ def _compile_returning_result(source: str, filename: str) -> CodeType:
     return compile(ast0, filename, "exec")
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_PythonWriter_writes_result_to_path(tmp_path: PathLike[str]):
     """PythonWriter writes returned Result objects to their configured Location."""
     out = Path(tmp_path) / "out.txt"
@@ -63,7 +63,7 @@ async def test_PythonWriter_writes_result_to_path(tmp_path: PathLike[str]):
     assert await out.read_text(encoding="utf-8") == "hello"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_PythonWriter_respects_timestamp_option(tmp_path: PathLike[str]):
     """Timestamp option controls whether generated header is written."""
     out = Path(tmp_path) / "out2.txt"
@@ -96,7 +96,7 @@ async def test_PythonWriter_respects_timestamp_option(tmp_path: PathLike[str]):
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_PythonWriter_generates_valid_timestamp_format(tmp_path: PathLike[str]):
     """Generated timestamp is parseable and includes timezone info."""
     out = Path(tmp_path) / "ts_format.txt"
@@ -134,7 +134,7 @@ async def test_PythonWriter_generates_valid_timestamp_format(tmp_path: PathLike[
     assert txt.startswith(GENERATE_COMMENT_FORMAT.format(now=ts))
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_PythonWriter_concatenates_multiple_results(tmp_path: PathLike[str]):
     """Multiple Result objects are concatenated when written to the same file."""
     out = Path(tmp_path) / "multi.txt"
@@ -163,7 +163,7 @@ async def test_PythonWriter_concatenates_multiple_results(tmp_path: PathLike[str
     assert await out.read_text(encoding="utf-8") == "firstsecond"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_PythonWriter_ignores_empty_result_and_does_not_truncate(
     tmp_path: PathLike[str],
 ):
@@ -194,7 +194,7 @@ async def test_PythonWriter_ignores_empty_result_and_does_not_truncate(
     assert await out.read_text(encoding="utf-8") == "preserve-me"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_PythonWriter_timestamp_only_when_nonempty_write(tmp_path: PathLike[str]):
     """Timestamp header is added only when a non-empty write occurs."""
     out = Path(tmp_path) / "ts.txt"

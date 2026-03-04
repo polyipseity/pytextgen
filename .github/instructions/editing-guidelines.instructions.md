@@ -35,7 +35,7 @@ Python style & typing:
 Tests:
 
 - Name tests `test_*.py` and keep them alongside the module under `tests/`.
-- When testing async code, use `async def` tests with `@pytest.mark.asyncio`.
+- When testing async code, use `async def` tests with `@pytest.mark.anyio`.
 
 Commits & PRs:
 

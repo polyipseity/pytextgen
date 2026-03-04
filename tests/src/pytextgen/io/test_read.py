@@ -53,7 +53,7 @@ def test_Reader_and_CodeLibrary_subclasshook_structural():
     assert not issubclass(FakeLib, CodeLibrary)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_Reader_cached_returns_same_instance(tmp_path: PathLike[str]):
     """`Reader.cached` returns the same instance for the same path/options."""
     f = Path(tmp_path) / "f.md"

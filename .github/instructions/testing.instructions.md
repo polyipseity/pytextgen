@@ -21,7 +21,7 @@ Tests use `pytest` and `pytest-asyncio` for async test support. Test configurati
 
 ## Async tests
 
-- For async code use `async def` tests decorated with `@pytest.mark.asyncio` and `await` coroutines in the test body.
+- For async code use `async def` tests decorated with `@pytest.mark.anyio` and `await` coroutines in the test body; when writing helpers prefer Asyncer (`create_task_group`, `soonify`, etc.) instead of raw `asyncio` primitives.
 - Do not use `asyncio.run`, `anyio.run`, or similar event-loop wrappers inside tests.
 
 ## Running tests locally

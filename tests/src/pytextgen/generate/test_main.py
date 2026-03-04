@@ -38,7 +38,7 @@ def test_generate_parser_flags_defaults_and_overrides():
     assert ns3.code_cache is None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_generate_parser_invoke_uses_CompileCache_and_calls_main(
     monkeypatch: pytest.MonkeyPatch, tmp_path: PathLike[str]
 ):
@@ -84,7 +84,7 @@ async def test_generate_parser_invoke_uses_CompileCache_and_calls_main(
     assert "args" in seen
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_generate_main_read_error_exits_with_read_error(
     monkeypatch: pytest.MonkeyPatch, tmp_path: PathLike[str]
 ):
@@ -111,7 +111,7 @@ async def test_generate_main_read_error_exits_with_read_error(
     assert code & ExitCode.READ_ERROR
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_generate_main_validate_and_write_errors(
     monkeypatch: "pytest.MonkeyPatch", tmp_path: PathLike[str]
 ):

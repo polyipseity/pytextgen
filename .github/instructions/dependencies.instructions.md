@@ -37,4 +37,5 @@ When adding a new dependency:
 
 - Add the package to `pyproject.toml` under the appropriate section and run
   `uv sync --all-extras --dev` to update `uv.lock` and commit the lockfile.
+  When the dependency supports asynchronous features, remember this project uses AnyIO and the Asyncer helpers; ensure both `anyio` and `asyncer` end up in the lockfile if you introduce or update async code.
 - Validate the change locally: run `uv run pytest` and `uv run ruff check --fix .` to ensure the dependency doesn't break type checks or formatting. Agents should record these commands in their PR description and link the updated `uv.lock` entry.

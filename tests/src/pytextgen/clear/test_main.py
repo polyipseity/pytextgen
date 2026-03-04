@@ -15,7 +15,7 @@ from pytextgen.io.options import ClearType
 __all__ = ()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_clear_parser_parses_types_and_inputs(tmp_path: PathLike[str]):
     """Parser parses ClearType flags and input paths correctly."""
     # create a real file so Path.resolve(strict=True) in invoke works
@@ -29,7 +29,7 @@ async def test_clear_parser_parses_types_and_inputs(tmp_path: PathLike[str]):
     assert isinstance(ns.types, (list, tuple, frozenset))
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_clear_parser_invoke_calls_main(
     monkeypatch: pytest.MonkeyPatch, tmp_path: PathLike[str]
 ):
@@ -55,7 +55,7 @@ async def test_clear_parser_invoke_calls_main(
     assert "args" in seen
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_clear_main_emits_exitcode_on_writer_failure(
     monkeypatch: pytest.MonkeyPatch, tmp_path: PathLike[str]
 ):
