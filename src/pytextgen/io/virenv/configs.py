@@ -99,4 +99,5 @@ class Configuration:
     )
 
 
+"""Default configuration instance for virenv helpers."""
 CONFIG = Configuration()

@@ -49,8 +49,11 @@ __all__ = (
     "Result",
 )
 
+"""Type alias for sync or async text file-like objects."""
 AnyTextIO = TextIO | AsyncFile[str]
+"""Per-path locks for concurrent file access."""
 _FILE_LOCKS = defaultdict[Path, Lock](Lock)
+"""Async wrapper for os.stat."""
 _stat_a = sync_to_async(stat)
 
 
@@ -111,6 +114,7 @@ class NullLocation:
 
 
 assert issubclass(NullLocation, Location)
+"""Singleton in-memory location used when no real path is available."""
 NULL_LOCATION = NullLocation()
 
 
@@ -333,6 +337,7 @@ class _FileSectionCache(dict[Path, Awaitable[_FileSectionCacheData]]):
         raise TypeError("Unsupported")
 
 
+"""Global cache for file section parsing keyed by path and section name."""
 _FILE_SECTION_CACHE = _FileSectionCache()
 
 

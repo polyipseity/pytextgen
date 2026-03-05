@@ -2,16 +2,10 @@
 
 Covers:
 - `pytextgen.main.parser` produces subcommands and version handling
-- `pytextgen.__main__.main` dispatches to the parser and calls asyncio.run
+- `pytextgen.__main__` calls runnify with the correct arguments.
 """
 
-import argparse
-import asyncio
-import inspect
 from argparse import ArgumentParser
-from collections.abc import Coroutine
-from types import SimpleNamespace
-from typing import Any
 
 import pytest
 
@@ -35,39 +29,25 @@ def test_top_level_parser_has_subcommands_and_version():
     assert hasattr(ns2, "invoke")
 
 
-def test___main___calls_asyncio_run(monkeypatch: pytest.MonkeyPatch):
-    """`__main__` dispatch uses asyncio.run to execute the parser invoke coroutine."""
-    called: dict[str, bool] = {}
+def test___main___calls_runnify_with_correct_arguments(monkeypatch: pytest.MonkeyPatch):
+    """`__main__` calls runnify with main and backend_options use_uvloop True."""
+    runnify_calls: list[tuple[tuple[object, ...], dict[str, object]]] = []
 
-    class DummyParser:
-        """Parser stub that returns a namespace with an async ``invoke`` coroutine."""
+    def capture_runnify(*args: object, **kwargs: object) -> object:
+        """Record runnify arguments and return a no-op callable so __main__ completes."""
+        runnify_calls.append((args, dict(kwargs)))
 
-        def parse_args(self, argv: list[str]):
-            """Return a namespace exposing an async invoke function used by the test."""
+        def noop(*_args: object, **_kwargs: object) -> None:
+            """No-op so runnify(...)() does nothing."""
+            return None
 
-            async def invoke(ns: "argparse.Namespace"):
-                """Coroutine that marks the test as executed when run."""
-                called["ran"] = True
+        return noop
 
-            return SimpleNamespace(invoke=invoke)
+    monkeypatch.setattr(pkg_main, "runnify", capture_runnify)
+    pkg_main.__main__()
 
-    # replace parser used by __main__ with our dummy
-    monkeypatch.setattr(pkg_main, "parser", lambda: DummyParser())
-
-    # capture asyncio.run calls
-    def fake_run(coro: Coroutine[Any, Any, Any]):
-        """Replacement for ``asyncio.run`` that executes the coroutine synchronously.
-
-        The stub asserts the passed object is a coroutine and runs it to
-        exercise the parser-invoke flow inside the test harness.
-        """
-        # ensure it's the coroutine returned by DummyParser.parse_args
-        assert inspect.iscoroutinefunction(coro.__class__) or asyncio.iscoroutine(coro)
-        # run the coroutine to set the marker
-        return asyncio.get_event_loop().run_until_complete(coro)
-
-    monkeypatch.setattr(asyncio, "run", fake_run)
-
-    # basicConfig is safe to call; run the function
-    pkg_main.main()
-    assert called.get("ran") is True
+    assert len(runnify_calls) == 1
+    args, kwargs = runnify_calls[0]
+    assert len(args) == 1
+    assert args[0] is pkg_main.main
+    assert kwargs.get("backend_options") == {"use_uvloop": True}

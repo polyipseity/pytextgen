@@ -79,22 +79,30 @@ __all__ = (
 if TYPE_CHECKING:
     from _typeshed import ReadableBuffer
 
+"""Type variable for generic helpers."""
 _T = TypeVar("_T")
+"""Covariant type variable for generic return types."""
 _T_co = TypeVar("_T_co", covariant=True)
+"""Covariant type variable for single-element sequences."""
 _T1_co = TypeVar("_T1_co", covariant=True)
+"""Type variable bounded by Unit for extension types."""
 _ExtendsUnit = TypeVar("_ExtendsUnit", bound="Unit[Any]")
+"""Tuple of Unicode punctuation characters for splitting."""
 _PUNCTUATIONS = tuple(
     char for char in map(chr, range(maxunicode + 1)) if category(char).startswith("P")
 )
+"""Compiled regex to split on punctuation boundaries."""
 _PUNCTUATION_REGEX = regex.compile(
     r"(?<={delims})(?<!^(?:{delims})+)(?!$|{delims})".format(
         delims=r"|".join(map(escape, _PUNCTUATIONS))
     ),
     regex.VERSION0,
 )
+"""Per-lock thread pool executor used by async_lock."""
 _ASYNC_LOCK_THREAD_POOLS: WeakKeyDictionary[Lock, Callable[[], Executor]] = (
     WeakKeyDictionary()
 )
+"""Async wrapper for os.remove."""
 rm_a = sync_to_async(remove)
 
 

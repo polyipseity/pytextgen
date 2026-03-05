@@ -49,6 +49,7 @@ try:
 except Exception:
     wcswidth = None
 
+"""Type variable for generic helpers in this module."""
 _T = TypeVar("_T")
 
 __all__ = (
@@ -71,6 +72,7 @@ __all__ = (
     "two_columns_to_code",
 )
 
+"""Format string for wrapping section content with newlines."""
 _SECTION_TEXT_FORMAT = "\n\n{}\n\n"
 
 
@@ -93,6 +95,7 @@ class _MarkdownRegex:
     desugared: str
 
 
+"""Tuple of (regex, desugared) pairs for markdown sanitization."""
 _MARKDOWN_REGEXES = (
     _MarkdownRegex(regex=re_compile(r"(?:\b|^)__(?=\S)", NOFLAG), desugared="<b u>"),
     _MarkdownRegex(regex=re_compile(r"(?<=\S)__(?:\b|$)", NOFLAG), desugared="</b u>"),
@@ -107,6 +110,7 @@ _MARKDOWN_REGEXES = (
         desugared=R"<a>\1</a>",
     ),
 )
+"""Regex matching HTML tags for sanitization."""
 _HTML_TAG_REGEX = re_compile(r"<([^>]+)>", NOFLAG)
 
 
@@ -115,6 +119,7 @@ def text(text: str):
     return Unit(text).map(strip_lines).map(_SECTION_TEXT_FORMAT.format).counit()
 
 
+"""Public alias for the text() formatter function."""
 TEXT = text
 
 

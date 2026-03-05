@@ -63,13 +63,16 @@ from .write import PythonWriter, Writer
 
 __all__ = ("Reader", "CodeLibrary", "MarkdownReader")
 
+"""Set of builtin names excluded from the Python execution environment."""
 _PYTHON_ENV_BUILTINS_EXCLUDE = frozenset[str](
     # constants: https://docs.python.org/library/constants.html
     # functions: https://docs.python.org/library/functions.html
 )
+"""Per-event-loop locks for module loading in the Python env."""
 _PYTHON_ENV_MODULE_LOCKS: WeakKeyDictionary[
     AbstractEventLoop, Callable[[], AsyncLock]
 ] = WeakKeyDictionary()
+"""Per-event-loop cache of (root module, namespace) for the Python env."""
 _PYTHON_ENV_MODULE_CACHE: WeakKeyDictionary[
     AbstractEventLoop, tuple[ModuleType, Mapping[str, ModuleType]]
 ] = WeakKeyDictionary()
