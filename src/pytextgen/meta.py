@@ -14,6 +14,7 @@ from typing import Literal, TypedDict, final
 
 """Public symbols exported by this module."""
 __all__ = (
+    "MAX_CONCURRENT_FILE_OPERATIONS",
     "NAME",
     "VERSION",
     "FLASHCARD_EASE_DEFAULT",
@@ -25,6 +26,9 @@ __all__ = (
     "OPEN_TEXT_OPTIONS",
     "UUID",
 )
+
+"""Maximum concurrent file operations to avoid exhausting file descriptors."""
+MAX_CONCURRENT_FILE_OPERATIONS = 256
 
 
 @final

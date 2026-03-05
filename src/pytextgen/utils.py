@@ -51,11 +51,11 @@ from uuid import uuid4
 from weakref import WeakKeyDictionary
 
 import regex
-from anyio import Path
+from anyio import Path, Semaphore
 from asyncer import asyncify
 from pydantic import BaseModel, ConfigDict, TypeAdapter
 
-from .meta import LOGGER, OPEN_TEXT_OPTIONS
+from .meta import LOGGER, MAX_CONCURRENT_FILE_OPERATIONS, OPEN_TEXT_OPTIONS
 
 """Public symbols exported by this module."""
 __all__ = (
@@ -571,10 +571,13 @@ class CompileCache:
             LOGGER.exception(f"Cannot parse metadata file: {metadata_path}")
             entries = []
 
+        semaphore = Semaphore(MAX_CONCURRENT_FILE_OPERATIONS)
+
         async def _process_entry(entry: CompileCache.MetadataEntry):
             """Load a single metadata entry into the in-memory cache.
 
-            Runs inside asyncio.gather to parallelise disk I/O.
+            Runs inside asyncio.gather to parallelise disk I/O; concurrency
+            is bounded to avoid exhausting file descriptors.
             """
             key_model = entry.key
             value_model = entry.value
@@ -582,7 +585,7 @@ class CompileCache:
             path = folder / cache_name
 
             try:
-                async with await path.open(mode="rb") as file:
+                async with semaphore, await path.open(mode="rb") as file:
                     code: CodeType | None = marshal.loads(await file.read())
                     if code is None:
                         raise ValueError
@@ -613,8 +616,13 @@ class CompileCache:
             return
         cur_time = self.__time()
 
+        semaphore = Semaphore(MAX_CONCURRENT_FILE_OPERATIONS)
+
         async def _save_one(key: CompileCache.CacheKey, cache: CompileCache.CacheEntry):
-            """Persist a single cache entry to disk (or remove if expired)."""
+            """Persist a single cache entry to disk (or remove if expired).
+
+            Concurrency is bounded to avoid exhausting file descriptors.
+            """
 
             cache_path = folder / cache.value.cache_name
 
@@ -632,7 +640,10 @@ class CompileCache:
             # ensure the on-disk cache exists; write only when missing
             if not await cache_path.exists():
                 try:
-                    async with await cache_path.open(mode="wb") as cache_file:
+                    async with (
+                        semaphore,
+                        await cache_path.open(mode="wb") as cache_file,
+                    ):
                         await cache_file.write(marshal.dumps(cache.code))
                 except (OSError, ValueError) as exc:
                     LOGGER.exception(f"Cannot save cache with key: {key} ({exc})")

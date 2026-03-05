@@ -13,11 +13,11 @@ from functools import partial, reduce, wraps
 from sys import exit
 from typing import final
 
-from anyio import Path
+from anyio import Path, Semaphore
 
 from ..io.options import ClearOpts, ClearType
 from ..io.write import ClearWriter
-from ..meta import LOGGER, VERSION
+from ..meta import LOGGER, MAX_CONCURRENT_FILE_OPERATIONS, VERSION
 
 """Public symbols exported by this module."""
 __all__ = ("ExitCode", "Arguments", "main", "parser")
@@ -72,10 +72,12 @@ async def main(args: Arguments):
     """Main async entry point for the `clear` command.
 
     Processes inputs according to `args` and writes cleared files back to
-    disk. Returns by calling `sys.exit` with an `ExitCode` value.
+    disk. Returns by calling `sys.exit` with an `ExitCode` value. Concurrency
+    is bounded to avoid exhausting file descriptors when processing many inputs.
     """
     exit_code = ExitCode(0)
     options = ClearOpts(types=args.types)
+    semaphore = Semaphore(MAX_CONCURRENT_FILE_OPERATIONS)
 
     async def write(input: Path):
         """Write a single input using `ClearWriter`; return an ExitCode.
@@ -84,7 +86,7 @@ async def main(args: Arguments):
         concurrently and returns `ExitCode.ERROR` on failure.
         """
         try:
-            async with ClearWriter(input, options=options).write():
+            async with semaphore, ClearWriter(input, options=options).write():
                 pass
         except Exception:
             LOGGER.exception(f"Exception writing file: {input}")

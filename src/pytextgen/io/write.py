@@ -14,12 +14,13 @@ from datetime import datetime
 from types import CodeType
 from typing import Any, ClassVar, cast
 
-from anyio import Path
+from anyio import Path, Semaphore
 
 from ..meta import (
     FLASHCARD_STATES_REGEX,
     GENERATE_COMMENT_FORMAT,
     GENERATE_COMMENT_REGEX,
+    MAX_CONCURRENT_FILE_OPERATIONS,
 )
 from ..utils import abc_subclasshook_check
 from .env import Environment
@@ -91,6 +92,7 @@ class ClearWriter:
                 if (text := self.__FLASHCARD_STATES_REGEX.sub("", read)) != read:
                     await wrap_async(io.write(text))
                     await wrap_async(io.truncate())
+
         else:
 
             async def process(io: AnyTextIO) -> None:
@@ -179,15 +181,21 @@ class PythonWriter:
             for r in results:
                 groups.setdefault(r.location, []).append(r)
 
+            semaphore = Semaphore(MAX_CONCURRENT_FILE_OPERATIONS)
+
             async def process_group(group: Sequence[Result]) -> None:
                 """Write concatenated `Result` content for a single target `Location`.
 
                 Uses file locking when appropriate and only updates the file when the
                 concatenated text differs from the existing generated section.
+                Concurrency is bounded to avoid exhausting file descriptors.
                 """
                 loc = group[0].location
                 path = loc.path
-                async with nullcontext() if path is None else lock_file(path):
+                async with (
+                    semaphore,
+                    nullcontext() if path is None else lock_file(path),
+                ):
                     async with loc.open() as io:
                         read = await wrap_async(io.read())
                         await wrap_async(io.seek(0))

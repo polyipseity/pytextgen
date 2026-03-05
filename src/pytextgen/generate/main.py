@@ -14,12 +14,12 @@ from itertools import chain
 from sys import exit
 from typing import final
 
-from anyio import Path
+from anyio import Path, Semaphore
 
 from ..io.options import GenOpts
 from ..io.read import Reader
 from ..io.write import Writer
-from ..meta import LOGGER, VERSION
+from ..meta import LOGGER, MAX_CONCURRENT_FILE_OPERATIONS, VERSION
 from ..utils import CompileCache
 
 """Public symbols exported by this module."""
@@ -71,14 +71,17 @@ async def main(args: Arguments):
     """Main async entry point for the `generate` subcommand.
 
     Reads inputs, validates and writes generated output. Exits with an
-    appropriate `ExitCode` on error.
+    appropriate `ExitCode` on error. Concurrency is bounded to avoid
+    exhausting file descriptors when processing many inputs.
     """
     exit_code = ExitCode(0)
+    semaphore = Semaphore(MAX_CONCURRENT_FILE_OPERATIONS)
 
     async def read(input: Path):
         """Read `input` using `Reader.cached` and return writer sequence or an ExitCode."""
         try:
-            return (await Reader.cached(path=input, options=args.options)).pipe()
+            async with semaphore:
+                return (await Reader.cached(path=input, options=args.options)).pipe()
         except Exception:
             LOGGER.exception(f"Exception reading file: {input}")
             return ExitCode.READ_ERROR
@@ -104,17 +107,18 @@ async def main(args: Arguments):
 
     async def write(writer: Writer):
         """Validate and write a single `Writer` instance, returning an ExitCode."""
-        write = writer.write()
-        try:
-            await write.__aenter__()
-        except Exception:
-            LOGGER.exception(f"Error while validation: {writer}")
-            return ExitCode.VALIDATE_ERROR
-        try:
-            await write.__aexit__(None, None, None)
-        except Exception:
-            LOGGER.exception(f"Error while writing: {writer}")
-            return ExitCode.WRITE_ERROR
+        async with semaphore:
+            write_ctx = writer.write()
+            try:
+                await write_ctx.__aenter__()
+            except Exception:
+                LOGGER.exception(f"Error while validation: {writer}")
+                return ExitCode.VALIDATE_ERROR
+            try:
+                await write_ctx.__aexit__(None, None, None)
+            except Exception:
+                LOGGER.exception(f"Error while writing: {writer}")
+                return ExitCode.WRITE_ERROR
         return ExitCode(0)
 
     exit_code = reduce(
