@@ -51,8 +51,8 @@ from uuid import uuid4
 from weakref import WeakKeyDictionary
 
 import regex
-from aioshutil import sync_to_async
 from anyio import Path
+from asyncer import asyncify
 from pydantic import BaseModel, ConfigDict, TypeAdapter
 
 from .meta import LOGGER, OPEN_TEXT_OPTIONS
@@ -104,7 +104,7 @@ _ASYNC_LOCK_THREAD_POOLS: WeakKeyDictionary[Lock, Callable[[], Executor]] = (
     WeakKeyDictionary()
 )
 """Async wrapper for os.remove."""
-rm_a = sync_to_async(remove)
+_rm_a = asyncify(remove)
 
 
 @overload
@@ -589,7 +589,7 @@ class CompileCache:
             except (OSError, ValueError, EOFError, TypeError) as exc:
                 LOGGER.exception(f"Cannot load code cache: {path} ({exc})")
                 with suppress(FileNotFoundError, OSError):
-                    await rm_a(path)
+                    await _rm_a(path)
                 return
 
             self.__cache_names.add(cache_name)
@@ -621,7 +621,7 @@ class CompileCache:
             # drop expired cache files
             if cur_time - cache.value.access_time >= self.__TIMEOUT:
                 with suppress(FileNotFoundError, OSError):
-                    await rm_a(cache_path)
+                    await _rm_a(cache_path)
                 return None
 
             # return the Pydantic model (do not individually serialise here)
@@ -637,7 +637,7 @@ class CompileCache:
                 except (OSError, ValueError) as exc:
                     LOGGER.exception(f"Cannot save cache with key: {key} ({exc})")
                     with suppress(FileNotFoundError, OSError):
-                        await rm_a(cache_path)
+                        await _rm_a(cache_path)
                     return None
 
             return entry_model

@@ -28,8 +28,8 @@ from typing import (
 )
 from weakref import WeakKeyDictionary
 
-from aioshutil import sync_to_async
 from anyio import AsyncFile, Path
+from asyncer import asyncify
 
 from ..meta import NAME, OPEN_TEXT_OPTIONS
 from ..utils import (
@@ -55,7 +55,7 @@ AnyTextIO = TextIO | AsyncFile[str]
 """Per-path locks for concurrent file access."""
 _FILE_LOCKS = defaultdict[Path, Lock](Lock)
 """Async wrapper for os.stat."""
-_stat_a = sync_to_async(stat)
+_stat_a = asyncify(stat)
 
 
 @asynccontextmanager
