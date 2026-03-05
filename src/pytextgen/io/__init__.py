@@ -9,4 +9,5 @@ subcommands, along with helpers to operate on file sections.
 #   from pytextgen.io.read import Reader
 #   from pytextgen.io.options import GenOpts
 
+"""Public symbols exported by this module (none)."""
 __all__ = ()

@@ -47,11 +47,13 @@ from .text_code import (
 try:
     from wcwidth import wcswidth
 except Exception:
+    """Fallback when wcwidth is not available; callers check for None."""
     wcswidth = None
 
 """Type variable for generic helpers in this module."""
 _T = TypeVar("_T")
 
+"""Public symbols exported by this module."""
 __all__ = (
     "text",
     "quote",

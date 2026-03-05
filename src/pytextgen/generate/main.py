@@ -22,6 +22,7 @@ from ..io.write import Writer
 from ..meta import LOGGER, VERSION
 from ..utils import CompileCache
 
+"""Public symbols exported by this module."""
 __all__ = ("ExitCode", "Arguments", "main", "parser")
 
 

@@ -35,6 +35,7 @@ from ..utils import (
 )
 from .configs import CONFIG, FlashcardSeparatorType
 
+"""Public symbols exported by this module."""
 __all__ = (
     "AnyTextIO",
     "ClozeFlashcardGroup",

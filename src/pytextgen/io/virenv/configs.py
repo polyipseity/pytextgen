@@ -12,6 +12,7 @@ from typing import (
     final,
 )
 
+"""Public symbols exported by this module."""
 __all__ = ("FlashcardSeparatorType", "Configuration", "CONFIG")
 
 

@@ -12,6 +12,7 @@ from typing import Any, ClassVar, cast, final
 
 from ..meta import UUID
 
+"""Public symbols exported by this module."""
 __all__ = ("Environment",)
 
 

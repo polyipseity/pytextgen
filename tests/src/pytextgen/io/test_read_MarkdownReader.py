@@ -18,6 +18,7 @@ from pytextgen.io.options import GenOpts
 from pytextgen.io.read import CodeLibrary, MarkdownReader, Reader
 from pytextgen.io.write import Writer
 
+"""Public symbols exported by this module (none)."""
 __all__ = ()
 
 

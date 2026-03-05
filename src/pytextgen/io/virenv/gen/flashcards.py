@@ -19,6 +19,7 @@ from ..utils import (
     split_by_punctuations,
 )
 
+"""Public symbols exported by this module."""
 __all__ = (
     "attach_flashcard_states",
     "listify_flashcards",

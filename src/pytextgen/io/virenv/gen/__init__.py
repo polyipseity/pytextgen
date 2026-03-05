@@ -11,4 +11,5 @@ Keeping a minimal package surface avoids accidental API stabilization and
 makes the origin of each symbol explicit.
 """
 
+"""Public symbols exported by this module (none)."""
 __all__ = ()

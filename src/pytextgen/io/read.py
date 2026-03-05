@@ -61,6 +61,7 @@ from .utils import NULL_LOCATION, FileSection
 from .virenv.utils import StatefulFlashcardGroup
 from .write import PythonWriter, Writer
 
+"""Public symbols exported by this module."""
 __all__ = ("Reader", "CodeLibrary", "MarkdownReader")
 
 """Set of builtin names excluded from the Python execution environment."""

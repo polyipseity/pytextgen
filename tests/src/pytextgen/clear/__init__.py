@@ -5,4 +5,5 @@ directory as a package.  Declares an empty `__all__` for test suite
 compliance.
 """
 
+"""Public symbols exported by this module (none)."""
 __all__ = ()

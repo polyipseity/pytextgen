@@ -13,6 +13,7 @@ from anyio import Path
 
 from pytextgen.meta import OPEN_TEXT_OPTIONS
 
+"""Public symbols exported by this module (none)."""
 __all__ = ()
 
 

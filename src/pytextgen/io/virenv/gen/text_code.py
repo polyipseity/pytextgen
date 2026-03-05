@@ -22,6 +22,7 @@ from typing import (
 from ..utils import constant
 from .misc import Tag
 
+"""Public symbols exported by this module."""
 __all__ = (
     "TextCode",
     "code_to_strs",

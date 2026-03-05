@@ -19,6 +19,7 @@ from ..io.options import ClearOpts, ClearType
 from ..io.write import ClearWriter
 from ..meta import LOGGER, VERSION
 
+"""Public symbols exported by this module."""
 __all__ = ("ExitCode", "Arguments", "main", "parser")
 
 

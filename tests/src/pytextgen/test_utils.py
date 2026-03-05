@@ -46,6 +46,7 @@ from pytextgen.utils import (
     tuple1,
 )
 
+"""Public symbols exported by this module (none)."""
 __all__ = ()
 
 

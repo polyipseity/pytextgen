@@ -5,4 +5,5 @@ are defined in `pytextgen.meta`. This top-level `__init__` intentionally
 exports nothing and acts as a lightweight package marker.
 """
 
+"""Public symbols exported by this module (none)."""
 __all__ = ()

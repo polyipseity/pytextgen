@@ -2,4 +2,5 @@
 
 from ..read import read_flashcard_states
 
+"""Public symbols exported by this module."""
 __all__ = ("read_flashcard_states",)

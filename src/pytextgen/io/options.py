@@ -11,6 +11,7 @@ from typing import final
 
 from ..utils import Compiler
 
+"""Public symbols exported by this module."""
 __all__ = ("ClearType", "ClearOpts", "GenOpts")
 
 

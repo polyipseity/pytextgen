@@ -38,6 +38,7 @@ from ..utils import (
     wrap_async,
 )
 
+"""Public symbols exported by this module."""
 __all__ = (
     "AnyTextIO",
     "lock_file",

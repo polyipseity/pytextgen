@@ -16,6 +16,7 @@ from .generate.main import __package__ as generate_package
 from .generate.main import parser as generate_parser
 from .meta import VERSION
 
+"""Public symbols exported by this module."""
 __all__ = ("parser",)
 
 

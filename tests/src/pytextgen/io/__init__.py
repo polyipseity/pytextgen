@@ -3,4 +3,5 @@
 Contains lightweight modules used by unit tests.
 """
 
+"""Public symbols exported by this module (none)."""
 __all__ = ()

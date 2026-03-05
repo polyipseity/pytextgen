@@ -3,6 +3,7 @@
 from ..utils import Location
 from .utils import FlashcardStateGroup, wrap_async
 
+"""Public symbols exported by this module."""
 __all__ = ("read_flashcard_states",)
 
 

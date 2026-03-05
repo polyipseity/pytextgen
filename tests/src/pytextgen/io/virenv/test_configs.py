@@ -2,6 +2,7 @@
 
 from pytextgen.io.virenv.configs import CONFIG, FlashcardSeparatorType
 
+"""Public symbols exported by this module (none)."""
 __all__ = ()
 
 

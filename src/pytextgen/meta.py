@@ -12,6 +12,7 @@ from datetime import datetime
 from logging import getLogger
 from typing import Literal, TypedDict, final
 
+"""Public symbols exported by this module."""
 __all__ = (
     "NAME",
     "VERSION",

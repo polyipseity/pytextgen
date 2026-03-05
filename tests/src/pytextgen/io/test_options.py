@@ -2,6 +2,7 @@
 
 from pytextgen.io.options import ClearOpts, ClearType
 
+"""Public symbols exported by this module (none)."""
 __all__ = ()
 
 

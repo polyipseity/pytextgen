@@ -2,4 +2,5 @@
 
 from ..configs import CONFIG, Configuration, FlashcardSeparatorType
 
+"""Public symbols exported by this module."""
 __all__ = ("FlashcardSeparatorType", "Configuration", "CONFIG")

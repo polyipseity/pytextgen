@@ -12,6 +12,7 @@ import pytest
 from pytextgen import __main__ as pkg_main
 from pytextgen import main as top_main
 
+"""Public symbols exported by this module (none)."""
 __all__ = ()
 
 

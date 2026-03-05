@@ -15,6 +15,7 @@ import pytextgen.generate.main as gen_main
 from pytextgen.generate.main import Arguments, ExitCode
 from pytextgen.io.options import GenOpts
 
+"""Public symbols exported by this module (none)."""
 __all__ = ()
 
 

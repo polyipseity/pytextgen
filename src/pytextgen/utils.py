@@ -57,6 +57,7 @@ from pydantic import BaseModel, ConfigDict, TypeAdapter
 
 from .meta import LOGGER, OPEN_TEXT_OPTIONS
 
+"""Public symbols exported by this module."""
 __all__ = (
     "wrap_async",
     "identity",

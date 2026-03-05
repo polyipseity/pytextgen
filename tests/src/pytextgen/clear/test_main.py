@@ -12,6 +12,7 @@ import pytextgen.clear.main as clear_main
 from pytextgen.clear.main import Arguments, ExitCode
 from pytextgen.io.options import ClearType
 
+"""Public symbols exported by this module (none)."""
 __all__ = ()
 
 

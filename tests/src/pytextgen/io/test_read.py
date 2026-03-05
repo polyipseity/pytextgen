@@ -8,6 +8,7 @@ from anyio import Path
 from pytextgen.io.options import GenOpts
 from pytextgen.io.read import CodeLibrary, Reader
 
+"""Public symbols exported by this module (none)."""
 __all__ = ()
 
 

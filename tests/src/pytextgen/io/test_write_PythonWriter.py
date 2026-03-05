@@ -19,6 +19,7 @@ from pytextgen.io.utils import Location, PathLocation, Result
 from pytextgen.io.write import PythonWriter
 from pytextgen.meta import GENERATE_COMMENT_FORMAT, GENERATE_COMMENT_REGEX
 
+"""Public symbols exported by this module (none)."""
 __all__ = ()
 
 

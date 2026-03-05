@@ -38,6 +38,7 @@ from ..gen.users import (
     two_columns_to_code,
 )
 
+"""Public symbols exported by this module."""
 __all__ = (
     "attach_flashcard_states",
     "listify_flashcards",

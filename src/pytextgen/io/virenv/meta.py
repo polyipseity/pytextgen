@@ -6,6 +6,7 @@ This module centralizes the small package-level public surface (currently
 
 from .configs import Configuration
 
+"""Public symbols exported by this module."""
 __all__ = ("dirty",)
 
 

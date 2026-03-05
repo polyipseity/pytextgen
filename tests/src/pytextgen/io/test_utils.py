@@ -2,6 +2,7 @@
 
 from pytextgen.io.utils import NULL_LOCATION, Result
 
+"""Public symbols exported by this module (none)."""
 __all__ = ()
 
 

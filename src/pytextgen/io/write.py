@@ -26,6 +26,7 @@ from .env import Environment
 from .options import ClearOpts, ClearType, GenOpts
 from .utils import AnyTextIO, FileSection, Location, Result, lock_file, wrap_async
 
+"""Public symbols exported by this module."""
 __all__ = ("Writer", "ClearWriter", "PythonWriter")
 
 

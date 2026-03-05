@@ -11,6 +11,7 @@ from asyncer import runnify
 
 from .main import parser
 
+"""Public symbols exported by this module."""
 __all__ = ("main",)
 
 

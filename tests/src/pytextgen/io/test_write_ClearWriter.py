@@ -10,6 +10,7 @@ from pytextgen.io.options import ClearOpts, ClearType
 from pytextgen.io.write import ClearWriter
 from pytextgen.meta import GENERATE_COMMENT_FORMAT, GENERATE_COMMENT_REGEX
 
+"""Public symbols exported by this module (none)."""
 __all__ = ()
 
 
