@@ -1,4 +1,0 @@
-extends = "../.rumdl.toml"
-
-[global]
-extend-disable = ["MD013", "MD036"]
