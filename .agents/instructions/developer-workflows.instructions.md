@@ -54,6 +54,6 @@ Agent & automation rules:
   tuple literal immediately after imports and keep tests explicit with
   `__all__ = ()`. Run formatting, type checks, and tests after changes and add
   or update tests that validate the exposed API where appropriate.
-- See `.github/instructions/agents.instructions.md` for an AI agent runbook with
+- See `.agents/instructions/agents.instructions.md` for an AI agent runbook with
   concrete commands, repo-specific patterns (imports, `__all__`, version bump
   workflow), and a pre-PR checklist to follow.

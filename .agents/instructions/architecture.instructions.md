@@ -26,7 +26,7 @@ Important invariants:
 
 If you add new top-level folders, update this document and `AGENTS.md`.
 
-Agent note: For AI agents and automation, consult `.github/instructions/agents.instructions.md` for a short runbook that includes pre-PR checks and repo-specific patterns (for example: the package follows an async-first approach using AnyIO/Asyncer for concurrency, and uses import aliasing conventions in `src/pytextgen/util.py`).
+Agent note: For AI agents and automation, consult `.agents/instructions/agents.instructions.md` for a short runbook that includes pre-PR checks and repo-specific patterns (for example: the package follows an async-first approach using AnyIO/Asyncer for concurrency, and uses import aliasing conventions in `src/pytextgen/util.py`).
 
 Key component callouts:
 

@@ -23,7 +23,7 @@ pytextgen is a focused utility for generating programmatic content blocks in Mar
 
 ## Documentation Structure
 
-Store long-form guidance in `.github/instructions/` or `docs/` when appropriate. Recommended instruction pages include (examples):
+Store long-form guidance in `.agents/instructions/` or `docs/` when appropriate. Recommended instruction pages include (examples):
 
 - `developer-workflows.instructions.md` — Development process, how to run checks, and CI expectations.
 - `formatting.instructions.md` — How to run and configure formatters and linters locally.
@@ -155,7 +155,7 @@ This repository includes an agent-specific runbook to help automated contributor
 
 Quick checklist (run before committing or opening a PR):
 
-- Read `.github/instructions/*` (especially `developer-workflows.instructions.md` and `agents.instructions.md`).
+- Read `.agents/instructions/*` (especially `developer-workflows.instructions.md` and `agents.instructions.md`).
 - Sync the environment: `uv sync --all-extras --dev` and install hooks: `prek install`.
 - Format & lint: `uv run ruff check --fix` and `uv run ruff format`.
 - Run pre-commit hooks: `prek run --all-files` (or `pre-commit run --all-files` if using pre-commit).
