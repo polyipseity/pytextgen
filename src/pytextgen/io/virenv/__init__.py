@@ -6,4 +6,5 @@ intentionally defined in `pytextgen.io.virenv.meta` and `__init__.py` keeps
 this package minimal (no public exports) to avoid accidental re-exports.
 """
 
+"""Public API exports (none)."""
 __all__ = ()
