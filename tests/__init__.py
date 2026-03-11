@@ -1,4 +1,4 @@
 """Package initialization for tests."""
 
-"""Public symbols exported by this module (none)."""
+"""Public API of the tests package."""
 __all__ = ()
