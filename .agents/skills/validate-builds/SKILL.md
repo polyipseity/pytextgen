@@ -102,7 +102,3 @@ python -c "import pytextgen; print(pytextgen.VERSION)"
 - run: python -m pip install --no-deps dist/*.whl
 - run: python -c "import pytextgen; assert pytextgen.VERSION == '$(cat pyproject.toml | grep version | ... )'"
 ```
-
----
-
-If you want, I can also add a small validation script (`scripts/validate_build.py`) that implements the automated checklist and returns an exit code and JSON report for agents to consume.
