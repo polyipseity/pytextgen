@@ -2,7 +2,6 @@
 name: bump-version
 description: Bump the project version (MAJOR | MINOR | PATCH), update files, and create a signed release commit and tag by default.
 argument-hint: Required `part=major|minor|patch`. Optional `commitNow=no` to skip committing; `tag=no` to skip tagging; `push=no` to skip pushing.
-agent: agent
 ---
 
 # Bump Version
