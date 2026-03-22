@@ -6,7 +6,6 @@ updating named file sections, and small helpers used by readers/writers.
 
 import re
 from abc import ABCMeta, abstractmethod
-from asyncio import TaskGroup, create_task
 from collections import defaultdict
 from collections.abc import AsyncIterator, Awaitable, Callable, Iterable, Mapping
 from contextlib import AbstractAsyncContextManager, asynccontextmanager
@@ -16,7 +15,7 @@ from io import StringIO
 from itertools import islice
 from os import stat
 from os.path import splitext
-from threading import Lock
+from threading import Lock as ThreadingLock
 from types import MappingProxyType, TracebackType
 from typing import (
     Any,
@@ -53,7 +52,7 @@ __all__ = (
 """Type alias for sync or async text file-like objects."""
 AnyTextIO = TextIO | AsyncFile[str]
 """Per-path locks for concurrent file access."""
-_FILE_LOCKS = defaultdict[Path, Lock](Lock)
+_FILE_LOCKS = defaultdict[Path, ThreadingLock](ThreadingLock)
 """Async wrapper for os.stat."""
 _stat_a = asyncify(stat)
 
@@ -268,7 +267,7 @@ class _FileSectionCache(dict[Path, Awaitable[_FileSectionCacheData]]):
     def __init__(self):
         """Initialise the file-section cache with per-path locks."""
         super().__init__()
-        self.__locks = WeakKeyDictionary[Path, Callable[[], Lock]]()
+        self.__locks = WeakKeyDictionary[Path, Callable[[], ThreadingLock]]()
 
     async def __getitem__(self, key: Path):
         """Return cached file-section metadata for `key`, refreshing when stale.
@@ -283,7 +282,7 @@ class _FileSectionCache(dict[Path, Awaitable[_FileSectionCacheData]]):
             format = FileSection.SECTION_FORMATS[ext]
         except KeyError as ex:
             raise ValueError(f"Unknown extension: {key}") from ex
-        async with async_lock(self.__locks.setdefault(key, cache(Lock))()):
+        async with async_lock(self.__locks.setdefault(key, cache(ThreadingLock))()):
             try:
                 cache_ = await super().__getitem__(key)
             except KeyError:
@@ -325,9 +324,7 @@ class _FileSectionCache(dict[Path, Awaitable[_FileSectionCacheData]]):
                         sections=sections,
                     )
             finally:
-                cache_ = create_task(
-                    wrap_async(cache_)
-                )  # Use `create_task` to avoid `RuntimeError` on already-awaited awaitables.`
+                cache_ = wrap_async(cache_)  # Ensure cache is awaitable
                 super().__setitem__(key, cache_)  # Replenish awaitable
         return (
             await cache_
@@ -381,24 +378,17 @@ class _FileSectionIO(StringIO):
         """
         try:
             try:
-
-                async def reader():
-                    """Read the current file contents asynchronously for comparison."""
+                self.seek(0)
+                if (text := self.read()) != self.__initial_value:
                     await self.__file.seek(0)
-                    return await self.__file.read()
-
-                read_task = create_task(reader())
-                try:
-                    self.seek(0)
-                    if (text := self.read()) != self.__initial_value:
-                        read = await read_task
-                        async with TaskGroup() as tg:
-                            _ = tg.create_task(self.__file.seek(0))
-                            text = f"{read[: self.__slice.start]}{text}{read[self.__slice.stop :]}"
-                        await self.__file.write(text)
-                        await self.__file.truncate()
-                finally:
-                    read_task.cancel()
+                    read = (
+                        await self.__file.read()
+                    )  # Read current file content for merging
+                    await self.__file.seek(0)  # Write from start, not append
+                    await self.__file.write(
+                        f"{read[: self.__slice.start]}{text}{read[self.__slice.stop :]}"
+                    )
+                    await self.__file.truncate()
             finally:
                 await self.__file.aclose()
         finally:

@@ -7,7 +7,6 @@ sections (`ClearWriter`) or write generated Python-based output
 
 import re
 from abc import ABCMeta, abstractmethod
-from asyncio import gather
 from collections.abc import AsyncIterator, Iterable, MutableSequence, Sequence
 from contextlib import AbstractAsyncContextManager, asynccontextmanager, nullcontext
 from datetime import datetime
@@ -15,6 +14,7 @@ from types import CodeType
 from typing import Any, ClassVar, cast
 
 from anyio import Path, Semaphore
+from asyncer import create_task_group
 
 from ..meta import (
     FLASHCARD_STATES_REGEX,
@@ -219,7 +219,9 @@ class PythonWriter:
                             await wrap_async(io.write(text))
                             await wrap_async(io.truncate())
 
-            await gather(*map(process_group, groups.values()))
+            async with create_task_group() as tg:
+                for group in groups.values():
+                    tg.soonify(process_group)(group)
 
 
 assert issubclass(PythonWriter, Writer)

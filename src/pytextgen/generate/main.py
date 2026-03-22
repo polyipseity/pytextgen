@@ -5,16 +5,16 @@ used by the top-level CLI.
 """
 
 from argparse import ONE_OR_MORE, ArgumentParser, Namespace
-from asyncio import gather
 from collections.abc import Callable, Iterable, MutableSequence, Sequence
 from dataclasses import dataclass
 from enum import IntFlag, auto, unique
-from functools import partial, reduce, wraps
+from functools import reduce, wraps
 from itertools import chain
 from sys import exit
 from typing import final
 
 from anyio import Path, Semaphore
+from asyncer import SoonValue, create_task_group
 
 from ..io.options import GenOpts
 from ..io.read import Reader
@@ -77,7 +77,7 @@ async def main(args: Arguments):
     exit_code = ExitCode(0)
     semaphore = Semaphore(MAX_CONCURRENT_FILE_OPERATIONS)
 
-    async def read(input: Path):
+    async def read(input: Path) -> Iterable[Writer] | ExitCode:
         """Read `input` using `Reader.cached` and return writer sequence or an ExitCode."""
         try:
             async with semaphore:
@@ -98,14 +98,21 @@ async def main(args: Arguments):
             seq.append(right)
         return (seq, code)
 
+    # Read all inputs concurrently using structured concurrency
+    read_results: list[SoonValue[Iterable[Writer] | ExitCode]] = []
+    async with create_task_group() as tg:
+        for inp in args.inputs:
+            soon = tg.soonify(read)(inp)
+            read_results.append(soon)
+
     writers0, exit_code = reduce(
         reduce_read_result,
-        await gather(*map(read, args.inputs)),
+        [r.value for r in read_results],
         (list[Iterable[Writer]](), exit_code),
     )
     writers = chain.from_iterable(writers0)
 
-    async def write(writer: Writer):
+    async def write(writer: Writer) -> ExitCode:
         """Validate and write a single `Writer` instance, returning an ExitCode."""
         async with semaphore:
             write_ctx = writer.write()
@@ -121,9 +128,16 @@ async def main(args: Arguments):
                 return ExitCode.WRITE_ERROR
         return ExitCode(0)
 
+    # Write all writers concurrently using structured concurrency
+    write_results: list[SoonValue[ExitCode]] = []
+    async with create_task_group() as tg:
+        for w in writers:
+            soon = tg.soonify(write)(w)
+            write_results.append(soon)
+
     exit_code = reduce(
         lambda left, right: left | right,
-        await gather(*map(write, writers)),
+        [r.value for r in write_results],
         exit_code,
     )
     exit(exit_code)
@@ -218,11 +232,16 @@ def parser(parent: Callable[..., ArgumentParser] | None = None):
                 else await args.code_cache.resolve()
             )
         ) as cache:
+            # Resolve paths concurrently
+            resolved_paths: list[SoonValue[Path]] = []
+            async with create_task_group() as tg:
+                for inp in args.inputs:
+                    soon = tg.soonify(Path.resolve)(inp, strict=True)
+                    resolved_paths.append(soon)
+
             await main(
                 Arguments(
-                    inputs=await gather(
-                        *map(partial(Path.resolve, strict=True), args.inputs)
-                    ),
+                    inputs=[r.value for r in resolved_paths],
                     options=GenOpts(
                         timestamp=args.timestamp,
                         init_flashcards=args.init_flashcards,

@@ -5,15 +5,15 @@ top-level CLI.
 """
 
 from argparse import ONE_OR_MORE, ArgumentParser, Namespace
-from asyncio import gather
 from collections.abc import Callable, Sequence, Set
 from dataclasses import dataclass
 from enum import IntFlag, auto, unique
-from functools import partial, reduce, wraps
+from functools import reduce, wraps
 from sys import exit
 from typing import final
 
 from anyio import Path, Semaphore
+from asyncer import SoonValue, create_task_group
 
 from ..io.options import ClearOpts, ClearType
 from ..io.write import ClearWriter
@@ -79,11 +79,11 @@ async def main(args: Arguments):
     options = ClearOpts(types=args.types)
     semaphore = Semaphore(MAX_CONCURRENT_FILE_OPERATIONS)
 
-    async def write(input: Path):
+    async def write(input: Path) -> ExitCode:
         """Write a single input using `ClearWriter`; return an ExitCode.
 
-        This inner coroutine is used with `asyncio.gather` to process inputs
-        concurrently and returns `ExitCode.ERROR` on failure.
+        This inner coroutine is used with structured concurrency to process
+        inputs concurrently and returns `ExitCode.ERROR` on failure.
         """
         try:
             async with semaphore, ClearWriter(input, options=options).write():
@@ -93,9 +93,16 @@ async def main(args: Arguments):
             return ExitCode.ERROR
         return ExitCode(0)
 
+    # Write all inputs concurrently using structured concurrency
+    write_results: list[SoonValue[ExitCode]] = []
+    async with create_task_group() as tg:
+        for inp in args.inputs:
+            soon = tg.soonify(write)(inp)
+            write_results.append(soon)
+
     exit_code = reduce(
         lambda left, right: left | right,
-        await gather(*map(write, args.inputs)),
+        [r.value for r in write_results],
         exit_code,
     )
     exit(exit_code)
@@ -145,14 +152,16 @@ def parser(parent: Callable[..., ArgumentParser] | None = None):
     @wraps(main)
     async def invoke(args: Namespace):
         """Resolve input paths and invoke `main` with constructed Arguments."""
+        # Resolve paths concurrently
+        resolved_paths: list[SoonValue[Path]] = []
+        async with create_task_group() as tg:
+            for inp in args.inputs:
+                soon = tg.soonify(Path.resolve)(inp, strict=True)
+                resolved_paths.append(soon)
+
         await main(
             Arguments(
-                inputs=await gather(
-                    *map(
-                        partial(Path.resolve, strict=True),
-                        args.inputs,
-                    )
-                ),
+                inputs=[r.value for r in resolved_paths],
                 types=args.types,
             )
         )

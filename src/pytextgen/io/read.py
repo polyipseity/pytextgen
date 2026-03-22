@@ -8,8 +8,6 @@ import builtins
 import re
 from abc import ABCMeta, abstractmethod
 from ast import parse
-from asyncio import AbstractEventLoop, get_running_loop
-from asyncio import Lock as AsyncLock
 from collections import defaultdict
 from collections.abc import (
     AsyncIterator,
@@ -28,12 +26,12 @@ from contextlib import (
 )
 from dataclasses import replace
 from datetime import date
-from functools import cache, partial, wraps
+from functools import partial, wraps
 from importlib import import_module
 from itertools import chain, repeat
 from os.path import splitext
 from sys import modules
-from threading import Lock as ThreadLock
+from threading import Lock as ThreadingLock
 from types import CodeType, MappingProxyType, ModuleType
 from typing import (
     Any,
@@ -41,7 +39,6 @@ from typing import (
     Self,
 )
 from unittest import mock
-from weakref import WeakKeyDictionary
 
 from anyio import Path
 from asyncstdlib import chain as achain
@@ -69,14 +66,10 @@ _PYTHON_ENV_BUILTINS_EXCLUDE = frozenset[str](
     # constants: https://docs.python.org/library/constants.html
     # functions: https://docs.python.org/library/functions.html
 )
-"""Per-event-loop locks for module loading in the Python env."""
-_PYTHON_ENV_MODULE_LOCKS: WeakKeyDictionary[
-    AbstractEventLoop, Callable[[], AsyncLock]
-] = WeakKeyDictionary()
-"""Per-event-loop cache of (root module, namespace) for the Python env."""
-_PYTHON_ENV_MODULE_CACHE: WeakKeyDictionary[
-    AbstractEventLoop, tuple[ModuleType, Mapping[str, ModuleType]]
-] = WeakKeyDictionary()
+"""Module-level lock for initializing the shared Python env."""
+_PYTHON_ENV_LOCK = ThreadingLock()
+"""Cached module root and map for the Python environment."""
+_pythonEnvModuleRootMap: tuple[ModuleType, Mapping[str, ModuleType]] | None = None
 
 
 class Reader(metaclass=ABCMeta):
@@ -89,7 +82,7 @@ class Reader(metaclass=ABCMeta):
     __slots__: ClassVar = ()
     REGISTRY: ClassVar = dict[str, type[Self]]()
     __CACHE: ClassVar = dict[Path, Self]()
-    __CACHE_LOCKS: ClassVar = defaultdict[Path, ThreadLock](ThreadLock)
+    __CACHE_LOCKS: ClassVar = defaultdict[Path, ThreadingLock](ThreadingLock)
 
     @classmethod
     def register2(cls, *extensions: str):
@@ -268,16 +261,14 @@ def _Python_env(
     async def context():
         """Async context manager that prepares an isolated execution environment.
 
-        Acquires a per-event-loop lock, prepares a fresh copy of the
-        ``pytextgen.io.virenv`` package (and its submodules) and installed a
-        temporary ``modules`` mapping so generated code runs in isolation.
-        The prepared root module is cached per event-loop for reuse.
+        Uses a global async lock to ensure fresh copies of the
+        ``pytextgen.io.virenv`` package are initialized once and cached
+        for reuse across invocations.
         """
-        loop = get_running_loop()
-        async with _PYTHON_ENV_MODULE_LOCKS.setdefault(loop, cache(AsyncLock))():
-            try:
-                root_mod, module_map = _PYTHON_ENV_MODULE_CACHE[loop]
-            except KeyError:
+        global _pythonEnvModuleRootMap, _pythonEnvModuleMap
+
+        async with async_lock(_PYTHON_ENV_LOCK):
+            if _pythonEnvModuleRootMap is None:
                 # obtain fresh copies of the package and its submodules
                 fresh = list(deep_copy_package(import_module(".virenv", __package__)))
                 # `fresh` is a list of (fullname, module) tuples — root first
@@ -292,6 +283,10 @@ def _Python_env(
                     module_map[new_name] = mod
 
                 module_map = MappingProxyType(module_map)
+                _pythonEnvModuleRootMap = (root_mod, module_map)
+            else:
+                root_mod, module_map = _pythonEnvModuleRootMap
+
             try:
                 with (
                     modifier(root_mod, module_map),
@@ -302,8 +297,9 @@ def _Python_env(
                 # Do not rely on package-level re-exports. Check package
                 # configuration dirtiness via its `meta` module instead of
                 # `module.dirty()` so `__init__` can remain non-exporting.
-                if not import_module(".virenv.meta", __package__).dirty():
-                    _PYTHON_ENV_MODULE_CACHE[loop] = (root_mod, module_map)
+                if import_module(".virenv.meta", __package__).dirty():
+                    # Reset cache if package marked as dirty
+                    _pythonEnvModuleRootMap = None
 
     return Environment(
         env={

@@ -7,20 +7,19 @@ protocols, and a small compile cache used by the `generate` path.
 import marshal
 from abc import ABCMeta
 from ast import AST, Expression, Interactive, Module, unparse
-from asyncio import gather, get_running_loop
 from collections.abc import (
     AsyncIterator,
     Awaitable,
     Callable,
     Collection,
+    Generator,
     Iterable,
     Iterator,
     Sequence,
 )
-from concurrent.futures import Executor, ThreadPoolExecutor
 from contextlib import asynccontextmanager, suppress
 from dataclasses import dataclass
-from functools import cache, partial, wraps
+from functools import partial, wraps
 from importlib import import_module
 from importlib.util import MAGIC_NUMBER
 from inspect import isawaitable
@@ -29,7 +28,7 @@ from os import PathLike, remove
 from pkgutil import walk_packages
 from re import escape
 from sys import maxunicode, modules
-from threading import Lock
+from threading import Lock as ThreadingLock
 from time import time
 from types import CodeType, ModuleType, TracebackType
 from typing import (
@@ -48,11 +47,10 @@ from typing import (
 from unicodedata import category
 from unittest import mock
 from uuid import uuid4
-from weakref import WeakKeyDictionary
 
 import regex
 from anyio import Path, Semaphore
-from asyncer import asyncify
+from asyncer import SoonValue, asyncify, create_task_group
 from pydantic import BaseModel, ConfigDict, TypeAdapter
 
 from .meta import LOGGER, MAX_CONCURRENT_FILE_OPERATIONS, OPEN_TEXT_OPTIONS
@@ -99,35 +97,55 @@ _PUNCTUATION_REGEX = regex.compile(
     ),
     regex.VERSION0,
 )
-"""Per-lock thread pool executor used by async_lock."""
-_ASYNC_LOCK_THREAD_POOLS: WeakKeyDictionary[Lock, Callable[[], Executor]] = (
-    WeakKeyDictionary()
-)
 """Async wrapper for os.remove."""
 _rm_a = asyncify(remove)
 
 
-@overload
-async def wrap_async(value: Awaitable[_T]) -> _T:
-    """Await and return the underlying value when awaitable (overload)."""
-    ...
+class _WrapAsyncAwaitable(Awaitable[_T]):
+    """Awaitable wrapper that caches and reuses result across awaits."""
+
+    __slots__ = ("__value", "__result", "__exception", "__done")
+
+    def __init__(self, value: Awaitable[_T] | _T):
+        """Initialise or cache an awaitable/permanent value."""
+        if isinstance(value, _WrapAsyncAwaitable):
+            # Unwrap nested _WrapAsyncAwaitable to avoid redundant layers
+            value = cast(_WrapAsyncAwaitable[_T], value).__value
+
+        self.__value: Awaitable[_T] | _T = value
+        self.__result: _T | None = None
+        self.__exception: BaseException | None = None
+
+        if isawaitable(value):
+            self.__done = False
+        else:
+            self.__done = True
+            # Plain/non-awaitable values are already resolved.
+            self.__result = value
+
+    def __await__(self) -> Generator[Any, None, _T]:
+        """Await method for caching across repeated awaits."""
+        if self.__done:
+            if self.__exception is not None:
+                raise self.__exception
+            return cast(_T, self.__result)
+
+        assert isawaitable(self.__value)
+        try:
+            result = yield from self.__value.__await__()
+        except BaseException as exc:
+            self.__exception = exc
+            self.__done = True
+            raise
+        else:
+            self.__result = result
+            self.__done = True
+            return result
 
 
-@overload
-async def wrap_async(value: Awaitable[_T] | _T) -> _T:
-    """Await and return the underlying value when awaitable (overload)."""
-    ...
-
-
-async def wrap_async(value: Awaitable[_T] | _T):
-    """Await and return the underlying value when awaitable.
-
-    This helper ensures that both plain values and awaitable values may
-    be handled transparently in async contexts.
-    """
-    if isawaitable(value):
-        return await value
-    return value
+def wrap_async(value: Awaitable[_T] | _T) -> Awaitable[_T]:
+    """Return an awaitable that yields the value and can be awaited repeatedly."""
+    return _WrapAsyncAwaitable(value)
 
 
 def identity(var: _T) -> _T:
@@ -172,18 +190,13 @@ def tuple1(var: _T) -> tuple[_T]:
 
 
 @asynccontextmanager
-async def async_lock(lock: Lock) -> AsyncIterator[Lock]:
+async def async_lock(lock: ThreadingLock) -> AsyncIterator[ThreadingLock]:
     """Async context manager to acquire and release a threading lock.
 
     This runs the blocking `lock.acquire` in a threadpool so it may be
     used from async code.
     """
-    await get_running_loop().run_in_executor(
-        _ASYNC_LOCK_THREAD_POOLS.setdefault(
-            lock, cache(partial(ThreadPoolExecutor, 1))
-        )(),
-        lock.acquire,
-    )
+    await asyncify(lock.acquire)()
     try:
         yield lock
     finally:
@@ -369,7 +382,7 @@ class IteratorSequence(Generic[_T_co], Sequence[_T_co]):
 
     def __init__(self, iterator: Iterator[_T_co]):
         """Initialise the sequence view over `iterator`, preparing cache and lock."""
-        self.__lock = Lock()
+        self.__lock = ThreadingLock()
         self.__iterator = iterator
         self.__cache = list[_T_co]()
         self.__done = False
@@ -576,7 +589,7 @@ class CompileCache:
         async def _process_entry(entry: CompileCache.MetadataEntry):
             """Load a single metadata entry into the in-memory cache.
 
-            Runs inside asyncio.gather to parallelise disk I/O; concurrency
+            Runs in structured concurrency to parallelise disk I/O; concurrency
             is bounded to avoid exhausting file descriptors.
             """
             key_model = entry.key
@@ -601,7 +614,9 @@ class CompileCache:
             )
 
         # process entries concurrently to improve start-up latency
-        await gather(*(_process_entry(e) for e in entries))
+        async with create_task_group() as tg:
+            for e in entries:
+                tg.soonify(_process_entry)(e)
         return self
 
     async def __aexit__(
@@ -654,7 +669,11 @@ class CompileCache:
             return entry_model
 
         # write metadata entries concurrently and collect the `MetadataEntry` models
-        results = await gather(*(_save_one(k, v) for k, v in self.__cache.items()))
+        soon_results: list[SoonValue[CompileCache.MetadataEntry | None]] = []
+        async with create_task_group() as tg:
+            for k, v in self.__cache.items():
+                soon_results.append(tg.soonify(_save_one)(k, v))
+        results = [r.value for r in soon_results]
         entries_models = tuple(filter(None, results))
 
         # use Pydantic to emit the final JSON for the whole list of models

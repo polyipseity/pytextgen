@@ -5,8 +5,6 @@ This file is the merged destination for previous `test_utils_*` and
 are deduplicated.
 """
 
-from __future__ import annotations
-
 import ast
 import json
 import string
@@ -15,7 +13,7 @@ import tempfile
 from abc import ABCMeta
 from collections.abc import Iterator
 from os import PathLike
-from threading import Lock
+from threading import Lock as ThreadingLock
 from types import ModuleType
 from typing import Any, Literal, cast
 
@@ -44,6 +42,7 @@ from pytextgen.utils import (
     split_by_punctuations,
     strip_lines,
     tuple1,
+    wrap_async,
 )
 
 """Public symbols exported by this module (none)."""
@@ -127,10 +126,52 @@ def test_identity_constant_ignore_tuple1():
 @pytest.mark.anyio
 async def test_async_lock_releases():
     """async_lock acquires and releases a threading Lock in async contexts."""
-    lock = Lock()
+    lock = ThreadingLock()
     async with async_lock(lock):
         assert lock.locked()
     assert not lock.locked()
+
+
+@pytest.mark.anyio
+async def test_wrap_async_repeated_await_returns_same_value():
+    """wrap_async returns an awaitable that can be awaited more than once."""
+
+    plain = wrap_async(42)
+    assert await plain == 42
+    assert await plain == 42
+
+    count = 0
+
+    async def one_shot():
+        """Simple coroutine that increments a counter once."""
+        nonlocal count
+        count += 1
+        return "ok"
+
+    wrapped = wrap_async(one_shot())
+    assert await wrapped == "ok"
+    assert await wrapped == "ok"
+    assert count == 1
+
+
+@pytest.mark.anyio
+async def test_wrap_async_repeats_exceptions():
+    """If wrapped awaitable raises, the same exception is raised on subsequent awaits."""
+
+    class CustomError(RuntimeError):
+        """Custom exception used for testing repeated failure behavior."""
+
+    async def failing():
+        """Coroutine that always raises a CustomError."""
+        raise CustomError("boom")
+
+    wrapped = wrap_async(failing())
+
+    with pytest.raises(CustomError):
+        await wrapped
+
+    with pytest.raises(CustomError):
+        await wrapped
 
 
 def test_Unit_and_TypedTuple_and_IteratorSequence():
