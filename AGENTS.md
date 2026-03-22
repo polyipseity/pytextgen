@@ -122,7 +122,8 @@ If you add an instructions file, link to it from this `AGENTS.md`.
 
 - CI should reproduce local dev installs via `uv sync --locked --all-extras --dev`.
 - Use `uv run -m build` to build source distributions and wheels locally.
-- Publish via `twine` using credentials stored in CI secrets; never commit credentials to the repo.
+- Publish via `uv publish` (preferred) using credentials stored in CI secrets; never commit credentials to the repo.
+- Use `uv run -m twine upload dist/*` as a fallback if `uv publish` is not available.
 
 ---
 

@@ -44,6 +44,12 @@ git push origin --tags
 
 ```powershell
 uv run -m build
+uv publish
+```
+
+*Fallback (if `uv publish` is unavailable in your environment):*
+
+```powershell
 uv run -m twine upload dist/*
 ```
 
