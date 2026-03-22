@@ -11,7 +11,9 @@ import tomllib
 import pytest
 from anyio import Path
 
+import pytextgen
 from pytextgen.meta import OPEN_TEXT_OPTIONS
+from pytextgen.meta import VERSION as META_VERSION
 
 """Public symbols exported by this module (none)."""
 __all__ = ()
@@ -44,6 +46,13 @@ async def test_pyproject_and_init_version_match():
     assert py_version == meta_version, (
         f"Version mismatch: pyproject.toml has {py_version!r} but src/pytextgen/meta.py has {meta_version!r}"
     )
+
+
+def test_package_dunder_version_matches_meta():
+    """Ensure public pytextgen.__version__ matches pytextgen.meta.VERSION."""
+
+    assert hasattr(pytextgen, "__version__"), "pytextgen.__version__ is missing"
+    assert pytextgen.__version__ == META_VERSION
 
 
 def test_open_text_options_shape():
