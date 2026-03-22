@@ -73,6 +73,7 @@ exclude = [
   "**/__pycache__",
   "**/.*",
   ".venv",
+	# self
 ]
 typeCheckingMode = "strict"
 venv = ".venv"

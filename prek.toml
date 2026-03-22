@@ -37,6 +37,13 @@ hooks = [
   { id = "trailing-whitespace", args = ["--markdown-linebreak-ext=md,mdoc,mdown,mdx,mkd,mkdn,markdown,rmd"] },
 ]
 
+[[repos]]
+repo = "https://github.com/astral-sh/uv-pre-commit.git"
+rev = "e3daa3b1abb0f966fc89f674fdf01eebd84c2eec"
+hooks = [
+  { id = "uv-lock" },
+]
+
 # Markdown linting using rumdl (high-performance Rust linter). These hooks
 # use the official pre-commit bridge which installs rumdl into an isolated
 # environment automatically. Keep `.markdownlint.jsonc` for compatibility;
@@ -75,6 +82,14 @@ hooks = [
     stages = ["commit-msg"],
     additional_dependencies = ["@commitlint/config-conventional"],
   },
+]
+
+[[repos]]
+repo = "https://github.com/python-jsonschema/check-jsonschema.git"
+rev = "4cec9aea9b0dd197127811e7d29bd48d761a9370"
+hooks = [
+  { id = "check-dependabot" },
+  { id = "check-github-workflows" },
 ]
 
 [[repos]]
