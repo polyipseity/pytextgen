@@ -24,6 +24,7 @@ from importlib import import_module
 from importlib.util import MAGIC_NUMBER
 from inspect import isawaitable
 from itertools import islice
+from math import inf
 from os import PathLike, remove
 from pkgutil import walk_packages
 from re import escape
@@ -49,7 +50,7 @@ from unittest import mock
 from uuid import uuid4
 
 import regex
-from anyio import Path, Semaphore
+from anyio import CapacityLimiter, Path, Semaphore
 from asyncer import SoonValue, asyncify, create_task_group
 from pydantic import BaseModel, ConfigDict, TypeAdapter
 
@@ -99,6 +100,9 @@ _PUNCTUATION_REGEX = regex.compile(
 )
 """Async wrapper for os.remove."""
 _rm_a = asyncify(remove)
+
+
+_ASYNC_LOCK_LIMITER = CapacityLimiter(inf)
 
 
 class _WrapAsyncAwaitable(Awaitable[_T]):
@@ -196,7 +200,7 @@ async def async_lock(lock: ThreadingLock) -> AsyncIterator[ThreadingLock]:
     This runs the blocking `lock.acquire` in a threadpool so it may be
     used from async code.
     """
-    await asyncify(lock.acquire)()
+    await asyncify(lock.acquire, limiter=_ASYNC_LOCK_LIMITER)()
     try:
         yield lock
     finally:
