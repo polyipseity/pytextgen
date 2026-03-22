@@ -55,7 +55,7 @@ class _OpenOptions(TypedDict):
 """Package display name."""
 NAME = "pytextgen"
 """Package version (keep in sync with pyproject.toml)."""
-VERSION = "9.0.0"
+VERSION = "9.0.1"
 
 """Default ease factor for generated flashcards."""
 FLASHCARD_EASE_DEFAULT = 250
