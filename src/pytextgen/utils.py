@@ -102,6 +102,7 @@ _PUNCTUATION_REGEX = regex.compile(
 _rm_a = asyncify(remove)
 
 
+"""Async limiter to bound concurrent access to locks in `async_lock`."""
 _ASYNC_LOCK_LIMITER = CapacityLimiter(inf)
 
 
