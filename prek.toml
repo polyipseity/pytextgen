@@ -15,7 +15,7 @@ default_stages = [
 ]
 
 [[repos]]
-repo = "https://github.com/pre-commit/pre-commit-hooks"
+repo = "https://github.com/pre-commit/pre-commit-hooks.git"
 rev = "3e8a8703264a2f4a69428a0aa4dcb512790b2c8c"
 # Notes:
 # - These hooks are a recommended baseline. If a particular hook is undesired (for example, forbidding
@@ -42,21 +42,21 @@ hooks = [
 # environment automatically. Keep `.markdownlint.jsonc` for compatibility;
 # rumdl auto-discovers and can import markdownlint configs via `rumdl import`.
 [[repos]]
-repo = "https://github.com/rvben/rumdl-pre-commit"
+repo = "https://github.com/rvben/rumdl-pre-commit.git"
 rev = "59d5dafbf6b16f065b4c86cbbff836f5c4a75a71"
 hooks = [
   { id = "rumdl-fmt" },
 ]
 
 [[repos]]
-repo = "https://github.com/RobertCraigie/pyright-python"
+repo = "https://github.com/RobertCraigie/pyright-python.git"
 rev = "81b795a41ddcc3c77218d8c8e406983e39852285"
 hooks = [
   { id = "pyright" },
 ]
 
 [[repos]]
-repo = "https://github.com/astral-sh/ruff-pre-commit"
+repo = "https://github.com/astral-sh/ruff-pre-commit.git"
 rev = "0470f7c8a653e950f7cc5a653204ceb3fde4c02a"
 hooks = [
   { id = "ruff-check", args = ["--fix"] },
@@ -67,7 +67,7 @@ hooks = [
 # the commitlint-pre-commit-hook bridge so it runs as a commit-msg hook.
 # Note: Node.js must be available on developer machines to run this hook.
 [[repos]]
-repo = "https://github.com/alessandrojcm/commitlint-pre-commit-hook"
+repo = "https://github.com/alessandrojcm/commitlint-pre-commit-hook.git"
 rev = "1f6454da22d006d5bb0d2e65c96c43c23c8a534f"
 hooks = [
   {
