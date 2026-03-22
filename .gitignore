@@ -1,4 +1,4 @@
-# https://github.com/github/gitignore/blob/8e67b9420cb6796e5eeca72682babdb06627ec8c/Python.gitignore {
+# <https://github.com/github/gitignore/blob/8e67b9420cb6796e5eeca72682babdb06627ec8c/Python.gitignore> {
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
