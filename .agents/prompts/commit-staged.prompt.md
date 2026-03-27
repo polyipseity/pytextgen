@@ -4,8 +4,6 @@ description: Produce a commit message for the currently staged changes and commi
 argument-hint: Optional extras (e.g., ticket=ABC-123). To skip committing, pass `commitNow=no`.
 ---
 
-<!-- markdownlint-disable-file MD005 MD007 -->
-
 # Commit Staged Change
 
 **Never ask for confirmation or clarification. Always proceed automatically using best-effort defaults and available context.**
@@ -22,7 +20,7 @@ argument-hint: Optional extras (e.g., ticket=ABC-123). To skip committing, pass 
    - Present the exact command to be run. If not executed, produce a best-effort commit message from available context and stop.
 
 2. **Compose commit message**
-   - Inspect Command 1 output and repository conventions (CONTRIBUTING.md, `.github/`, `package.json`, `commitlint`, `.husky`, `CHANGELOG.md`, etc.).
+   - Inspect Command 1 output and repository conventions (CONTRIBUTING.md, `.agents/`, `package.json`, `commitlint`, `.husky`, `CHANGELOG.md`, etc.).
    - Produce a commit message with:
      - Short subject (~50 chars)
      - Optional body (each line **must be wrapped to 72 characters or fewer**; bullets allowed)
@@ -34,33 +32,28 @@ argument-hint: Optional extras (e.g., ticket=ABC-123). To skip committing, pass 
 3. **Create the commit**
    - If `${input:commitNow}` is `no`, skip this step and only present the message.
    - Otherwise, present the exact command to create the commit from stdin and print the new SHA. **Both commands must be run in the same shell command block to ensure correct context.** Use the correct heredoc/here-string syntax for the detected shell:
-      - **PowerShell (Windows):**
+     - **PowerShell (Windows):**
 
-        ```powershell
-        (@'
-        <full commit message>
-        '@ | git commit --file=-) ; git rev-parse HEAD
-        ```
+       ```powershell
+       (@'
+       <full commit message>
+       '@ | git commit --file=-) ; git rev-parse HEAD
+       ```
 
-        **Note on special characters and quoting:**
-        Prefer PowerShell single-quoted here-strings (`@'... '@`) to prevent variable
-        expansion and avoid backtick (`) escaping. If a double-quoted here-string
-        (`@"..."@`) is used, be careful to escape backticks and`$` or switch to
-        the single-quoted form.
+       **Note on special characters and quoting:**
+       Prefer PowerShell single-quoted here-strings (`@'...'@`) to prevent variable expansion and avoid backtick (\`) escaping. If a double-quoted here-string (`@"..."@`) is used, be careful to escape backticks and `$` or switch to the single-quoted form.
 
-      - **Bash/zsh (Linux/macOS):**
+     - **Bash/zsh (Linux/macOS):**
 
-        ```bash
-        (git commit --file - <<'MSG'
-        <full commit message>
-        MSG
-        ) && git rev-parse HEAD
-        ```
+       ```bash
+       (git commit --file - <<'MSG'
+       <full commit message>
+       MSG
+       ) && git rev-parse HEAD
+       ```
 
-        **Note on special characters and quoting:**
-        Use a single-quoted heredoc delimiter (`<<'MSG'`) to prevent shell expansion
-        (backticks and `$` are preserved). If the delimiter (e.g., `MSG`) appears
-        verbatim in the message, choose a different delimiter to avoid conflicts.
+       **Note on special characters and quoting:**
+       Use a single-quoted heredoc delimiter (`<<'MSG'`) to prevent shell expansion (backticks and `$` are preserved). If the delimiter (e.g., `MSG`) appears verbatim in the message, choose a different delimiter to avoid conflicts.
 
    - If Command 2 fails due to quoting/heredoc syntax, retry up to 3 corrected forms. For other failures, report the error and do not modify the index.
 
