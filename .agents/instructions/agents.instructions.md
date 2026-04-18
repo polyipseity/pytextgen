@@ -18,7 +18,7 @@ Quick start (commands you will run every time):
 
    - uv run ruff check --fix
    - uv run ruff format
-  - uv run ty check
+   - uv run ty check
 
 3. Hooks and tests
 
