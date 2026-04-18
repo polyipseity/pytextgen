@@ -68,8 +68,6 @@ dev = [
 
 [tool.ty.environment]
 python-platform = "all"
-root = [".", "src", "tests"]
-extra-paths = ["typings"]
 
 [tool.ty.rules]
 all = "error"
