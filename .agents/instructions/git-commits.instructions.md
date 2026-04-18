@@ -36,6 +36,6 @@ Agent & automation notes:
 
 - Agents must include a short rationale in the commit body when deviating from
   usual conventions or performing non-trivial changes.
-- Agents must run the same local checks documented in `.agents/instructions/agents.instructions.md` before committing (format, pyright, tests, and prek hooks). If unsure about a behavioural change, stop and ask a maintainer rather than guessing — include the question and context in the PR body.
+- Agents must run the same local checks documented in `.agents/instructions/agents.instructions.md` before committing (format, ty, tests, and prek hooks). If unsure about a behavioural change, stop and ask a maintainer rather than guessing — include the question and context in the PR body.
 - Domain-data or transaction commits (if applicable) may follow stricter
   machine-parseable formats; follow domain-specific policies if present.

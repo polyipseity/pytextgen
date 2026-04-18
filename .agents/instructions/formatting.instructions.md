@@ -21,11 +21,11 @@ uv run ruff check --fix
 uv run ruff format
 ```
 
-- Run static type checks (pyright/Pylance): ensure `pyrightconfig.json` uses `typeCheckingMode: "strict"` for CI parity.
+- Run static type checks with ty: ensure `[tool.ty.rules] all = "error"` for CI parity.
 
 ## Editor integration
 
-- Use the editor's Ruff/pyright integration where available. Keep the editor settings consistent with `.editorconfig` and `pyrightconfig.json`.
+- Use the editor's Ruff/ty integration where available. Keep the editor settings consistent with `.editorconfig` and `pyproject.toml`.
 
 ## Pre-commit-style hooks (prek)
 
@@ -107,6 +107,6 @@ uv run --locked rumdl fmt
 - Always run formatters and linters before committing to avoid CI failures.
 - For large formatting changes, prefer small, focused commits and run the test suite locally after formatting to catch regressions.
 
-Agent note: Agents should not add new formatters (for Python) or change the line-length policy. The canonical tool is Ruff; run `uv run ruff check --fix` and `uv run ruff format` before committing. For type checks run `uv run pyright` and include the results in the PR description.
+Agent note: Agents should not add new formatters (for Python) or change the line-length policy. The canonical tool is Ruff; run `uv run ruff check --fix` and `uv run ruff format` before committing. For type checks run `uv run ty check` and include the results in the PR description.
 
 Export control note: When an agent changes public symbols, update `__all__` tuples and ensure the change is covered by tests and type checks. Add a short test that imports the module and verifies its exported names if you're changing the public surface.

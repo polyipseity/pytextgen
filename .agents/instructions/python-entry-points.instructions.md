@@ -206,7 +206,7 @@ When creating or updating a pytextgen `__main__.py`:
 - [ ] Add docstrings to `main()` and `__main__()`
 - [ ] Use appropriate exit codes (0, 1, 2, 3)
 - [ ] Test by importing `main()` directly in pytest with `@pytest.mark.anyio`
-- [ ] Run `pyright`, `ruff check`, and `pytest` before committing
+- [ ] Run `ty check`, `ruff check`, and `pytest` before committing
 
 ## Integration with Parent Convention
 

@@ -46,5 +46,5 @@ jobs:
           uv run --locked rumdl check
           uv run --locked ruff check
           uv run --locked ruff format --check
-          uv run --locked pyright
+          uv run --locked ty check
           uv build

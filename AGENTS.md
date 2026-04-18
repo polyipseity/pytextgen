@@ -38,7 +38,7 @@ If you add an instructions file, link to it from this `AGENTS.md`.
 - **Async concurrency:** refrain from importing `asyncio`; rely on AnyIO and the Asyncer helper library for structured patterns. Useful helpers include `create_task_group`, `soonify` (with return values), `asyncify` (run sync code in async), `syncify` (call async from sync), and `runnify` (expose async functions to synchronous callers). If you need simple file-path concurrency use `anyio.Path` but prefer Asyncer for all task management to get typing/editor benefits.
 - **Use os.PathLike for file identifiers.** Accept `os.PathLike` and use `os.fspath(path_like)` when a string path is needed.
 - **Timezone-aware datetimes.** Use `datetime.now(timezone.utc)` (avoid `datetime.utcnow()`).
-- **Type hints:** Prefer PEP 585 types (`dict`, `list`) and `X | Y` unions (PEP 604). For abstract collection/iterable types (for example `Iterable`, `Iterator`, `Sequence`, `Mapping`, `Collection`, `AsyncIterator`) import from `collections.abc` rather than `typing` (e.g. `from collections.abc import Iterable, Mapping`). Use built-in generics for concrete containers (`list[int]`, `dict[str, int]`). Use `Self` where appropriate. Aim for `typeCheckingMode: "strict"` compatibility in `pyrightconfig.json`. Do not use `from __future__ import annotations` in this repository; postponed evaluation of annotations is not permitted.
+- **Type hints:** Prefer PEP 585 types (`dict`, `list`) and `X | Y` unions (PEP 604). For abstract collection/iterable types (for example `Iterable`, `Iterator`, `Sequence`, `Mapping`, `Collection`, `AsyncIterator`) import from `collections.abc` rather than `typing` (e.g. `from collections.abc import Iterable, Mapping`). Use built-in generics for concrete containers (`list[int]`, `dict[str, int]`). Use `Self` where appropriate. Aim for strict `ty` compatibility (configured via `[tool.ty.rules] all = "error"`). Do not use `from __future__ import annotations` in this repository; postponed evaluation of annotations is not permitted.
 
   - Tests & filesystem fixtures: Prefer annotating pytest `tmp_path` parameters as `tmp_path: os.PathLike[str]` (this is the recommended, typed signature for filesystem fixtures in our codebase). When you need path operations convert with `Path(tmp_path)`; when you need a `str` path always convert using `os.fspath(path_like)` — prefer `fspath` over `str()` for portability and correctness.
 - **Docstrings & annotations:** All modules, functions, classes (public and private), and tests must include clear module-level and object-level docstrings and complete type annotations. Docstrings should be concise, use triple double-quotes, include a short one-line summary, and expand when necessary to describe parameters, return values, and examples. See the `agents.instructions.md` runbook for a short template and examples.
@@ -51,7 +51,7 @@ If you add an instructions file, link to it from this `AGENTS.md`.
   - Only include public symbols (classes, functions, constants) or package-level module names; do not include names starting with `_`.
   - New-folder rule: when creating any new directory that will contain Python code (production or tests), include an `__init__.py` file in that directory (it may be empty). This applies to `src/` packages and `tests/` packages — it ensures imports, test discovery, and tooling work reliably. Add a short `__all__` (or `__all__ = ()` for test modules) where appropriate.
   - Prefer not to re-export submodules via package `__init__.py`. Callers should import directly from submodules. When a package-level API is necessary and intentionally stable, prefer centralizing the package's exported surface in a `meta.py` module located in the package directory. Put the exported symbols and the `__all__` tuple in `meta.py` and have `__init__.py` import the minimal exported names (or forward `__all__` from `_meta`) so the package-level surface remains small and explicit.
-  - When changing public symbols, update `__all__`, update docs, and add or update tests that verify exports. Run `uv run ruff check --fix`, `uv run pyright`, and `uv run pytest` locally before opening a PR.
+  - When changing public symbols, update `__all__`, update docs, and add or update tests that verify exports. Run `uv run ruff check --fix`, `uv run ty check`, and `uv run pytest` locally before opening a PR.
 - **Async tests:** Prefer `async def` tests with `@pytest.mark.anyio` and `await` usage. Do not use `asyncio.run` within pytest tests.
 
 ## Formatting & tooling note 💡
@@ -146,7 +146,7 @@ If you add an instructions file, link to it from this `AGENTS.md`.
 ## VS Code & Editor Setup
 
 - Use `.editorconfig` for sensible defaults (UTF-8, final newline, trim trailing whitespace).
-- Keep `pyrightconfig.json` with `typeCheckingMode: "strict"` to match repository expectations.
+- Keep `[tool.ty]` configuration strict (`[tool.ty.rules] all = "error"`) to match repository expectations.
 
 ---
 
@@ -160,7 +160,7 @@ Quick checklist (run before committing or opening a PR):
 - Sync the environment: `uv sync --all-extras --dev` and install hooks: `prek install`.
 - Format & lint: `uv run ruff check --fix` and `uv run ruff format`.
 - Run pre-commit hooks: `prek run --all-files` (or `pre-commit run --all-files` if using pre-commit).
-- Type check: `uv run pyright` (or run your editor's pyright integration configured by `pyrightconfig.json`).
+- Type check: `uv run ty check` (or run your editor's ty integration).
 - Run tests: `uv run pytest` (use `--cov` when verifying coverage changes).
 - Ensure conventional commit messages and sign release commits (`git commit -S -m "1.2.3"`).
 

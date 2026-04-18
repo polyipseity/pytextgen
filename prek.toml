@@ -56,13 +56,6 @@ hooks = [
 ]
 
 [[repos]]
-repo = "https://github.com/RobertCraigie/pyright-python.git"
-rev = "81b795a41ddcc3c77218d8c8e406983e39852285"
-hooks = [
-  { id = "pyright" },
-]
-
-[[repos]]
 repo = "https://github.com/astral-sh/ruff-pre-commit.git"
 rev = "0470f7c8a653e950f7cc5a653204ceb3fde4c02a"
 hooks = [
@@ -95,6 +88,15 @@ hooks = [
 [[repos]]
 repo = "local"
 hooks = [
+  {
+    id = "ty-check",
+    name = "Run ty check",
+    entry = "uv run --locked ty check",
+    language = "system",
+    types_or = ["pyi", "python"],
+    pass_filenames = false,  # Type checkers need global context, not individual files
+    always_run = true,       # Ensure ty runs even if no Python files changed (catches cross-file errors)
+  },
   {
     id = "pytest-push",
     name = "Run Pytest on Push",

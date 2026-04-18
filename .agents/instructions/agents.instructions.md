@@ -18,7 +18,7 @@ Quick start (commands you will run every time):
 
    - uv run ruff check --fix
    - uv run ruff format
-   - uv run pyright
+  - uv run ty check
 
 3. Hooks and tests
 
@@ -29,7 +29,7 @@ Quick start (commands you will run every time):
 Checklist before opening a PR ✅
 
 - All tests pass locally and in CI-equivalent commands.
-- Ruff and pyright report no errors or warnings relevant to your change.
+- Ruff and ty report no errors or warnings relevant to your change.
 - Pre-commit / prek hooks all clean (no unexpected fixes remain).
 - Commit messages follow Conventional Commits and release commits are GPG-signed when required.
 - The PR description includes: intent, the set of files changed, and any potential upgrade/migration impact.
@@ -59,7 +59,7 @@ Repo-specific patterns & examples (do not assume standard patterns):
     - Do not include private names (names that start with `_`).
     - Avoid re-exporting submodules or symbols from package `__init__.py`. Prefer explicit imports from submodules (for example, `from package.submodule import Thing`) so callers import symbols directly from the module that defines them.
 
-    - New-folder rule: When creating any new directory that will contain Python code (production or tests), include an `__init__.py` file in the directory (it may be empty). This ensures Python package semantics, reliable test discovery, and consistent behavior of tooling such as `pyright` and test collectors. For test package directories, also add `__all__ = ()` to test modules.
+    - New-folder rule: When creating any new directory that will contain Python code (production or tests), include an `__init__.py` file in the directory (it may be empty). This ensures Python package semantics, reliable test discovery, and consistent behavior of tooling such as `ty` and test collectors. For test package directories, also add `__all__ = ()` to test modules.
 
   - Package-level exports (`meta.py`): When a package needs a small, stable package-level API, create a `meta.py` module inside the package directory and place the exported symbols and the `__all__` tuple there. Keep `__init__.py` minimal: import the exported symbols from `.meta` and set `__all__` to the exported tuple (for example `from . import meta as _meta` then `__all__ = _meta.__all__`). This reduces import-time work, avoids accidental import cycles, and centralizes the package's exported surface for easier testing and maintenance. Importers should still prefer importing from the module that actually defines the symbol where practical.
 
@@ -91,11 +91,11 @@ Repo-specific patterns & examples (do not assume standard patterns):
     - Tests should also include a short module docstring and test docstrings describing the intent of the test.
     - Automated checks:
       - Add or update tests if the behaviour or public surface changes.
-      - Run `uv run ruff check --fix`, `uv run pyright`, and `uv run pytest` after adding docstrings (these checks are fast and catch formatting/typing issues).
+      - Run `uv run ruff check --fix`, `uv run ty check`, and `uv run pytest` after adding docstrings (these checks are fast and catch formatting/typing issues).
 
   - Verification: After adding or changing docstrings, run local checks and include the commands you executed in the PR body.
   - Why: Explicit `__all__` makes public surface area explicit for users and tools, reduces accidental exports, and aids static analysis and packaging.
-  - Verification: After adding or changing `__all__`, run your local checks (`uv run ruff check --fix`, `uv run pyright`, `uv run pytest`). When changing package exports, ensure `pyright` and tests still import and reference symbols correctly; prefer updating callers to import directly from submodules when possible.
+  - Verification: After adding or changing `__all__`, run your local checks (`uv run ruff check --fix`, `uv run ty check`, `uv run pytest`). When changing package exports, ensure `ty` and tests still import and reference symbols correctly; prefer updating callers to import directly from submodules when possible.
   - Examples and automated checks: Prefer small tests which import the module and assert the presence of promised attributes and absence of private ones when appropriate.
 - Typing & dataclasses: Prefer PEP-585/604 annotations (`list[int]`, `str | None`). For abstract collection/iterable protocols (for example `Iterable`, `Iterator`, `Sequence`, `Mapping`, `Collection`, `AsyncIterator`) import from `collections.abc` instead of `typing` (example: `from collections.abc import Iterable, Mapping`). Many dataclasses use `@dataclass(..., slots=True, frozen=True)`. Do not use `from __future__ import annotations` anywhere in this repository; postponed evaluation of annotations is disallowed. Use explicit forward references or runtime-compatible patterns when necessary.
   - Tests: When writing filesystem tests prefer the `tmp_path` fixture _and_ annotate the parameter as `tmp_path: os.PathLike[str]` (this makes intent explicit for type-checkers and reviewers). Convert `tmp_path` to a `pathlib.Path` only when you need `Path` methods (for example `p = Path(tmp_path)`), and always use `os.fspath(path_like)` when an API requires a `str` (do not rely on `str(path_like)` in library code or tests).
@@ -121,7 +121,7 @@ Workflow tools for agents
   2. Implement behaviour in `src/pytextgen/foo.py` — not-started
   3. Run format & tests, fix issues — not-started
 
-- Run the same local checks the CI runs (format, type, tests) before creating a PR. Include the exact commands you executed in the PR body (example: `uv run ruff check --fix . && uv run pyright && uv run pytest`).
+- Run the same local checks the CI runs (format, type, tests) before creating a PR. Include the exact commands you executed in the PR body (example: `uv run ruff check --fix . && uv run ty check && uv run pytest`).
 
 Optional PR template snippet (paste into PR description):
 
@@ -132,7 +132,7 @@ What I changed:
 Commands I ran locally:
 - uv sync --all-extras --dev
 - uv run ruff check --fix .
-- uv run pyright
+- uv run ty check
 - uv run pytest
 
 Why this change:
