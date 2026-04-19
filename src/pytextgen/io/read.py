@@ -265,7 +265,7 @@ def _Python_env(
         ``pytextgen.io.virenv`` package are initialized once and cached
         for reuse across invocations.
         """
-        global _pythonEnvModuleRootMap, _pythonEnvModuleMap
+        global _pythonEnvModuleRootMap
 
         async with async_lock(_PYTHON_ENV_LOCK):
             if _pythonEnvModuleRootMap is None:
@@ -472,8 +472,8 @@ class MarkdownReader(Reader):
                     cls.__str__ = new
                 yield
             finally:
-                for final in finals:
-                    final()
+                for final_ in finals:
+                    final_()
 
         def ret_gen():
             """Yield configured `PythonWriter` instances for the reader's data blocks.

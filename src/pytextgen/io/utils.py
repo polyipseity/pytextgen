@@ -244,7 +244,7 @@ class FileSection:
 class _FileSectionCacheData:
     """Container for cached section metadata and the file's modification time."""
 
-    EMPTY: ClassVar[Self]
+    EMPTY: ClassVar["_FileSectionCacheData"]
     mod_time: int
     sections: Mapping[str, tuple[slice, str]]
 
@@ -360,8 +360,8 @@ class _FileSectionIO(StringIO):
     def __exit__(
         self,
         exc_type: type[BaseException] | None,
-        exc_value: BaseException | None,
-        traceback: TracebackType | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
     ):
         """Synchronous context manager exit is unsupported for `_FileSectionIO`."""
         raise TypeError("Unsupported")

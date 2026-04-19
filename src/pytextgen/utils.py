@@ -136,6 +136,7 @@ class _WrapAsyncAwaitable(Awaitable[_T]):
             return cast(_T, self.__result)
 
         assert isawaitable(self.__value)
+        self.__value = cast(Awaitable[_T], self.__value)
         try:
             result = yield from self.__value.__await__()
         except BaseException as exc:
@@ -269,8 +270,7 @@ def abc_subclasshook_check(
             if any(
                 c.__subclasshook__(subclass) is False
                 for c in cls.__mro__
-                if c is not cls  # type: ignore[reportUnnecessaryComparison]
-                and hasattr(c, "__subclasshook__")
+                if c is not cls and hasattr(c, "__subclasshook__")
             ) or any(
                 all(c.__dict__[p] is None for c in subclass.__mro__ if p in c.__dict__)
                 for p in names
@@ -280,8 +280,7 @@ def abc_subclasshook_check(
             if all(
                 c.__subclasshook__(subclass) is not False
                 for c in cls.__mro__
-                if c is not cls  # type: ignore[reportUnnecessaryComparison]
-                and hasattr(c, "__subclasshook__")
+                if c is not cls and hasattr(c, "__subclasshook__")
             ) and all(
                 any(
                     c.__dict__[p] is not None
@@ -547,7 +546,7 @@ class CompileCache:
         model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
 
         value: "CompileCache.MetadataValue"
-        code: CodeType
+        code: CodeType | Any
 
     @classmethod
     def __time(cls):

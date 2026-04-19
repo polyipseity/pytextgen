@@ -70,7 +70,12 @@ def export_seq(*seq: Callable[..., Any] | type) -> dict[str, Any]:
     Returns a dict suitable for populating export maps used by package
     `meta` modules or other small registries.
     """
-    return {val.__name__: val for val in seq}
+    res = {}
+    for val in seq:
+        if not isinstance(name := getattr(val, "__name__", None), str):
+            raise ValueError(val)
+        res[name] = val
+    return res
 
 
 class FlashcardGroup(Sequence[str], metaclass=ABCMeta):
@@ -269,7 +274,7 @@ class FlashcardStateGroup(TypedTuple[FlashcardState], element_type=FlashcardStat
     def __str__(self):
         """Serialize the state group into the FLASHCARD_STATES_FORMAT or empty string."""
         if self:
-            return self.FORMAT.format(states="".join(map(str, self)))
+            return self.FORMAT.format(states="".join(str(fcs) for fcs in self))
         return ""
 
     @classmethod

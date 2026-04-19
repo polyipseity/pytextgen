@@ -15,6 +15,8 @@ from re import compile as re_compile
 from typing import Any, Literal, TypeVar, final
 from unicodedata import normalize
 
+from wcwidth import wcswidth
+
 from ..configs import CONFIG
 from ..utils import (
     FlashcardGroup,
@@ -37,18 +39,7 @@ from .flashcards import (
     semantics_seq_map0,
 )
 from .misc import Tag
-from .text_code import (
-    TextCode,
-    code_to_str,
-    code_to_strs,
-    separate_code_by_tag,
-)
-
-try:
-    from wcwidth import wcswidth
-except Exception:
-    """Fallback when wcwidth is not available; callers check for None."""
-    wcswidth = None
+from .text_code import TextCode, code_to_str, code_to_strs, separate_code_by_tag
 
 """Type variable for generic helpers in this module."""
 _T = TypeVar("_T")
@@ -275,7 +266,7 @@ def memorize_linked_seq(
                 (
                     constant(hinted)
                     if isinstance(hinted, bool)
-                    else hinted.__getitem__
+                    else (lambda idx: hinted[idx])
                     if isinstance(hinted, Sequence)
                     else hinted
                 ),
@@ -640,7 +631,7 @@ def _visible_display_width(text: str) -> int:
     visible widths.
     """
     s = normalize("NFC", text)
-    if wcswidth is not None and (w := wcswidth(s)) >= 0:
+    if (w := wcswidth(s)) >= 0:
         return w
     return len(s)
 
