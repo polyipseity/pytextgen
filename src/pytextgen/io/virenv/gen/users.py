@@ -625,15 +625,10 @@ def two_columns_to_code(
 def _visible_display_width(text: str) -> int:
     """Return number of terminal columns required to display `text`.
 
-    Prefer `wcwidth.wcswidth` when available for correct handling of CJK and
-    combining marks; otherwise fall back to the simple length of the
-    normalized string. Installing `wcwidth` is recommended for accurate
-    visible widths.
+    Uses `wcwidth.wcswidth` for correct handling of CJK and combining marks.
     """
     s = normalize("NFC", text)
-    if (w := wcswidth(s)) >= 0:
-        return w
-    return len(s)
+    return wcswidth(s)
 
 
 def _compute_display_length(s: str, use_compiled: bool, use_visible: bool) -> int:
@@ -648,9 +643,8 @@ def _compute_display_length(s: str, use_compiled: bool, use_visible: bool) -> in
       is used unchanged.
     - If ``use_visible`` is True, the function measures the *visible*
       display width using :func:`_visible_display_width`. That helper
-      normalizes text to NFC and prefers ``wcwidth.wcswidth`` when
-      available, which gives correct column counts for CJK characters
-      and combining diacritics.
+      normalizes text to NFC and uses ``wcwidth.wcswidth`` for correct
+      handling of CJK characters and combining diacritics.
     - If ``use_visible`` is False, the function returns ``len(s)`` of the
       selected string (compiled or raw).
 
