@@ -8,11 +8,11 @@ name = "pytextgen"
 version = "9.0.1"
 requires-python = ">=3.12.0"
 description = "Generate text using code."
-license = {file = "LICENSE.txt"}
+license = { file = "LICENSE.txt" }
 readme = "README.md"
 dependencies = [
 	"anyio>=3.6.2",
-  "asyncer>=0.0.17",
+	"asyncer>=0.0.17",
 	"asyncstdlib>=3.10.6",
 	"more-itertools>=9.1.0",
 	"pydantic>=2.12.0",
@@ -22,9 +22,7 @@ dependencies = [
 	"winloop>=0.5.0; platform_system == 'Windows'",
 ]
 
-authors = [
-	{name = "William So", email = "polyipseity@gmail.com"},
-]
+authors = [{ name = "William So", email = "polyipseity@gmail.com" }]
 keywords = []
 classifiers = [
 	"Development Status :: 5 - Production/Stable",
@@ -56,13 +54,13 @@ repository = "https://github.com/polyipseity/pytextgen.git"
 
 [dependency-groups]
 dev = [
-  "hypothesis>=6.151.0",
-  "prek>=0.3.0",
-  "pytest>=9.0.0",
-  "pytest-cov>=7.0.0",
-  "pytest-xdist>=3.8.0",
-  "ruff>=0.15.0",
-  "rumdl>=0.1.20",
+	"hypothesis>=6.151.0",
+	"prek>=0.3.0",
+	"pytest>=9.0.0",
+	"pytest-cov>=7.0.0",
+	"pytest-xdist>=3.8.0",
+	"ruff>=0.15.0",
+	"rumdl>=0.1.20",
 	"ty>=0.0.31",
 ]
 
@@ -81,19 +79,22 @@ unresolved-global = "warn"
 
 [tool.ty.src]
 exclude = [
-  "**/node_modules",
-  "**/__pycache__",
-  "**/.*",
-  ".venv",
+	"**/node_modules",
+	"**/__pycache__",
+	"**/.*",
+	".venv",
 	# self
 ]
 
 [tool.pytest.ini_options]
-addopts = ["--cov=./", "--cov-report=term-missing", "--dist=loadscope", "-n=auto", "--strict-markers"]
-testpaths = [
-  ".agents/skills/**/tests_*",
-  "tests",
+addopts = [
+	"--cov=./",
+	"--cov-report=term-missing",
+	"--dist=loadscope",
+	"-n=auto",
+	"--strict-markers",
 ]
+testpaths = [".agents/skills/**/tests_*", "tests"]
 python_files = "test_*.py"
 
 [tool.ruff]
@@ -110,6 +111,7 @@ extend-select = ["I", "PLC0415"]
 extends = ".rumdl.toml" # redirect to .rumdl.toml in the same directory
 
 [tool.uv]
+package = true
 required-version = ">=0.9.0,<0.11.0"
 
 [tool.uv.build-backend]
