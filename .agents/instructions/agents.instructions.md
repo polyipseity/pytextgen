@@ -10,18 +10,15 @@ This page contains concise, actionable steps and repository-specific rules for A
 Quick start (commands you will run every time):
 
 1. Sync & setup
-
    - uv sync --all-extras --dev
    - prek install
 
 2. Format, lint, and type-check
-
    - uv run ruff check --fix
    - uv run ruff format
    - uv run ty check
 
 3. Hooks and tests
-
    - prek run --all-files
    - uv run pytest
    - uv run pytest --cov=./ --cov-report=term-missing (when validating coverage)
@@ -40,11 +37,10 @@ Checklist before opening a PR ✅
 Repo-specific patterns & examples (do not assume standard patterns):
 
 - Top-level imports only: avoid runtime imports inside functions. Prefer importing names directly (for example: `from typing import Self`) and avoid aliasing with a leading underscore. When a name collision would occur, prefer importing the module (for example `import json`) and referencing `json.loads`.
-- **Capitalization when embedding class names in identifiers:** When a function or test name includes a `ClassName`, embed the class name verbatim using `CamelCase` (for example `test_PythonWriter_writes_result`, `test_ClearWriter_strips_flashcard_state`). Avoid lowercase or snake_case variants of class-name segments (for example `test_pythonwriter_*` or `test_python_writer_*`).
+- **Capitalization when embedding class names in identifiers:** When a function or test name includes a `ClassName`, embed the class name verbatim using `CamelCase` (for example `test_PythonWriter_writes_result`, `test_ClearWriter_strips_flashcard_state`). Avoid lowercase or snake*case variants of class-name segments (for example `test_pythonwriter*_`or`test*python_writer*_`).
 - Export control: Public modules that export a surface must define an explicit `__all__` tuple (not a list); test modules must set `__all__ = ()`.
 
   Export-control policy (detailed):
-
   - Format and placement: Add a module-level `__all__` tuple placed near the top of the module immediately after imports (the first top-level statements after imports).
   - Use a tuple literal and the exact symbol names (strings) that the module intends to export. Example:
 
@@ -69,9 +65,7 @@ Repo-specific patterns & examples (do not assume standard patterns):
   - Tests: Test modules must set `__all__ = ()` to make it explicit they export nothing.
 
   Rationale and checks:
-
   - **Docstrings:** Every module should start with a brief module-level docstring describing its responsibility. Every public function and class must include a docstring; private helpers should also have docstrings when non-trivial. Follow these simple conventions:
-
     - Use triple double-quotes ("""Summary line.""") for all docstrings.
     - Start with a one-line summary, followed by an optional description and sections for `Args:`, `Returns:`, `Raises:`, and `Example:` as needed.
 
@@ -100,6 +94,7 @@ Repo-specific patterns & examples (do not assume standard patterns):
   - Why: Explicit `__all__` makes public surface area explicit for users and tools, reduces accidental exports, and aids static analysis and packaging.
   - Verification: After adding or changing `__all__`, run your local checks (`uv run ruff check --fix`, `uv run ty check`, `uv run pytest`). When changing package exports, ensure `ty` and tests still import and reference symbols correctly; prefer updating callers to import directly from submodules when possible.
   - Examples and automated checks: Prefer small tests which import the module and assert the presence of promised attributes and absence of private ones when appropriate.
+
 - Typing & dataclasses: Prefer PEP-585/604 annotations (`list[int]`, `str | None`). For abstract collection/iterable protocols (for example `Iterable`, `Iterator`, `Sequence`, `Mapping`, `Collection`, `AsyncIterator`) import from `collections.abc` instead of `typing` (example: `from collections.abc import Iterable, Mapping`). Many dataclasses use `@dataclass(..., slots=True, frozen=True)`. Do not use `from __future__ import annotations` anywhere in this repository; postponed evaluation of annotations is disallowed. Use explicit forward references or runtime-compatible patterns when necessary.
   - Tests: When writing filesystem tests prefer the `tmp_path` fixture _and_ annotate the parameter as `tmp_path: os.PathLike[str]` (this makes intent explicit for type-checkers and reviewers). Convert `tmp_path` to a `pathlib.Path` only when you need `Path` methods (for example `p = Path(tmp_path)`), and always use `os.fspath(path_like)` when an API requires a `str` (do not rely on `str(path_like)` in library code or tests).
 - Async-first code: Many helpers are `async` (use `@pytest.mark.anyio` for tests). Examples: `CompileCache` context manager in `src/pytextgen/util.py`.
@@ -119,7 +114,6 @@ Safety & secrets ⚠️
 Workflow tools for agents
 
 - Use the Todo List Tool for multi-step work. Add a concise plan, mark one item `in-progress`, complete it, then move to the next. Example Todo plan:
-
   1. Add a new test for `foo` (in `tests/pytextgen/test_foo.py`) — in-progress
   2. Implement behaviour in `src/pytextgen/foo.py` — not-started
   3. Run format & tests, fix issues — not-started
