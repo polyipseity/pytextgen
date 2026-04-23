@@ -124,6 +124,62 @@ def _has_all_tuple(node: ast.Module) -> tuple[bool, str]:
     return False, "__all__ not found"
 
 
+def _extract_all_tuple(node: ast.Module) -> tuple[str, ...] | None:
+    """Return a statically-determined ``__all__`` tuple, if present."""
+    for stmt in node.body:
+        if isinstance(stmt, ast.Assign):
+            for target in stmt.targets:
+                if isinstance(target, ast.Name) and target.id == "__all__":
+                    val = stmt.value
+                    if isinstance(val, ast.Tuple):
+                        names = tuple(
+                            elt.value
+                            for elt in val.elts
+                            if isinstance(elt, ast.Constant)
+                            and isinstance(elt.value, str)
+                        )
+                        if len(names) == len(val.elts):
+                            return names
+        elif isinstance(stmt, ast.AnnAssign):
+            if isinstance(stmt.target, ast.Name) and stmt.target.id == "__all__":
+                val = stmt.value
+                if isinstance(val, ast.Tuple):
+                    names = tuple(
+                        elt.value
+                        for elt in val.elts
+                        if isinstance(elt, ast.Constant) and isinstance(elt.value, str)
+                    )
+                    if len(names) == len(val.elts):
+                        return names
+    return None
+
+
+def _iter_defined_top_level_names(node: ast.Module) -> Iterator[str]:
+    """Yield names defined at module top level by defs/imports/assignments."""
+    for stmt in node.body:
+        if isinstance(stmt, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            yield stmt.name
+        elif isinstance(stmt, ast.Assign):
+            for target in stmt.targets:
+                if isinstance(target, ast.Name):
+                    yield target.id
+        elif isinstance(stmt, ast.AnnAssign):
+            if isinstance(stmt.target, ast.Name):
+                yield stmt.target.id
+        elif isinstance(stmt, ast.Import):
+            for alias in stmt.names:
+                yield (
+                    alias.asname
+                    if alias.asname is not None
+                    else alias.name.split(".")[0]
+                )
+        elif isinstance(stmt, ast.ImportFrom):
+            for alias in stmt.names:
+                if alias.name == "*":
+                    continue
+                yield alias.asname if alias.asname is not None else alias.name
+
+
 @pytest.mark.anyio
 async def test_all_tuple_present_and_is_tuple() -> None:
     """Assert that every module declares `__all__` as a tuple of strings.
@@ -203,3 +259,36 @@ async def test___all___follows_top_level_imports() -> None:
 
     if failures:
         raise AssertionError("__all__ ordering failures:\n" + "\n".join(failures))
+
+
+@pytest.mark.anyio
+async def test___all___exports_are_defined_unique_and_non_private() -> None:
+    """`__all__` entries should be defined, unique, and not private names."""
+    failures: list[str] = []
+
+    for path in await _find_py_files():
+        text = await path.read_text(encoding="utf-8")
+        try:
+            node = ast.parse(text, filename=path)
+        except SyntaxError as exc:
+            failures.append(f"{path}: SyntaxError: {exc}")
+            continue
+
+        exported = _extract_all_tuple(node)
+        if exported is None:
+            continue
+
+        if len(set(exported)) != len(exported):
+            failures.append(f"{path}: __all__ contains duplicated names")
+
+        defined = set(_iter_defined_top_level_names(node))
+        for name in exported:
+            if name.startswith("_") and not (
+                name.startswith("__") and name.endswith("__")
+            ):
+                failures.append(f"{path}: __all__ contains private name {name!r}")
+            if name not in defined:
+                failures.append(f"{path}: __all__ exports undefined name {name!r}")
+
+    if failures:
+        raise AssertionError("__all__ quality failures:\n" + "\n".join(failures))

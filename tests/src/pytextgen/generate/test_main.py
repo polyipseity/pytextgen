@@ -266,3 +266,96 @@ async def test_generate_main_validate_and_write_errors(
         await gen_main.main(args_write)
     code2 = cast(gen_main.ExitCode, excinfo2.value.code)
     assert code2 & ExitCode.WRITE_ERROR
+
+
+@pytest.mark.anyio
+async def test_generate_main_combines_exit_flags_across_inputs(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: PathLike[str],
+) -> None:
+    """Multiple failing inputs should combine validate and write exit flags."""
+
+    class WriterValidateBad:
+        """Writer stub that raises during validation (`__aenter__`)."""
+
+        def write(self):
+            """Return context manager raising on enter."""
+
+            class Ctx:
+                """Validation-error context."""
+
+                async def __aenter__(self) -> None:
+                    """Raise validation error on enter."""
+                    raise RuntimeError("validate")
+
+                async def __aexit__(
+                    self,
+                    exc_type: type[BaseException] | None,
+                    exc: BaseException | None,
+                    tb: TracebackType | None,
+                ) -> bool:
+                    """Do not suppress raised errors."""
+                    return False
+
+            return Ctx()
+
+    class WriterWriteBad:
+        """Writer stub that raises during write (`__aexit__`)."""
+
+        def write(self):
+            """Return context manager raising on exit."""
+
+            class Ctx:
+                """Write-error context."""
+
+                async def __aenter__(self) -> None:
+                    """Succeed on enter so write-phase fails."""
+                    return None
+
+                async def __aexit__(
+                    self,
+                    exc_type: type[BaseException] | None,
+                    exc: BaseException | None,
+                    tb: TracebackType | None,
+                ) -> bool:
+                    """Raise write error on exit."""
+                    raise RuntimeError("write")
+
+            return Ctx()
+
+    class ReaderObj:
+        """Reader-like object yielding one failing writer."""
+
+        def __init__(self, writer: object) -> None:
+            """Store writer to yield from ``pipe``."""
+            self._writer = writer
+
+        def pipe(self):
+            """Return the configured writer wrapped in a list."""
+            return [self._writer]
+
+    async def reader_cached(*, path: Path, options: GenOpts):
+        """Return different failing readers based on input filename suffix."""
+        name = fspath(path)
+        if name.endswith("validate.md"):
+            return ReaderObj(WriterValidateBad())
+        return ReaderObj(WriterWriteBad())
+
+    monkeypatch.setattr(gen_main, "Reader", SimpleNamespace(cached=reader_cached))
+
+    f_validate = Path(tmp_path) / "validate.md"
+    f_write = Path(tmp_path) / "write.md"
+    await f_validate.write_text("x", encoding="utf-8")
+    await f_write.write_text("x", encoding="utf-8")
+
+    args = Arguments(
+        inputs=(f_validate, f_write),
+        options=GenOpts(timestamp=True, init_flashcards=False, compiler=compile),
+    )
+
+    with pytest.raises(SystemExit) as excinfo:
+        await gen_main.main(args)
+
+    code = cast(gen_main.ExitCode, excinfo.value.code)
+    assert code & ExitCode.VALIDATE_ERROR
+    assert code & ExitCode.WRITE_ERROR

@@ -33,6 +33,9 @@ Checklist before opening a PR ✅
 - Pre-commit / prek hooks all clean (no unexpected fixes remain).
 - Commit messages follow Conventional Commits and release commits are GPG-signed when required.
 - The PR description includes: intent, the set of files changed, and any potential upgrade/migration impact.
+- Test changes follow the repository baseline: keep top-level AST safety tests
+  strict, keep test helpers centralized in `tests/utils.py`, and include both
+  happy-path and failure-path assertions for changed behavior.
 
 Repo-specific patterns & examples (do not assume standard patterns):
 
@@ -122,6 +125,8 @@ Workflow tools for agents
   3. Run format & tests, fix issues — not-started
 
 - Run the same local checks the CI runs (format, type, tests) before creating a PR. Include the exact commands you executed in the PR body (example: `uv run ruff check --fix . && uv run ty check && uv run pytest`).
+- During development, prefer focused test runs for edited modules first, then run
+  full `uv run pytest` before finalizing.
 
 Optional PR template snippet (paste into PR description):
 

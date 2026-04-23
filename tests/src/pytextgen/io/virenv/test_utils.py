@@ -7,6 +7,8 @@ across `test_utils_more.py` and `test_utils.py` in the same package.
 from datetime import date
 from typing import cast
 
+import pytest
+
 from pytextgen.io.virenv.utils import (
     ClozeFlashcardGroup,
     FlashcardGroup,
@@ -36,6 +38,15 @@ def test_flashcardstate_compile_many_empty():
     assert list(FlashcardState.compile_many("no states here")) == []
 
 
+def test_flashcardstate_compile_failure_messages() -> None:
+    """compile should reject missing or ambiguous state strings with detail."""
+    with pytest.raises(ValueError, match="No matches"):
+        FlashcardState.compile("nothing")
+
+    with pytest.raises(ValueError, match="Too many matches"):
+        FlashcardState.compile("!2023-01-02,1,250 !2023-01-03,2,260")
+
+
 def test_TwoSidedFlashcard_str_len_and_indexing():
     """TwoSidedFlashcard string output, length and indexing behave."""
     f = TwoSidedFlashcard(left="L", right="R", reversible=True)
@@ -47,6 +58,12 @@ def test_TwoSidedFlashcard_str_len_and_indexing():
     f2 = TwoSidedFlashcard(left="L", right="R", reversible=False)
     assert len(f2) == 1
 
+    with pytest.raises(IndexError):
+        _ = f2[1]
+
+    with pytest.raises(IndexError):
+        _ = f[-3]
+
 
 def test_ClozeFlashcardGroup_extracts_tokens_and_len():
     """ClozeFlashcardGroup locates cloze tokens and reports their count."""
@@ -55,6 +72,9 @@ def test_ClozeFlashcardGroup_extracts_tokens_and_len():
     assert len(c) == 2
     assert c[0] == "cloze"
     assert str(c) == txt
+
+    with pytest.raises(IndexError):
+        _ = c[2]
 
 
 def test_FlashcardStateGroup_and_Stateful_str_and_compile():
@@ -73,7 +93,32 @@ def test_FlashcardStateGroup_and_Stateful_str_and_compile():
     assert str(stateful).startswith(str(fc))
 
 
+def test_FlashcardStateGroup_compile_failure_messages() -> None:
+    """compile should reject missing or ambiguous flashcard-state groups."""
+    with pytest.raises(ValueError, match="No matches"):
+        FlashcardStateGroup.compile("none")
+
+    with pytest.raises(ValueError, match="Too many matches"):
+        FlashcardStateGroup.compile(
+            "<!--SR:!2023-01-02,1,250--><!--SR:!2023-01-03,2,260-->"
+        )
+
+
 def test_export_seq_returns_name_map():
     """export_seq returns a mapping keyed by symbol name."""
     m = export_seq(TwoSidedFlashcard, ClozeFlashcardGroup)
     assert "TwoSidedFlashcard" in m and "ClozeFlashcardGroup" in m
+
+
+def test_export_seq_rejects_values_without___name__() -> None:
+    """export_seq should reject values lacking a string ``__name__``."""
+
+    class NamelessCallable:
+        """Callable instance intentionally lacking a ``__name__`` attribute."""
+
+        def __call__(self) -> None:
+            """No-op callable implementation for testing."""
+            return None
+
+    with pytest.raises(ValueError):
+        export_seq(NamelessCallable())

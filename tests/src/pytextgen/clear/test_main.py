@@ -104,3 +104,99 @@ async def test_clear_main_emits_exitcode_on_writer_failure(
     assert isinstance(excinfo.value.code, clear_main.ExitCode)
     code = excinfo.value.code
     assert code & ExitCode.ERROR
+
+
+@pytest.mark.anyio
+async def test_clear_main_success_exits_with_zero(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: PathLike[str],
+) -> None:
+    """Successful writes should exit with zero-valued ``ExitCode``."""
+    f = Path(tmp_path) / "ok.md"
+    await f.write_text("x", encoding="utf-8")
+
+    args = Arguments(inputs=(f,), types={ClearType.CONTENT})
+
+    class OkCtx:
+        """Context manager stub that succeeds on enter/exit."""
+
+        async def __aenter__(self) -> None:
+            """Succeed immediately."""
+            return None
+
+        async def __aexit__(
+            self,
+            exc_type: type[BaseException] | None,
+            exc: BaseException | None,
+            tb: TracebackType | None,
+        ) -> bool:
+            """Do not suppress exceptions."""
+            return False
+
+    class OkWriter:
+        """Writer stub returning a successful async context manager."""
+
+        def __init__(self, *a: Any, **k: Any) -> None:
+            """Accept any constructor inputs from production call sites."""
+            pass
+
+        def write(self):
+            """Return successful context manager."""
+            return OkCtx()
+
+    monkeypatch.setattr(clear_main, "ClearWriter", OkWriter)
+
+    with pytest.raises(SystemExit) as excinfo:
+        await clear_main.main(args)
+
+    assert isinstance(excinfo.value.code, clear_main.ExitCode)
+    assert clear_main.ExitCode(excinfo.value.code) == ExitCode(0)
+
+
+@pytest.mark.anyio
+async def test_clear_main_multiple_failures_still_emit_error_flag(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: PathLike[str],
+) -> None:
+    """Multiple failing inputs should still produce the aggregated error flag."""
+    f1 = Path(tmp_path) / "a.md"
+    f2 = Path(tmp_path) / "b.md"
+    await f1.write_text("x", encoding="utf-8")
+    await f2.write_text("x", encoding="utf-8")
+
+    args = Arguments(inputs=(f1, f2), types={ClearType.CONTENT})
+
+    class BadCtx:
+        """Context manager stub that fails on enter."""
+
+        async def __aenter__(self) -> None:
+            """Raise a write failure during enter."""
+            raise RuntimeError("boom")
+
+        async def __aexit__(
+            self,
+            exc_type: type[BaseException] | None,
+            exc: BaseException | None,
+            tb: TracebackType | None,
+        ) -> bool:
+            """Do not suppress exceptions."""
+            return False
+
+    class BadWriter:
+        """Writer stub returning the failing context manager."""
+
+        def __init__(self, *a: Any, **k: Any) -> None:
+            """Accept any constructor inputs from production call sites."""
+            pass
+
+        def write(self):
+            """Return failing context manager."""
+            return BadCtx()
+
+    monkeypatch.setattr(clear_main, "ClearWriter", BadWriter)
+
+    with pytest.raises(SystemExit) as excinfo:
+        await clear_main.main(args)
+
+    code = clear_main.ExitCode(excinfo.value.code)
+    assert code & ExitCode.ERROR

@@ -1,0 +1,10 @@
+test(pytextgen): add entrypoint and io/env/virenv tests with ledger-style rigor
+
+Add comprehensive test coverage:
+- test___main__.py: Full coverage of generate/clear dispatch, argument parsing
+- test_env.py, test_meta.py, test_read.py: Module-level unit tests
+- Expand io/virenv/utils tests: Edge cases, error handling, validation
+- Fixture helpers and shared utilities for consistent patterns
+
+Update instructions: AST-level policy tests, mirrored test structure, verification workflows
+Metrics: 116 tests passing, 84% coverage

@@ -1,5 +1,7 @@
 """Tests for `src/pytextgen/io/virenv/configs.py`."""
 
+import pytest
+
 from pytextgen.io.virenv.configs import CONFIG, FlashcardSeparatorType
 
 """Public symbols exported by this module (none)."""
@@ -15,6 +17,28 @@ def test_flashcard_separator_type_parse():
     t2 = FlashcardSeparatorType.parse("")
     assert t2.reversible is False
     assert t2.multiline is False
+
+
+def test_flashcard_separator_type_parse_passthrough_instance() -> None:
+    """Passing an instance should return that same instance unchanged."""
+    expected = FlashcardSeparatorType(reversible=True, multiline=False)
+    assert FlashcardSeparatorType.parse(expected) is expected
+
+
+@pytest.mark.parametrize(
+    ("options", "message"),
+    (
+        ("x", "Invalid option 'x'"),
+        ("--", "Invalid options"),
+        ("r-", "Incomplete options"),
+    ),
+)
+def test_flashcard_separator_type_parse_rejects_invalid_options(
+    options: str, message: str
+) -> None:
+    """Invalid compact option strings should raise ValueError with context."""
+    with pytest.raises(ValueError, match=message):
+        FlashcardSeparatorType.parse(options)
 
 
 def test_config_has_expected_separators():

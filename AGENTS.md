@@ -89,6 +89,34 @@ If you add an instructions file, link to it from this `AGENTS.md`.
 - Tests should mirror the `src/` structure in `tests/`. Prefer one test file per source file unless splitting is justified.
 - Use `pytest` and include coverage (`pytest-cov`) reporting. Make sure slow or flaky tests are marked appropriately and documented.
 
+### Ledger-style testing baseline (required)
+
+When adding or modifying tests in this submodule, mirror the rigor and layout used
+in `self/ledger`:
+
+- Keep top-level invariant checks such as `tests/test_docstrings.py` and
+  `tests/test_module_exports.py` strict and up-to-date.
+- Keep `tests/conftest.py` as the fixture hub for AnyIO backend setup and plugin wiring.
+- Put reusable typed fixtures/helpers in `tests/utils.py` (instead of duplicating
+  ad-hoc helpers in each test module).
+- Prefer directional mirroring: `src/pkg/mod.py` → `tests/src/pkg/test_mod.py`.
+- Every test module must declare `__all__ = ()`.
+- Async behavior must be tested with `@pytest.mark.anyio` and deterministic fixtures.
+- For critical paths, test both happy-path and failure-path behavior, including
+  exception messages and grouped failures where relevant.
+
+### Minimum local test workflow before PR
+
+Run these commands from the submodule root in order:
+
+1. `uv run ruff check --fix`
+2. `uv run ruff format`
+3. `uv run ty check`
+4. `uv run pytest`
+
+If a change is focused to a small area, run a targeted pytest command first, then
+run the full suite before finalizing.
+
 ---
 
 ## Branching & commit conventions

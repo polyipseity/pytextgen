@@ -7,12 +7,19 @@ module to assert the two version values are equal.
 
 import importlib.util
 import tomllib
+from datetime import datetime, timezone
+from uuid import UUID
 
 import pytest
 from anyio import Path
 
 import pytextgen
-from pytextgen.meta import OPEN_TEXT_OPTIONS
+from pytextgen.meta import (
+    GENERATE_COMMENT_FORMAT,
+    GENERATE_COMMENT_REGEX,
+    OPEN_TEXT_OPTIONS,
+)
+from pytextgen.meta import UUID as META_UUID
 from pytextgen.meta import VERSION as META_VERSION
 
 """Public symbols exported by this module (none)."""
@@ -59,3 +66,17 @@ def test_open_text_options_shape():
     """OPEN_TEXT_OPTIONS exposes a mapping suitable for file open calls."""
     assert isinstance(OPEN_TEXT_OPTIONS, dict)
     assert OPEN_TEXT_OPTIONS["encoding"] == "UTF-8"
+
+
+def test_generate_comment_format_and_regex_roundtrip() -> None:
+    """Generate-comment regex should match strings emitted by the format template."""
+    now = datetime.now(timezone.utc).isoformat()
+    comment = GENERATE_COMMENT_FORMAT.format(now=now)
+    match = GENERATE_COMMENT_REGEX.search(comment)
+    assert match is not None
+    assert match.group(1) == now
+
+
+def test_meta_uuid_is_valid_uuid_string() -> None:
+    """Exported UUID constant should parse as a valid UUID."""
+    assert str(UUID(META_UUID)) == META_UUID

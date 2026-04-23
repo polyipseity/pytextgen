@@ -26,6 +26,23 @@ Local development quick start:
     uv run pytest
     ```
 
+4. When iterating on a small change, run focused tests first, then the full suite:
+
+    ```powershell
+    uv run pytest tests/src/pytextgen/io/test_env.py
+    uv run pytest tests/src/pytextgen/io/test_utils.py -k "FileSection"
+    uv run pytest
+    ```
+
+5. Final verification sequence (CI-like):
+
+    ```powershell
+    uv run ruff check --fix
+    uv run ruff format
+    uv run ty check
+    uv run pytest
+    ```
+
 Script & CI conventions:
 
 - Prefer `uv run` for invoking tools when a `bun` wrapper is not used.
@@ -45,6 +62,8 @@ Agent & automation rules:
 - Agents must run the same format & check steps locally (using `uv` wrappers)
   before making commits or opening PRs. This includes running pre-commit hooks
   and the test suite.
+- If new tests require reusable helpers, add them to `tests/utils.py` and wire
+  them through `tests/conftest.py` instead of duplicating local helper classes.
 - Agents must ask clarifying questions if intent is ambiguous rather than
   guessing when correctness matters.
 - Agents must not add `from __future__ import annotations` to new or existing

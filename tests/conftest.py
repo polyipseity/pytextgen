@@ -9,6 +9,9 @@ import pytest
 """Public API of this test configuration module (empty)."""
 __all__ = ()
 
+"""Additional fixture modules loaded by pytest."""
+pytest_plugins = ("tests.utils",)
+
 
 @pytest.fixture
 def anyio_backend():
