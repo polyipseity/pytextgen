@@ -17,12 +17,9 @@ dependencies = [
 	"more-itertools>=9.1.0",
 	"pydantic>=2.12.0",
 	"regex>=2022.10.31",
-	"uvloop>=0.22.0; platform_system != 'Windows'",
 	"wcwidth>=0.4.0",
-	"winloop>=0.5.0; platform_system == 'Windows'",
 ]
-
-authors = [{ name = "William So", email = "polyipseity@gmail.com" }]
+authors = []
 keywords = []
 classifiers = [
 	"Development Status :: 5 - Production/Stable",
@@ -44,6 +41,12 @@ classifiers = [
 	"Typing :: Typed",
 ]
 
+[project.optional-dependencies]
+uvloop = [
+	"uvloop>=0.22.0; platform_system != 'Windows'",
+	"winloop>=0.5.0; platform_system == 'Windows'",
+]
+
 [project.scripts]
 pytextgen = "pytextgen.__main__:__main__"
 pytextgen_clear = "pytextgen.clear.__main__:__main__"
@@ -63,6 +66,7 @@ dev = [
 	"rumdl>=0.1.20",
 	"ty>=0.0.31",
 ]
+uvloop = ["pytextgen[uvloop]"]
 
 [tool.ty.environment]
 python-platform = "all"
@@ -111,6 +115,7 @@ extend-select = ["I", "PLC0415"]
 extends = ".rumdl.toml" # redirect to .rumdl.toml in the same directory
 
 [tool.uv]
+default-groups = ["dev", "uvloop"]
 package = true
 required-version = ">=0.9.0,<0.11.0"
 
