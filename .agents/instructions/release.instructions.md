@@ -18,7 +18,7 @@ This document describes a minimal, reproducible release process for `pytextgen`.
 
 1. Update `pyproject.toml` with the new `version` and update `src/pytextgen/__init__.py` with a matching version string (for example, `1.2.3`). Commit both files together in the release commit.
 
-1a. After changing the version, run `uv sync --all-extras --dev` locally to update `uv.lock` and development extras. If `uv.lock` changes, commit it together with the release commit. In CI use `uv sync --locked --all-extras --dev` to validate the locked environment.
+1a. After changing the version, run `uv sync` locally to update `uv.lock` and development extras. If `uv.lock` changes, commit it together with the release commit. In CI use `uv sync --locked` to validate the locked environment.
 
 1. Commit using the version string as the commit message and sign the commit with GPG:
 
@@ -47,7 +47,7 @@ uv run -m build
 uv publish
 ```
 
-*Fallback (if `uv publish` is unavailable in your environment):*
+_Fallback (if `uv publish` is unavailable in your environment):_
 
 ```powershell
 uv run -m twine upload dist/*
@@ -62,7 +62,7 @@ uv run -m twine upload dist/*
 - Prefer publishing from CI using stored secrets (PyPI API tokens in CI secrets) and secure workflows.
 - Ensure the CI job performs the following checks before publishing: tests, linters, and package build.
 
-Agent-specific note: Agents performing a release or preparing a release PR should follow `.agents/instructions/agents.instructions.md` and include in the PR body the exact commands they executed locally (example: `uv sync --all-extras --dev`, `uv run pytest`, `uv run -m build`). Release commits must be GPG-signed as described above.
+Agent-specific note: Agents performing a release or preparing a release PR should follow `.agents/instructions/agents.instructions.md` and include in the PR body the exact commands they executed locally (example: `uv sync`, `uv run pytest`, `uv run -m build`). Release commits must be GPG-signed as described above.
 
 ## Post-release
 

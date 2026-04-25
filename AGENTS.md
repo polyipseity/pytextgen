@@ -39,31 +39,31 @@ If you add an instructions file, link to it from this `AGENTS.md`.
 - **Use os.PathLike for file identifiers.** Accept `os.PathLike` and use `os.fspath(path_like)` when a string path is needed.
 - **Timezone-aware datetimes.** Use `datetime.now(timezone.utc)` (avoid `datetime.utcnow()`).
 - **Type hints:** Prefer PEP 585 types (`dict`, `list`) and `X | Y` unions (PEP 604). For abstract collection/iterable types (for example `Iterable`, `Iterator`, `Sequence`, `Mapping`, `Collection`, `AsyncIterator`) import from `collections.abc` rather than `typing` (e.g. `from collections.abc import Iterable, Mapping`). Use built-in generics for concrete containers (`list[int]`, `dict[str, int]`). Use `Self` where appropriate. Aim for strict `ty` compatibility (configured via `[tool.ty.rules] all = "error"`). Do not use `from __future__ import annotations` in this repository; postponed evaluation of annotations is not permitted.
-
   - Tests & filesystem fixtures: Prefer annotating pytest `tmp_path` parameters as `tmp_path: os.PathLike[str]` (this is the recommended, typed signature for filesystem fixtures in our codebase). When you need path operations convert with `Path(tmp_path)`; when you need a `str` path always convert using `os.fspath(path_like)` — prefer `fspath` over `str()` for portability and correctness.
+
 - **Docstrings & annotations:** All modules, functions, classes (public and private), and tests must include clear module-level and object-level docstrings and complete type annotations. Docstrings should be concise, use triple double-quotes, include a short one-line summary, and expand when necessary to describe parameters, return values, and examples. See the `agents.instructions.md` runbook for a short template and examples.
-- **Capitalization when embedding class names in identifiers:** When a function or test name includes a `ClassName`, embed the class name verbatim using `CamelCase` (for example `test_PythonWriter_writes_result`, `test_ClearWriter_strips_flashcard_state`). Do not convert the class-name portion to lowercase or snake_case (avoid `test_pythonwriter_*` or `test_python_writer_*`).
+- **Capitalization when embedding class names in identifiers:** When a function or test name includes a `ClassName`, embed the class name verbatim using `CamelCase` (for example `test_PythonWriter_writes_result`, `test_ClearWriter_strips_flashcard_state`). Do not convert the class-name portion to lowercase or snake*case (avoid `test_pythonwriter*_`or`test*python_writer*_`).
 - **`__all__` usage:** Export control via `__all__` is mandatory; tests should use `__all__ = ()`.
 
   Detailed rules:
-
   - Place `__all__` as a tuple literal immediately after imports at the top of the module.
   - Only include public symbols (classes, functions, constants) or package-level module names; do not include names starting with `_`.
   - New-folder rule: when creating any new directory that will contain Python code (production or tests), include an `__init__.py` file in that directory (it may be empty). This applies to `src/` packages and `tests/` packages — it ensures imports, test discovery, and tooling work reliably. Add a short `__all__` (or `__all__ = ()` for test modules) where appropriate.
   - Prefer not to re-export submodules via package `__init__.py`. Callers should import directly from submodules. When a package-level API is necessary and intentionally stable, prefer centralizing the package's exported surface in a `meta.py` module located in the package directory. Put the exported symbols and the `__all__` tuple in `meta.py` and have `__init__.py` import the minimal exported names (or forward `__all__` from `_meta`) so the package-level surface remains small and explicit.
   - When changing public symbols, update `__all__`, update docs, and add or update tests that verify exports. Run `uv run ruff check --fix`, `uv run ty check`, and `uv run pytest` locally before opening a PR.
+
 - **Async tests:** Prefer `async def` tests with `@pytest.mark.anyio` and `await` usage. Do not use `asyncio.run` within pytest tests.
 
 ## Formatting & tooling note 💡
 
 - **Ruff** is the canonical formatter/linter for Python. Do not add `black` or `isort`. Use:
 
-    ```powershell
-    uv run ruff check --fix
-    uv run ruff format
-    ```
+  ```powershell
+  uv run ruff check --fix
+  uv run ruff format
+  ```
 
-- For Markdown we use **rumdl** (fast Rust-based linter & formatter). Install via dev extras (add `rumdl` to `[dependency-groups].dev` in `pyproject.toml` and run `uv sync --all-extras --dev`) and run `uv run --locked rumdl check` to lint and `uv run --locked rumdl fmt` to format. `rumdl` auto-discovers `.markdownlint.jsonc` and supports `rumdl import --pyproject` to convert existing configs into the `[tool.rumdl]` section of `pyproject.toml`.
+- For Markdown we use **rumdl** (fast Rust-based linter & formatter). Install via dev extras (add `rumdl` to `[dependency-groups].dev` in `pyproject.toml` and run `uv sync`) and run `uv run --locked rumdl check` to lint and `uv run --locked rumdl fmt` to format. `rumdl` auto-discovers `.markdownlint.jsonc` and supports `rumdl import --pyproject` to convert existing configs into the `[tool.rumdl]` section of `pyproject.toml`.
 
 - Use `uv` and commit `uv.lock` to ensure reproducible installs.
 
@@ -71,11 +71,11 @@ If you add an instructions file, link to it from this `AGENTS.md`.
 
 - Install `prek` as a dev extra and run:
 
-    ```powershell
-    uv sync --all-extras --dev
-    prek install
-    prek run --all-files
-    ```
+  ```powershell
+  uv sync
+  prek install
+  prek run --all-files
+  ```
 
 - The repository provides a `prek.toml` (preferred) and still supports `.pre-commit-config.yaml` for compatibility. Recommended checks include `pre-commit-hooks`, `ruff`, `rumdl` (Markdown), and a `pytest` hook run on push.
 
@@ -130,15 +130,15 @@ run the full suite before finalizing.
 
 1. Update the version in `pyproject.toml` (primary) and keep `src/pytextgen/__init__.py` in sync. Ensure both files match and commit them together as a single signed commit with the bare version as the message (e.g., `1.2.3`).
 
-    **Important:** After changing the version, run `uv sync --all-extras --dev` locally to update `uv.lock` and dev extras. If `uv.lock` changes, commit it (for example: `git add uv.lock && git commit -m "chore: update uv.lock"`). In CI prefer `uv sync --locked --all-extras --dev` to validate the locked environment.
+   **Important:** After changing the version, run `uv sync` locally to update `uv.lock` and dev extras. If `uv.lock` changes, commit it (for example: `git add uv.lock && git commit -m "chore: update uv.lock"`). In CI prefer `uv sync --locked` to validate the locked environment.
 
-    ```powershell
-    git add pyproject.toml uv.lock src/pytextgen/__init__.py
-    git commit -S -m "1.2.3"
-    git tag -s -a v1.2.3 -m "v1.2.3"
-    git push origin HEAD
-    git push origin --tags
-    ```
+   ```powershell
+   git add pyproject.toml uv.lock src/pytextgen/__init__.py
+   git commit -S -m "1.2.3"
+   git tag -s -a v1.2.3 -m "v1.2.3"
+   git push origin HEAD
+   git push origin --tags
+   ```
 
 2. Keep releases minimal and focused; add release notes in a separate commit if needed.
 
@@ -148,7 +148,7 @@ run the full suite before finalizing.
 
 ## CI & Packaging
 
-- CI should reproduce local dev installs via `uv sync --locked --all-extras --dev`.
+- CI should reproduce local dev installs via `uv sync --locked`.
 - Use `uv run -m build` to build source distributions and wheels locally.
 - Publish via `uv publish` (preferred) using credentials stored in CI secrets; never commit credentials to the repo.
 - Use `uv run -m twine upload dist/*` as a fallback if `uv publish` is not available.
@@ -185,7 +185,7 @@ This repository includes an agent-specific runbook to help automated contributor
 Quick checklist (run before committing or opening a PR):
 
 - Read `.agents/instructions/*` (especially `developer-workflows.instructions.md` and `agents.instructions.md`).
-- Sync the environment: `uv sync --all-extras --dev` and install hooks: `prek install`.
+- Sync the environment: `uv sync` and install hooks: `prek install`.
 - Format & lint: `uv run ruff check --fix` and `uv run ruff format`.
 - Run pre-commit hooks: `prek run --all-files` (or `pre-commit run --all-files` if using pre-commit).
 - Type check: `uv run ty check` (or run your editor's ty integration).
@@ -199,7 +199,7 @@ Repository-specific patterns & gotchas:
 - Preferred typing styles: PEP 585 (`list[int]`) and PEP 604 (`str | None`). Use `Self`/`TypedDict` where appropriate.
 - Async-first patterns: favor `async def` and `@pytest.mark.anyio` in tests; use `anyio`/`async` I/O patterns (see `CompileCache` in `src/pytextgen/util.py`).
 - Do not add `black` or `isort` to the toolchain—Ruff is the canonical formatter/linter.
-- When bumping versions: update `pyproject.toml` and `src/pytextgen/__init__.py`, run tests (see version parity test), and run `uv sync --all-extras --dev` to refresh `uv.lock` before committing.
+- When bumping versions: update `pyproject.toml` and `src/pytextgen/__init__.py`, run tests (see version parity test), and run `uv sync` to refresh `uv.lock` before committing.
 
 If uncertain about intent or design, ask a short clarifying question rather than guessing. Use the Todo List Tool for multi-step changes and include the reason in the commit/PR body.
 

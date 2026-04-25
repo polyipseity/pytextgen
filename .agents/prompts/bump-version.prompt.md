@@ -46,7 +46,7 @@ argument-hint: Required `part=major|minor|patch`. Optional `commitNow=no` to ski
    - Update the discovered source file's `VERSION = "..."` to the new version. Preserve formatting and comments.
 
 4. **Synchronize lockfile (recommended)**
-   - Run `uv sync --all-extras --dev` to refresh `uv.lock` and development extras.
+   - Run `uv sync` to refresh `uv.lock` and development extras.
    - If `uv.lock` changed, include it in the release commit.
 
 5. **Run quick validation (recommended)**

@@ -10,7 +10,7 @@ This page contains concise, actionable steps and repository-specific rules for A
 Quick start (commands you will run every time):
 
 1. Sync & setup
-   - uv sync --all-extras --dev
+   - uv sync
    - prek install
 
 2. Format, lint, and type-check
@@ -99,7 +99,7 @@ Repo-specific patterns & examples (do not assume standard patterns):
   - Tests: When writing filesystem tests prefer the `tmp_path` fixture _and_ annotate the parameter as `tmp_path: os.PathLike[str]` (this makes intent explicit for type-checkers and reviewers). Convert `tmp_path` to a `pathlib.Path` only when you need `Path` methods (for example `p = Path(tmp_path)`), and always use `os.fspath(path_like)` when an API requires a `str` (do not rely on `str(path_like)` in library code or tests).
 - Async-first code: Many helpers are `async` (use `@pytest.mark.anyio` for tests). Examples: `CompileCache` context manager in `src/pytextgen/util.py`.
 - Formatting toolchain: Ruff is the canonical formatter and linter—do not add `black` or `isort`.
-- Version bumps: Update `pyproject.toml` and `src/pytextgen/__init__.py` together. Run the version parity test (`tests/pytextgen/test___init__.py`) and `uv sync --all-extras --dev` so `uv.lock` is updated.
+- Version bumps: Update `pyproject.toml` and `src/pytextgen/__init__.py` together. Run the version parity test (`tests/pytextgen/test___init__.py`) and `uv sync` so `uv.lock` is updated.
 
 When you need human help 💬
 
@@ -129,7 +129,7 @@ What I changed:
 - <brief summary>
 
 Commands I ran locally:
-- uv sync --all-extras --dev
+  - uv sync
 - uv run ruff check --fix .
 - uv run ty check
 - uv run pytest

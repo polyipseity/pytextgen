@@ -32,7 +32,7 @@ uv run ruff format
 - The repository provides a `prek.toml` (preferred) and still supports `.pre-commit-config.yaml` for compatibility. Install and run locally:
 
 ```powershell
-uv sync --all-extras --dev
+uv sync
 prek install
 prek run --all-files
 ```
@@ -46,7 +46,6 @@ prek run --all-files
 Follow this short example to get started with `prek`:
 
 1. Create a configuration
-
    - Add a `prek.toml` to the repository root. Example snippet:
 
      ```toml
@@ -87,7 +86,7 @@ prek install
 
 ```powershell
 # Ensure dev extras are installed (rumdl is provided from dev extras in pyproject.toml)
-uv sync --all-extras --dev
+uv sync
 
 # Lint (fails on violations):
 uv run --locked rumdl check

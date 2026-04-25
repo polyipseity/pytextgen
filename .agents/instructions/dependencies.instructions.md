@@ -15,20 +15,20 @@ Creating an environment:
 
 1. Create a virtual environment and activate it:
 
-    ```powershell
-    python -m venv .venv
-    .\.venv\Scripts\Activate.ps1
-    ```
+   ```powershell
+   python -m venv .venv
+   .\.venv\Scripts\Activate.ps1
+   ```
 
 2. Install dependencies:
 
-    ```powershell
-    uv sync --all-extras --dev
-    ```
+   ```powershell
+   uv sync
+   ```
 
 Notes for CI:
 
-- CI should run `uv sync --locked --all-extras --dev` to install development extras
+- CI should run `uv sync --locked` to install development extras
   deterministically.
 - Pin long-lived tooling (for example: `ruff`, `pytest`, `pre-commit`) in the
   `[dependency-groups].dev` section to ensure reproducible behaviour.
@@ -36,6 +36,6 @@ Notes for CI:
 When adding a new dependency:
 
 - Add the package to `pyproject.toml` under the appropriate section and run
-  `uv sync --all-extras --dev` to update `uv.lock` and commit the lockfile.
+  `uv sync` to update `uv.lock` and commit the lockfile.
   When the dependency supports asynchronous features, remember this project uses AnyIO and the Asyncer helpers; ensure both `anyio` and `asyncer` end up in the lockfile if you introduce or update async code.
 - Validate the change locally: run `uv run pytest` and `uv run ruff check --fix .` to ensure the dependency doesn't break type checks or formatting. Agents should record these commands in their PR description and link the updated `uv.lock` entry.
