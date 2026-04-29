@@ -5,14 +5,8 @@
 # This file replaces `.pre-commit-config.yaml`; that file has been removed to avoid duplication.
 # Note: `prek` can read `.pre-commit-config.yaml` for compatibility, but `prek.toml` is preferred.
 
-default_install_hook_types = [
-  "commit-msg",
-  "pre-commit",
-  "pre-push",
-]
-default_stages = [
-  "pre-commit",
-]
+default_install_hook_types = ["commit-msg", "pre-commit", "pre-push"]
+default_stages = ["pre-commit"]
 
 [[repos]]
 repo = "https://github.com/pre-commit/pre-commit-hooks.git"
@@ -32,17 +26,19 @@ hooks = [
   { id = "detect-private-key" },
   { id = "end-of-file-fixer" },
   { id = "fix-byte-order-marker" },
-  { id = "name-tests-test", args = ["--pytest-test-first"] },
+  { id = "name-tests-test", args = [
+    "--pytest-test-first",
+  ] },
   # Preserve markdown hard line breaks (common in docs)
-  { id = "trailing-whitespace", args = ["--markdown-linebreak-ext=md,mdoc,mdown,mdx,mkd,mkdn,markdown,rmd"] },
+  { id = "trailing-whitespace", args = [
+    "--markdown-linebreak-ext=md,mdoc,mdown,mdx,mkd,mkdn,markdown,rmd",
+  ] },
 ]
 
 [[repos]]
 repo = "https://github.com/astral-sh/uv-pre-commit.git"
 rev = "e3daa3b1abb0f966fc89f674fdf01eebd84c2eec"
-hooks = [
-  { id = "uv-lock" },
-]
+hooks = [{ id = "uv-lock" }]
 
 # Markdown linting using rumdl (high-performance Rust linter). These hooks
 # use the official pre-commit bridge which installs rumdl into an isolated
@@ -51,17 +47,12 @@ hooks = [
 [[repos]]
 repo = "https://github.com/rvben/rumdl-pre-commit.git"
 rev = "59d5dafbf6b16f065b4c86cbbff836f5c4a75a71"
-hooks = [
-  { id = "rumdl-fmt" },
-]
+hooks = [{ id = "rumdl-fmt" }]
 
 [[repos]]
 repo = "https://github.com/astral-sh/ruff-pre-commit.git"
 rev = "0470f7c8a653e950f7cc5a653204ceb3fde4c02a"
-hooks = [
-  { id = "ruff-check", args = ["--fix"] },
-  { id = "ruff-format" },
-]
+hooks = [{ id = "ruff-check", args = ["--fix"] }, { id = "ruff-format" }]
 
 # Commit message linting using commitlint (Node.js). This uses
 # the commitlint-pre-commit-hook bridge so it runs as a commit-msg hook.
@@ -70,40 +61,28 @@ hooks = [
 repo = "https://github.com/alessandrojcm/commitlint-pre-commit-hook.git"
 rev = "1f6454da22d006d5bb0d2e65c96c43c23c8a534f"
 hooks = [
-  {
-    id = "commitlint",
-    stages = ["commit-msg"],
-    additional_dependencies = ["@commitlint/config-conventional"],
-  },
+  { id = "commitlint", stages = [
+    "commit-msg",
+  ], additional_dependencies = [
+    "@commitlint/config-conventional",
+  ] },
 ]
 
 [[repos]]
 repo = "https://github.com/python-jsonschema/check-jsonschema.git"
 rev = "4cec9aea9b0dd197127811e7d29bd48d761a9370"
-hooks = [
-  { id = "check-dependabot" },
-  { id = "check-github-workflows" },
-]
+hooks = [{ id = "check-dependabot" }, { id = "check-github-workflows" }]
 
 [[repos]]
 repo = "local"
 hooks = [
-  {
-    id = "ty-check",
-    name = "Run ty check",
-    entry = "uv run --locked ty check",
-    language = "system",
-    types_or = ["pyi", "python"],
-    pass_filenames = false,  # Type checkers need global context, not individual files
-    always_run = true,       # Ensure ty runs even if no Python files changed (catches cross-file errors)
-  },
-  {
-    id = "pytest-push",
-    name = "Run Pytest on Push",
-    entry = "uv run --locked pytest",
-    language = "system",
-    pass_filenames = false, # Run all tests, not just those with changed files
-    always_run = true, # Ensure tests run on every push, even if no files changed
-    stages = ["pre-push"], # Specify pre-push stage
-  }
+  # Type checkers need global context, not individual files
+  { id = "ty-check", name = "Run ty check", entry = "uv run --locked ty check", language = "system", types_or = [
+    "pyi",
+    "python",
+  ], pass_filenames = false, always_run = true },
+  # Run all tests, not just those with changed files
+  { id = "pytest-push", name = "Run Pytest on Push", entry = "uv run --locked pytest", language = "system", pass_filenames = false, always_run = true, stages = [
+    "pre-push",
+  ] },
 ]
