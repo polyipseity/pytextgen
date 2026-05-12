@@ -37,7 +37,7 @@ hooks = [
 
 [[repos]]
 repo = "https://github.com/astral-sh/uv-pre-commit.git"
-rev = "e3daa3b1abb0f966fc89f674fdf01eebd84c2eec"
+rev = "92791afd0b37b081bdc48d250ecc6aed11b6beac"
 hooks = [{ id = "uv-lock" }]
 
 # Markdown linting using rumdl (high-performance Rust linter). These hooks
