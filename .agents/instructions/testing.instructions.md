@@ -35,7 +35,6 @@ these invariants in place:
   `pytest_plugins` in `tests/conftest.py`.
 - New-folder rule for tests: When adding a new test directory, include an `__init__.py` file in that directory (it may be empty). This guarantees pytest discovery and consistent import semantics for test packages.
   - When changing a module's public API, add or update tests that import the module and assert the exported symbols are present and behave correctly. Prefer updating callers to import directly from the defining submodule rather than relying on re-exports in `__init__.py` when feasible. This helps catch accidental renames or missing re-exports.
-
 - All tests and public code must include type annotations and module-level docstrings.
 - Agents adding behavior must include tests that follow these conventions and ensure new tests run with `uv run pytest` locally. Prefer the `tmp_path` fixture for filesystem tests and annotate the parameter as `tmp_path: os.PathLike[str]`. When you need a `Path` object use `Path(tmp_path)`; when passing a path to APIs that expect a `str`, always call `os.fspath(path_like)` (avoid using `str(path_like)` for conversions in library/tests). Avoid external network calls in unit tests (mock where appropriate).
 
