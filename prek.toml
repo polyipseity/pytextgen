@@ -1,9 +1,8 @@
 # Prek native configuration: preferred as the canonical configuration for pre-commit-style hooks.
-# Pre-commit-style configuration for common checks and Python formatting.
-# Mirrors the project's conventions: enable the recommended hooks from pre-commit-hooks and use Ruff
-# for Python formatting and linting. Adjust or opt-out of any hooks as needed per team preference.
-# This file replaces `.pre-commit-config.yaml`; that file has been removed to avoid duplication.
-# Note: `prek` can read `.pre-commit-config.yaml` for compatibility, but `prek.toml` is preferred.
+# Prek is a Rust-based, drop-in replacement for pre-commit with support for TOML config.
+# Configuration mirrors project conventions: baseline checks, formatting, linting, and CI validation.
+# For details on prek, see: https://prek.j178.dev/
+# Note: `prek` can also read `.pre-commit-config.yaml` for compatibility, but `prek.toml` is preferred.
 
 default_install_hook_types = ["commit-msg", "pre-commit", "pre-push"]
 default_stages = ["pre-commit"]
@@ -14,7 +13,7 @@ rev = "3e8a8703264a2f4a69428a0aa4dcb512790b2c8c"
 # Notes:
 # - These hooks are a recommended baseline. If a particular hook is undesired (for example, forbidding
 #   submodules in a repository that intentionally uses them), remove or configure that hook in `prek.toml`.
-# - Keep hook repositories pinned (set `rev`) to an explicit release to ensure reproducible behaviour.
+# - Keep hook repositories pinned (set `rev`) to an explicit commit hash to ensure reproducible behaviour.
 hooks = [
   { id = "check-case-conflict" },
   { id = "check-executables-have-shebangs", exclude = "\\.(bat|cmd|ps1|psd1|psm1|vbs|wsf|wsh)$" },
@@ -35,25 +34,6 @@ hooks = [
   ] },
 ]
 
-[[repos]]
-repo = "https://github.com/astral-sh/uv-pre-commit.git"
-rev = "92791afd0b37b081bdc48d250ecc6aed11b6beac"
-hooks = [{ id = "uv-lock" }]
-
-# Markdown linting using rumdl (high-performance Rust linter). These hooks
-# use the official pre-commit bridge which installs rumdl into an isolated
-# environment automatically. Keep `.markdownlint.jsonc` for compatibility;
-# rumdl auto-discovers and can import markdownlint configs via `rumdl import`.
-[[repos]]
-repo = "https://github.com/rvben/rumdl-pre-commit.git"
-rev = "59d5dafbf6b16f065b4c86cbbff836f5c4a75a71"
-hooks = [{ id = "rumdl-fmt" }]
-
-[[repos]]
-repo = "https://github.com/astral-sh/ruff-pre-commit.git"
-rev = "0470f7c8a653e950f7cc5a653204ceb3fde4c02a"
-hooks = [{ id = "ruff-check", args = ["--fix"] }, { id = "ruff-format" }]
-
 # Commit message linting using commitlint (Node.js). This uses
 # the commitlint-pre-commit-hook bridge so it runs as a commit-msg hook.
 # Note: Node.js must be available on developer machines to run this hook.
@@ -73,16 +53,36 @@ repo = "https://github.com/python-jsonschema/check-jsonschema.git"
 rev = "4cec9aea9b0dd197127811e7d29bd48d761a9370"
 hooks = [{ id = "check-dependabot" }, { id = "check-github-workflows" }]
 
+# Markdown linting using rumdl (high-performance Rust linter). These hooks
+# use the official pre-commit bridge which installs rumdl into an isolated
+# environment automatically. Keep `.markdownlint.jsonc` for compatibility;
+# rumdl auto-discovers and can import markdownlint configs via `rumdl import`.
+[[repos]]
+repo = "https://github.com/rvben/rumdl-pre-commit.git"
+rev = "59d5dafbf6b16f065b4c86cbbff836f5c4a75a71"
+hooks = [{ id = "rumdl-fmt" }]
+
+[[repos]]
+repo = "https://github.com/astral-sh/uv-pre-commit.git"
+rev = "92791afd0b37b081bdc48d250ecc6aed11b6beac"
+hooks = [{ id = "uv-lock" }]
+
+[[repos]]
+repo = "https://github.com/astral-sh/ruff-pre-commit.git"
+rev = "0470f7c8a653e950f7cc5a653204ceb3fde4c02a"
+hooks = [{ id = "ruff-check", args = ["--fix"] }, { id = "ruff-format" }]
+
 [[repos]]
 repo = "local"
 hooks = [
   # Type checkers need global context, not individual files
-  { id = "ty-check", name = "Run ty check", entry = "uv run --locked ty check", language = "system", types_or = [
+  { id = "ty-check", name = "ty check", entry = "uv run --locked ty check", language = "system", types_or = [
+    "cython",
     "pyi",
     "python",
   ], pass_filenames = false, always_run = true },
   # Run all tests, not just those with changed files
-  { id = "pytest-push", name = "Run Pytest on Push", entry = "uv run --locked pytest", language = "system", pass_filenames = false, always_run = true, stages = [
+  { id = "test-pytest", name = "test with Pytest", entry = "uv run --locked pytest", language = "system", pass_filenames = false, always_run = true, stages = [
     "pre-push",
   ] },
 ]
