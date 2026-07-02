@@ -67,11 +67,13 @@ FLASHCARD_STATES_REGEX = re.compile(r"<!--SR:(.*?)-->", re.NOFLAG)
 GENERATE_COMMENT_FORMAT = "<!-- The following content is generated at {now}. Any edits will be overridden! -->"
 """Regex to match and parse the generate-block marker comment."""
 GENERATE_COMMENT_REGEX = re.compile(
-    r"^<!-- The following content is generated at (\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}\+\d{2}:\d{2}). Any edits will be overridden! -->",
+    r"^<!-- The following content is generated at (\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}[+-]\d{2}:\d{2}). Any edits will be overridden! -->",
     re.NOFLAG,
 )
 assert GENERATE_COMMENT_REGEX.search(
-    GENERATE_COMMENT_FORMAT.format(now=datetime.now().astimezone().isoformat())
+    GENERATE_COMMENT_FORMAT.format(
+        now=datetime.now().astimezone().isoformat(timespec="microseconds")
+    )
 )
 
 """Package-level logger."""
