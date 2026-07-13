@@ -115,6 +115,8 @@ extend-select = ["I", "PLC0415"]
 extends = ".rumdl.toml" # redirect to .rumdl.toml in the same directory
 
 [tool.uv]
+add-bounds = "exact"
+exclude-newer = "P5D"
 default-groups = ["dev", "uvloop"]
 package = true
 required-version = ">=0.11.0"
